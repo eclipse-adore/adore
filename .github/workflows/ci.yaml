@@ -6,7 +6,10 @@ on:
       - 'master'
       - 'develop'
   pull_request:
+    branches:
+      - '**'
   workflow_dispatch:
+
 
 jobs:
   CI:
@@ -113,7 +116,7 @@ jobs:
           make lint
 
       - name: Upload Logs
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: logs
           path: .log
