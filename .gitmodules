@@ -57,3 +57,6 @@
 [submodule "vendor/libOpenDRIVE/libOpenDRIVE"]
 	path = vendor/libOpenDRIVE/libOpenDRIVE
 	url = git@github.com:markomiz/libOpenDRIVE.git
+[submodule "ros2_workspace/src/adore_decision_maker_infrastructure"]
+	path = ros2_workspace/src/decision_maker_infrastructure
+	url = git@github.com:DLR-TS/adore_decision_maker_infrastructure.git
