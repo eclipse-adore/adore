@@ -17,8 +17,7 @@ clang-format
 clang-tidy
 cpplint
 cppcheck
-
-# Language servers and intellicense
+clang
 clangd
 python3-pylsp
 
@@ -50,4 +49,5 @@ ros-${ROS_DISTRO}-tracetools-launch
 ros-${ROS_DISTRO}-tracetools-read
 ros-${ROS_DISTRO}-tracetools-test
 ros-${ROS_DISTRO}-tracetools-trace
-
+ros-${ROS_DISTRO}-rqt
+ros-${ROS_DISTRO}-rqt-common-plugins
