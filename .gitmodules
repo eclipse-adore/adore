@@ -60,3 +60,6 @@
 [submodule "ros2_workspace/src/adore_decision_maker_infrastructure"]
 	path = ros2_workspace/src/decision_maker_infrastructure
 	url = git@github.com:DLR-TS/adore_decision_maker_infrastructure.git
+[submodule "ros2_workspace/src/adore_simulated_remote_operator"]
+	path = ros2_workspace/src/simulated_remote_operator
+	url = git@github.com:DLR-TS/adore_simulated_remote_operator.git
