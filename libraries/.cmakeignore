@@ -1,0 +1,22 @@
+## Any library referenced in this file will not be built, or defined
+
+# Any line beginning with a "#" is a comment.
+# Any path within `lib` that matches a pattern in this fill will be skipped.
+#  No target will be defined/generated and anything in that path will not be
+#  built.
+
+
+#lib/a # comment out this line to enable build of library a
+#lib/a/src/a_test_program.cpp
+
+#lib/a
+#lib/a/src/a_test_program.cpp
+#lib/b
+#lib/c
+#lib/boost_hello
+#lib/boost_hello/src/boost_hello_test_program.cpp 
+
+#lib/test_programs/eigen3_hello_world/eigen3_hello_world.cpp
+#lib/test_programs/osqp_hello_world/osqp_hello_world.cpp
+
+#lib/hello_world/hello_world.cpp

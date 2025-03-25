@@ -30,9 +30,6 @@
 [submodule "vendor/mathematics_toolbox"]
 	path = vendor/mathematics_toolbox
 	url = git@github.com:DLR-TS/mathematics_toolbox.git
-[submodule "libraries"]
-	path = libraries
-	url = git@github.com:DLR-TS/adore_libraries.git
 [submodule "ros2_workspace/src/ros2_messages/adore_ros2_msgs"]
 	path = ros2_workspace/src/ros2_messages/adore_ros2_msgs
 	url = git@github.com:DLR-TS/adore_ros2_msgs.git
@@ -63,3 +60,18 @@
 [submodule "ros2_workspace/src/adore_simulated_remote_operator"]
 	path = ros2_workspace/src/simulated_remote_operator
 	url = git@github.com:DLR-TS/adore_simulated_remote_operator.git
+[submodule "libraries/lib/adore_planning"]
+	path = libraries/lib/adore_planning
+	url = git@github.com:DLR-TS/adore_planning.git
+[submodule "libraries/lib/adore_math"]
+	path = libraries/lib/adore_math
+	url = git@github.com:DLR-TS/adore_math.git
+[submodule "libraries/lib/adore_dynamics"]
+	path = libraries/lib/adore_dynamics
+	url = git@github.com:DLR-TS/adore_dynamics.git
+[submodule "libraries/lib/adore_controllers"]
+	path = libraries/lib/adore_controllers
+	url = git@github.com:DLR-TS/adore_controllers.git
+[submodule "libraries/lib/adore_map"]
+	path = libraries/lib/adore_map
+	url = git@github.com:DLR-TS/adore_map.git
