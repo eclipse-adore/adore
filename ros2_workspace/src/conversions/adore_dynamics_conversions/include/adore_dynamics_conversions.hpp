@@ -16,6 +16,7 @@
 
 #include "adore_map_conversions.hpp"
 #include "adore_math/angles.h"
+#include "adore_math_conversions.hpp"
 #include "adore_ros2_msgs/msg/gear_state.hpp"
 #include "adore_ros2_msgs/msg/traffic_participant_set.hpp"
 #include "adore_ros2_msgs/msg/trajectory.hpp"
@@ -68,8 +69,8 @@ VehicleInfo to_cpp_type( const adore_ros2_msgs::msg::VehicleInfo& msg );
 
 nav_msgs::msg::Odometry dynamic_state_to_odometry_msg( const dynamics::VehicleStateDynamic& vehicle_state, rclcpp::Clock::SharedPtr clock );
 
-geometry_msgs::msg::TransformStamped vehicle_state_to_transform( const dynamics::VehicleStateDynamic& vehicle_state,
-                                                                 const rclcpp::Time&                  timestamp );
+geometry_msgs::msg::TransformStamped vehicle_state_to_transform( const VehicleStateDynamic& vehicle_state, const rclcpp::Time& timestamp,
+                                                                 const std::string& source_frame_id );
 
 adore_ros2_msgs::msg::Trajectory to_ros_msg( const Trajectory& trajectory );
 
@@ -84,6 +85,10 @@ TrafficParticipant to_cpp_type( const adore_ros2_msgs::msg::TrafficParticipant& 
 adore_ros2_msgs::msg::TrafficParticipantSet to_ros_msg( const TrafficParticipantSet& participant_set );
 
 TrafficParticipantSet to_cpp_type( const adore_ros2_msgs::msg::TrafficParticipantSet& msg );
+
+adore_ros2_msgs::msg::PhysicalVehicleParameters to_ros_msg( const PhysicalVehicleParameters& cpp );
+
+PhysicalVehicleParameters to_cpp_type( const adore_ros2_msgs::msg::PhysicalVehicleParameters& msg );
 } // namespace conversions
 } // namespace dynamics
 } // namespace adore

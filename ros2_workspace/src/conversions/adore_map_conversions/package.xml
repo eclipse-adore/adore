@@ -15,5 +15,8 @@
 
   <export>
     <build_type>ament_cmake</build_type>
+    <depend>rclcpp</depend>
+    <depend>adore_ros2_msgs</depend>
   </export>
+
 </package>

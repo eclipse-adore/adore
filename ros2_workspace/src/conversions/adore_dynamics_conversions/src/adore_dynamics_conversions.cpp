@@ -172,13 +172,13 @@ dynamic_state_to_odometry_msg( const VehicleStateDynamic& vehicle_state, rclcpp:
 }
 
 geometry_msgs::msg::TransformStamped
-vehicle_state_to_transform( const VehicleStateDynamic& vehicle_state, const rclcpp::Time& timestamp )
+vehicle_state_to_transform( const VehicleStateDynamic& vehicle_state, const rclcpp::Time& timestamp, const std::string& source_frame_id )
 {
   geometry_msgs::msg::TransformStamped vehicle_frame;
 
   vehicle_frame.header.stamp    = timestamp;
   vehicle_frame.header.frame_id = "world";
-  vehicle_frame.child_frame_id  = "ego_vehicle";
+  vehicle_frame.child_frame_id  = source_frame_id;
 
   vehicle_frame.transform.translation.x = vehicle_state.x;
   vehicle_frame.transform.translation.y = vehicle_state.y;
@@ -251,11 +251,15 @@ to_ros_msg( const TrafficParticipant& participant )
   msg.motion_state = to_ros_msg( participant.state );
 
   // Convert bounding box
-  msg.shape.type       = shape_msgs::msg::SolidPrimitive::BOX;
-  msg.shape.dimensions = { participant.bounding_box.length, participant.bounding_box.width, participant.bounding_box.height };
+  msg.physical_parameters = to_ros_msg( participant.physical_parameters );
 
   // Convert classification
   msg.classification.type_id = static_cast<uint8_t>( participant.classification );
+
+  if ( participant.v2x_id.has_value() )
+  {
+    msg.v2x_station_id = static_cast<uint64_t>( participant.v2x_id.value() );
+  }
 
   // Convert id
   msg.tracking_id = participant.id;
@@ -288,17 +292,18 @@ to_cpp_type( const adore_ros2_msgs::msg::TrafficParticipant& msg )
   // Convert state
   VehicleStateDynamic state = to_cpp_type( msg.motion_state );
 
-  // Convert bounding box
-  math::Box3d bounding_box( msg.shape.dimensions[0], // length
-                            msg.shape.dimensions[1], // width
-                            msg.shape.dimensions[2]  // height
-  );
+  PhysicalVehicleParameters physical_parameters = to_cpp_type( msg.physical_parameters );
 
   // Convert classification
   TrafficParticipantClassification classification = static_cast<TrafficParticipantClassification>( msg.classification.type_id );
 
   // Construct the participant
-  TrafficParticipant participant( state, msg.tracking_id, classification, bounding_box.length, bounding_box.width, bounding_box.height );
+  TrafficParticipant participant( state, msg.tracking_id, classification, physical_parameters );
+
+  if ( msg.v2x_station_id != 0 )
+  {
+    participant.v2x_id =  static_cast<uint64_t>( msg.v2x_station_id ); 
+  }
 
   // Optional goal point
   if( msg.goal_point.x != 0.0 || msg.goal_point.y != 0.0 )
@@ -329,7 +334,7 @@ to_ros_msg( const TrafficParticipantSet& participant_set )
 {
   adore_ros2_msgs::msg::TrafficParticipantSet msg;
 
-  for( const auto& [id, participant] : participant_set )
+  for( const auto& [id, participant] : participant_set.participants )
   {
     adore_ros2_msgs::msg::TrafficParticipantDetection detection_msg;
 
@@ -340,6 +345,10 @@ to_ros_msg( const TrafficParticipantSet& participant_set )
     detection_msg.detection_by_sensor = adore_ros2_msgs::msg::TrafficParticipantDetection::UNDEFINED;
 
     msg.data.push_back( detection_msg );
+  }
+  if( participant_set.validity_area )
+  {
+    msg.validity_area = math::conversions::to_ros_msg( participant_set.validity_area.value() );
   }
 
   return msg;
@@ -355,10 +364,76 @@ to_cpp_type( const adore_ros2_msgs::msg::TrafficParticipantSet& msg )
     const auto&        participant_msg = detection.participant_data;
     TrafficParticipant participant     = to_cpp_type( participant_msg );
 
-    participant_set[participant.id] = participant;
+    participant_set.participants[participant.id] = participant;
+  }
+  if( msg.validity_area.points.size() > 5 )
+  {
+    participant_set.validity_area = math::conversions::to_cpp_type( msg.validity_area );
   }
 
   return participant_set;
+}
+
+adore_ros2_msgs::msg::PhysicalVehicleParameters
+to_ros_msg( const PhysicalVehicleParameters& cpp )
+{
+  adore_ros2_msgs::msg::PhysicalVehicleParameters msg;
+
+  msg.cog_to_front_axle           = cpp.cog_to_front_axle;
+  msg.rear_axle_to_cog            = cpp.rear_axle_to_cog;
+  msg.wheelbase                   = cpp.wheelbase;
+  msg.front_axle_to_front_border  = cpp.front_axle_to_front_border;
+  msg.rear_border_to_rear_axle    = cpp.rear_border_to_rear_axle;
+  msg.mass                        = cpp.mass;
+  msg.friction_coefficient        = cpp.friction_coefficient;
+  msg.cog_height                  = cpp.cog_height;
+  msg.front_tire_stiffness        = cpp.front_tire_stiffness;
+  msg.rear_tire_stiffness         = cpp.rear_tire_stiffness;
+  msg.rotational_inertia_div_mass = cpp.rotational_inertia_div_mass;
+  msg.front_track_width           = cpp.front_track_width;
+  msg.rear_track_width            = cpp.rear_track_width;
+  msg.steering_ratio              = cpp.steering_ratio;
+  msg.steering_angle_max          = cpp.steering_angle_max;
+  msg.steering_angle_min          = cpp.steering_angle_min;
+  msg.cornering_stiffness         = cpp.cornering_stiffness;
+  msg.brake_balance_front         = cpp.brake_balance_front;
+  msg.acceleration_balance_front  = cpp.acceleration_balance_front;
+  msg.body_width                  = cpp.body_width;
+  msg.body_length                 = cpp.body_length;
+  msg.body_height                 = cpp.body_height;
+
+  return msg;
+}
+
+PhysicalVehicleParameters
+to_cpp_type( const adore_ros2_msgs::msg::PhysicalVehicleParameters& msg )
+{
+  PhysicalVehicleParameters cpp;
+
+  cpp.cog_to_front_axle           = msg.cog_to_front_axle;
+  cpp.rear_axle_to_cog            = msg.rear_axle_to_cog;
+  cpp.wheelbase                   = msg.wheelbase;
+  cpp.front_axle_to_front_border  = msg.front_axle_to_front_border;
+  cpp.rear_border_to_rear_axle    = msg.rear_border_to_rear_axle;
+  cpp.mass                        = msg.mass;
+  cpp.friction_coefficient        = msg.friction_coefficient;
+  cpp.cog_height                  = msg.cog_height;
+  cpp.front_tire_stiffness        = msg.front_tire_stiffness;
+  cpp.rear_tire_stiffness         = msg.rear_tire_stiffness;
+  cpp.rotational_inertia_div_mass = msg.rotational_inertia_div_mass;
+  cpp.front_track_width           = msg.front_track_width;
+  cpp.rear_track_width            = msg.rear_track_width;
+  cpp.steering_ratio              = msg.steering_ratio;
+  cpp.steering_angle_max          = msg.steering_angle_max;
+  cpp.steering_angle_min          = msg.steering_angle_min;
+  cpp.cornering_stiffness         = msg.cornering_stiffness;
+  cpp.brake_balance_front         = msg.brake_balance_front;
+  cpp.acceleration_balance_front  = msg.acceleration_balance_front;
+  cpp.body_width                  = msg.body_width;
+  cpp.body_length                 = msg.body_length;
+  cpp.body_height                 = msg.body_height;
+
+  return cpp;
 }
 } // namespace conversions
 } // namespace dynamics

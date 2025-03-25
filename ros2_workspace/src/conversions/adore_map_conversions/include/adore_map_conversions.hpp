@@ -12,8 +12,8 @@
  *    Marko Mizdrak
  ********************************************************************************/
 #pragma once
-
 #include "adore_map/map.hpp"
+#include "adore_map/route.hpp"
 #include "adore_ros2_msgs/msg/map.hpp"
 #include "adore_ros2_msgs/msg/map_connection.hpp"
 #include "adore_ros2_msgs/msg/map_lane.hpp"
@@ -60,6 +60,12 @@ Map to_cpp_type( const adore_ros2_msgs::msg::Map& ros_map );
 
 // Convert Map to ROS message
 adore_ros2_msgs::msg::Map to_ros_msg( const Map& cpp_map );
+
+// Convert from Route message to Route C++ type
+RouteSection to_cpp_type( const adore_ros2_msgs::msg::RouteSection& msg );
+
+// Convert from RouteSection (C++ struct) to RouteSection.msg
+adore_ros2_msgs::msg::RouteSection to_ros_msg( const RouteSection& section );
 
 // Convert from Route message to Route C++ type
 Route to_cpp_type( const adore_ros2_msgs::msg::Route& msg );

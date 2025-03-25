@@ -215,7 +215,7 @@ to_cpp_type( const adore_ros2_msgs::msg::Map& ros_map )
       // add lane
       cpp_map.lanes[lane->id] = lane;
       // add points
-      for( const auto& point : lane->borders.center.points )
+      for( const auto& point : lane->borders.center.interpolated_points )
       {
         cpp_map.quadtree.insert( point );
       }
@@ -225,18 +225,57 @@ to_cpp_type( const adore_ros2_msgs::msg::Map& ros_map )
   return cpp_map;
 }
 
+RouteSection
+to_cpp_type( const adore_ros2_msgs::msg::RouteSection& msg )
+{
+  RouteSection section;
+  section.end_s   = msg.end_s;
+  section.start_s = msg.start_s;
+  section.route_s = msg.route_s;
+  section.lane_id = msg.lane_id;
+  return section;
+}
+
+adore_ros2_msgs::msg::RouteSection
+to_ros_msg( const RouteSection& section )
+{
+  adore_ros2_msgs::msg::RouteSection msg;
+  msg.end_s   = section.end_s;
+  msg.start_s = section.start_s;
+  msg.route_s = section.route_s;
+  msg.lane_id = section.lane_id;
+  return msg;
+}
+
 Route
 to_cpp_type( const adore_ros2_msgs::msg::Route& msg )
 {
   Route route;
 
-  // Convert lane IDs
-  route.lane_id_route = std::deque<size_t>( msg.lane_ids.begin(), msg.lane_ids.end() );
-
-  // Convert center points
-  for( const auto& point : msg.center_points )
+  for( const auto& section : msg.sections )
   {
-    route.center_lane.push_back( to_cpp_type( point ) );
+    auto                          cpp_section = to_cpp_type( section );
+    std::shared_ptr<RouteSection> section_ptr = std::make_shared<RouteSection>( cpp_section );
+    route.lane_to_sections[section.lane_id]   = section_ptr;
+    route.s_to_sections[section.lane_id]      = section_ptr;
+  }
+
+  for( const auto& point_msg : msg.center_points )
+  {
+    // Convert from ROS to internal MapPoint
+    auto mp = to_cpp_type( point_msg );
+
+    // Find which RouteSection this point belongs to, via lane_id
+    auto it = route.lane_to_sections.find( mp.parent_id );
+    if( it == route.lane_to_sections.end() )
+    {
+      continue;
+    }
+    auto   section_ptr         = it->second; // shared_ptr<RouteSection>
+    bool   forward             = ( section_ptr->end_s >= section_ptr->start_s );
+    double local_s             = forward ? ( mp.s - section_ptr->start_s ) : ( section_ptr->start_s - mp.s );
+    double route_s             = section_ptr->route_s + local_s;
+    route.center_lane[route_s] = mp;
   }
 
   // Convert start and destination points
@@ -255,12 +294,15 @@ to_ros_msg( const Route& route )
   adore_ros2_msgs::msg::Route msg;
 
   // Convert lane IDs
-  msg.lane_ids = std::vector<int64_t>( route.lane_id_route.begin(), route.lane_id_route.end() );
+  for( const auto& section : route.sections )
+  {
+    auto section_msg = to_ros_msg( *section );
+    msg.sections.push_back( section_msg );
+  }
 
   // Convert center points
-  for( const auto& map_point : route.center_lane )
+  for( const auto& [s, map_point] : route.center_lane )
   {
-
     msg.center_points.push_back( to_ros_msg( map_point ) );
   }
 
