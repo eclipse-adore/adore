@@ -18,6 +18,7 @@
 #include <string>
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "import tracing"
 
 using namespace std::chrono_literals;
 
@@ -48,7 +49,7 @@ class Ros2HelloWorld : public rclcpp::Node
 
     void Run(){
       std_msgs::msg::String message;
-      message.data = "Hello, World from ROS2!";
+      message.data = "Hello, World!";
       RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
       publisherString->publish(message);
       rclcpp::sleep_for(std::chrono::seconds(1));

@@ -60,6 +60,3 @@
 [submodule "vendor/libOpenDRIVE/libOpenDRIVE"]
 	path = vendor/libOpenDRIVE/libOpenDRIVE
 	url = git@github.com:markomiz/libOpenDRIVE.git
-[submodule "vendor/ros2_observer"]
-	path = vendor/ros2_observer
-	url = git@github.com:DLR-TS/ros2_observer.git
