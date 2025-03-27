@@ -18,7 +18,6 @@
 #include <string>
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
-#include "import tracing"
 
 using namespace std::chrono_literals;
 
