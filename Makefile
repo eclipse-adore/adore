@@ -4,12 +4,6 @@ ROOT_DIR:=$(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
 
 MAKE_GADGETS_DIR:=tools/adore_cli/make_gadgets
 
-MAKE_GADGETS_FILES:=$(wildcard $(MAKE_GADGETS_DIR)/*)
-
-ifeq ($(shell test -d "$(MAKE_GADGETS_DIR)" && find "$(MAKE_GADGETS_DIR)" -mindepth 1 -maxdepth 1 | grep -q . || echo "empty"),empty)
-    $(shell git submodule update --init --recursive)
-endif
-
 include ${MAKE_GADGETS_DIR}/make_gadgets.mk
 #include tools/make_gadgets/docker/docker-tools.mk
 
