@@ -6,7 +6,7 @@ MAKE_GADGETS_DIR:=tools/adore_cli/make_gadgets
 
 MAKE_GADGETS_FILES := $(wildcard $(MAKE_GADGETS_DIR)/*)
 ifeq ($(MAKE_GADGETS_FILES),)
-    $(shell git submodule update --init || true)
+$(shell git submodule update --init)
 endif
 
 
@@ -32,7 +32,7 @@ TRACE_DURATION_s:=5
 
 include ${SUBMODULES_PATH}/adore_cli/ci_teststand/ci_teststand.mk
 include utils.mk
-include tools/adore_cli/adore_cli.mk
+include ${SUBMODULES_PATH}/adore_cli/adore_cli.mk
 
 .PHONY: build
 build: clean stop_adore_cli build_vendor_libraries build_adore_cli_core build_adore_cli build_user_libraries build_ros_nodes ## Build and setup adore cli
