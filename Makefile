@@ -6,9 +6,8 @@ MAKE_GADGETS_DIR:=tools/adore_cli/make_gadgets
 
 MAKE_GADGETS_FILES := $(wildcard $(MAKE_GADGETS_DIR)/*)
 ifeq ($(MAKE_GADGETS_FILES),)
-$(shell git submodule update --init)
+	$(shell git submodule update --init || true)
 endif
-
 
 include ${MAKE_GADGETS_DIR}/make_gadgets.mk
 #include tools/make_gadgets/docker/docker-tools.mk
