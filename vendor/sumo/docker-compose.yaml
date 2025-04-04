@@ -1,0 +1,10 @@
+services:
+  sumo:
+    image: sumo:v1_22_0
+    network_mode: "host"
+    ipc: "host"
+    pid: "host"
+    build:
+      context: . 
+      network: host
+      dockerfile: Dockerfile
