@@ -149,6 +149,41 @@ header{
     border: none;
 }
 
+.documentation {
+	margin-top: 15%;
+	justify-content: space-between;
+	overflow: hidden;
+	font-weight: normal;
+	color: #000;
+	min-height: 400px;
+	background-color: var(--traffic_light_green_color);
+}
+
+.documentation-title {
+	width: 100%;
+	text-align: center;
+	overflow: hidden;
+	color: var(--header);
+	font-size: 3rem;
+	font-weight: bold;
+	margin-top: 5vmin;
+}
+
+.documentation-text{
+	display: inline-block;
+	margin: 0 25%;
+	min-height: 100%;
+}
+
+.documentation-text p{
+	text-align: left;
+}
+
+.documentation a {
+	color: #0044CC;
+	text-decoration: underline;
+}
+
 .contribute {
 	margin-top: 15%;
  	justify-content: space-between;
@@ -255,7 +290,6 @@ header{
 	color: #0044CC;
 	text-decoration: underline;
 }
-
 
 footer {
 	position: fixed;

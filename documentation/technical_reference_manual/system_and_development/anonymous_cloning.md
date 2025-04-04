@@ -46,5 +46,5 @@ git config --global url."https://".insteadOf git://
 
 Next, you can clone the repository as normal except use https:
 ```bash
-git clone -recurse-submodules -j$(nproc) https://github.com/DLR-TS/adore.git
+git clone --recurse-submodules -j$(nproc) https://github.com/DLR-TS/adore.git
 ```
