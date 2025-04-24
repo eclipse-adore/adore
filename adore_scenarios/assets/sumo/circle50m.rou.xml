@@ -14,6 +14,6 @@
 ********************************************************************************
 -->
 <routes>
-    <vType id="traffic" type="passenger" length="5"  accel="2.6" decel="4.5" maxSpeed="50" carFollowModel="Krauss" sigma="0.9"/>
+    <vType id="traffic" type="passenger" length="5"  accel="2.6" decel="4.5" maxSpeed="50" minGap="7" carFollowModel="Krauss" sigma="0.9"/>
     <flow id="carflow1" type="traffic" from="-1.157.08" to="-1.0.00" beg="0" end="0" number="25" departPos="random"/>
 </routes>
