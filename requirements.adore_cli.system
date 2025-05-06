@@ -51,3 +51,6 @@ ros-${ROS_DISTRO}-tracetools-read
 ros-${ROS_DISTRO}-tracetools-test
 ros-${ROS_DISTRO}-tracetools-trace
 
+# Carla
+ros-${ROS_DISTRO}-rviz2
+

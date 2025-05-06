@@ -57,3 +57,9 @@
 [submodule "vendor/libOpenDRIVE/libOpenDRIVE"]
 	path = vendor/libOpenDRIVE/libOpenDRIVE
 	url = git@github.com:markomiz/libOpenDRIVE.git
+[submodule "ros2_workspace/src/carla_bridge"]
+	path = ros2_workspace/src/carla_bridge
+	url = git@github.com:dlr-ts/adore_if_carla.git
+[submodule "ros2_workspace/src/ros2_messages/ros-carla-msgs"]
+	path = ros2_workspace/src/ros2_messages/ros-carla-msgs
+	url = git@github.com:carla-simulator/ros-carla-msgs.git
