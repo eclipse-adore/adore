@@ -1,4 +1,4 @@
-name: CI
+name: CI_crosscompile_quem_arm64
 
 on:
   push:
@@ -14,6 +14,8 @@ on:
 jobs:
   CI:
     runs-on: ubuntu-latest
+    env:
+      ARCH: "arm64"
 
     steps:
       - name: Init
