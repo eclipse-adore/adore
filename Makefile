@@ -6,7 +6,7 @@ MAKE_GADGETS_DIR:=tools/adore_cli/make_gadgets
 
 MAKE_GADGETS_FILES := $(wildcard $(MAKE_GADGETS_DIR)/*)
 ifeq ($(MAKE_GADGETS_FILES),)
-    $(shell git submodule update --init)
+    $(shell git submodule update --init --recursive)
 endif
 
 
@@ -22,10 +22,8 @@ VENDOR_PATH:=${ROOT_DIR}/vendor
 ROS_NODE_PATH:=${ROOT_DIR}/ros2_workspace/src
 ADORE_LIBRARY_PATH:=${ROOT_DIR}/libraries
 #BRANCH:=$(shell make get_sanitized_branch_name)
-BRANCH:=$(shell bash ${MAKE_GADGETS_DIR}/tools/branch_name.sh)
-ADORE_CLI_BRANCH:=$(shell bash ${MAKE_GADGETS_DIR}/tools/branch_name.sh)
-ADORE_CLI_IMAGE:=$(shell cd tools/adore_cli && make image_adore_cli)_${BRANCH}
-ADORE_CLI_CONTAINER_NAME:=$(subst :,_,${ADORE_CLI_IMAGE})
+PARENT_BRANCH:= $(shell cd "${ROOT_DIR}" && bash $(MAKE_GADGETS_DIR)/tools/branch_name.sh 2>/dev/null || echo NOBRANCH)
+PARENT_SHORT_HASH:=$(shell cd "${ROOT_DIR}" && git rev-parse --short HEAD 2>/dev/null || echo NOHASH)
 
 include ${SUBMODULES_PATH}/adore_cli/ci_teststand/ci_teststand.mk
 include utils.mk
