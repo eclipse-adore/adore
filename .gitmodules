@@ -66,3 +66,6 @@
 [submodule "vendor/ros2_observer"]
 	path = vendor/ros2_observer
 	url = git@github.com:DLR-TS/ros2_observer.git
+[submodule "adore_scenarios/simulation_scenarios"]
+	path = adore_scenarios/simulation_scenarios
+	url = git@github.com:DLR-TS/adore_simulation_scenarios.git
