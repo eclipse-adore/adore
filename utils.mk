@@ -7,7 +7,7 @@ load: load_docker_images
 
 .PHONY: debug
 debug:
-	docker exec -it -u root adore_cli_core /bin/bash
+	docker exec -it -u root $(shell make container_name_adore_cli) /bin/bash
 
 .PHONY: check_deployment_host_connection
 check_deployment_host_connection:

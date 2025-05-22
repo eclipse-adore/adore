@@ -10,7 +10,12 @@ help:
 
 .PHONY: build
 build: ## Build all ROS2 packages
-	source /opt/ros/$${ROS_DISTRO}/setup.bash && colcon build --parallel-workers $$(nproc)
+	source /opt/ros/$${ROS_DISTRO}/setup.bash && colcon build --cmake-args -DCMAKE_BUILD_TYPE=Debug --parallel-workers $$(nproc)
+	#source /opt/ros/$${ROS_DISTRO}/setup.bash && colcon build --continue-on-error --cmake-args -DCMAKE_BUILD_TYPE=Debug --parallel-workers $$(nproc)
+
+.PHONY: build_continue_on_error
+build_continue_on_error: ## Build all ROS2 packages, continue on error
+	source /opt/ros/$${ROS_DISTRO}/setup.bash && colcon build --continue-on-error --cmake-args -DCMAKE_BUILD_TYPE=Debug --parallel-workers $$(nproc)
 
 .PHONY: clean_build
 clean_build: clean build ## Clean and build all ROS2 packages

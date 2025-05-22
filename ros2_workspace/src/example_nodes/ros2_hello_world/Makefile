@@ -31,7 +31,7 @@ DEPENDENCIES := $(shell grep -oP '<depend>\K[^<]*' $(SCRIPT_DIRECTORY)/package.x
 build: build_dependencies ##         Build ROS2 Node. Same as running `colcon build --packages-select <package name>`
 	@echo "Building: ${ROS2_PACKAGE}"
 	@echo "  Using ROS 2 workspace: ${ROS2_WORKSPACE}"
-	cd $(ROS2_WORKSPACE) && colcon build --packages-select ${ROS2_PACKAGE}
+	cd $(ROS2_WORKSPACE) && colcon build --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo --packages-select ${ROS2_PACKAGE}
 
 .PHONY: build_dependencies
 build_dependencies: ## Build all node dependencies

@@ -17,17 +17,20 @@ clang-format
 clang-tidy
 cpplint
 cppcheck
+jq
+
 
 # Language servers and intellicense
 clangd
 python3-pylsp
 
+
 ## Plotting
 ros-${ROS_DISTRO}-plotjuggler-ros
 ros-${ROS_DISTRO}-plotjuggler
 ros-${ROS_DISTRO}-rosbridge-suite
-
-
+python3-matplotlib
+python3-pandas
 
 ## Network debugging tools
 telnet
@@ -35,6 +38,7 @@ netcat-traditional
 traceroute
 nmap
 inetutils-ping
+net-tools
 
 #ROS
 ros-${ROS_DISTRO}-ament-index-cpp

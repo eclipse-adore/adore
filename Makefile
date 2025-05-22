@@ -24,10 +24,17 @@ ADORE_LIBRARY_PATH:=${ROOT_DIR}/libraries
 #BRANCH:=$(shell make get_sanitized_branch_name)
 PARENT_BRANCH:= $(shell cd "${ROOT_DIR}" && bash $(MAKE_GADGETS_DIR)/tools/branch_name.sh 2>/dev/null || echo NOBRANCH)
 PARENT_SHORT_HASH:=$(shell cd "${ROOT_DIR}" && git rev-parse --short HEAD 2>/dev/null || echo NOHASH)
+BRANCH:=$(shell bash ${MAKE_GADGETS_DIR}/tools/branch_name.sh)
+ADORE_CLI_BRANCH:=$(shell bash ${MAKE_GADGETS_DIR}/tools/branch_name.sh)
+ADORE_CLI_IMAGE:=$(shell cd tools/adore_cli && make image_adore_cli)_${BRANCH}
+ADORE_CLI_CONTAINER_NAME:=$(subst :,_,${ADORE_CLI_IMAGE})
+ROS_HOME:="${ROOT_DIR}/.log/.ros"
+TRACE_DURATION_s:=5
+
 
 include ${SUBMODULES_PATH}/adore_cli/ci_teststand/ci_teststand.mk
 include utils.mk
-include tools/adore_cli/adore_cli.mk
+include ${SUBMODULES_PATH}/adore_cli/adore_cli.mk
 
 .PHONY: build
 build: clean stop_adore_cli build_vendor_libraries build_adore_cli_core build_adore_cli build_user_libraries build_ros_nodes ## Build and setup adore cli
@@ -69,6 +76,11 @@ clean: clean_adore_cli ## Clean ADORe  build artifacts
 	cd libraries && make clean
 	cd ros2_workspace && make clean
 	rm -rf build
+
+.PHONY: trace
+trace: ## Generate tracing data with ros2_traceing 
+	make adore_cli_run cmd="ros2-tracer -t ${TRACE_DURATION_s} -o"
+	cd vendor/ros2_observer/trace_compass && make start
 
 .PHONY:lint_nodes
 lint_nodes:

@@ -63,3 +63,6 @@
 [submodule "ros2_workspace/src/ros2_messages/ros-carla-msgs"]
 	path = ros2_workspace/src/ros2_messages/ros-carla-msgs
 	url = git@github.com:carla-simulator/ros-carla-msgs.git
+[submodule "vendor/ros2_observer"]
+	path = vendor/ros2_observer
+	url = git@github.com:DLR-TS/ros2_observer.git
