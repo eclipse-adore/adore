@@ -57,6 +57,12 @@
 [submodule "vendor/libOpenDRIVE/libOpenDRIVE"]
 	path = vendor/libOpenDRIVE/libOpenDRIVE
 	url = git@github.com:markomiz/libOpenDRIVE.git
+[submodule "vendor/sumo/sumo"]
+	path = vendor/sumo/sumo
+	url = git@github.com:eclipse/sumo.git
+[submodule "ros2_workspace/src/sumo_bridge"]
+	path = ros2_workspace/src/sumo_bridge
+	url = git@github.com:DLR-TS/sumo_if_ros.git
 [submodule "ros2_workspace/src/carla_bridge"]
 	path = ros2_workspace/src/carla_bridge
 	url = git@github.com:dlr-ts/adore_if_carla.git

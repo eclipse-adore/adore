@@ -1,0 +1,10 @@
+services:
+  sumo:
+    image: ${PROJECT}:${TAG} 
+    network_mode: "host"
+    ipc: "host"
+    pid: "host"
+    build:
+      context: . 
+      network: host
+      dockerfile: Dockerfile

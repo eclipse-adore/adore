@@ -1,0 +1,9 @@
+cmake
+python3.12-dev
+g++
+libxerces-c-dev
+libfox-1.6-dev
+libgdal-dev
+libproj-dev
+libgl2ps-dev
+swig
