@@ -21,6 +21,7 @@ jobs:
       - name: Init
         run: |
           df -h
+          sudo add-apt-repository universe
           sudo apt-get update
 
       - name: Maximize free space
