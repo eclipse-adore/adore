@@ -87,3 +87,6 @@
 [submodule "libraries/lib/adore_dynamics"]
 	path = libraries/lib/adore_dynamics
 	url = git@github.com:DLR-TS/adore_dynamics.git
+[submodule "ros2_workspace/src/conversions/adore_dynamics_conversions"]
+	path = ros2_workspace/src/conversions/adore_dynamics_conversions
+	url = git@github.com:DLR-TS/adore_dynamics_conversions.git
