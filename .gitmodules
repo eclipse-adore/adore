@@ -30,9 +30,6 @@
 [submodule "vendor/mathematics_toolbox"]
 	path = vendor/mathematics_toolbox
 	url = git@github.com:DLR-TS/mathematics_toolbox.git
-[submodule "libraries"]
-	path = libraries
-	url = git@github.com:DLR-TS/adore_libraries.git
 [submodule "ros2_workspace/src/ros2_messages/adore_ros2_msgs"]
 	path = ros2_workspace/src/ros2_messages/adore_ros2_msgs
 	url = git@github.com:DLR-TS/adore_ros2_msgs.git
