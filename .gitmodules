@@ -72,3 +72,6 @@
 [submodule "adore_scenarios/simulation_scenarios"]
 	path = adore_scenarios/simulation_scenarios
 	url = git@github.com:DLR-TS/adore_simulation_scenarios.git
+[submodule "libraries/lib/adore_planning"]
+	path = libraries/lib/adore_planning
+	url = git@github.com:DLR-TS/adore_planning.git
