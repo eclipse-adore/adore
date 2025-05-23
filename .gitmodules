@@ -93,3 +93,6 @@
 [submodule "ros2_workspace/src/conversions/adore_map_conversions"]
 	path = ros2_workspace/src/conversions/adore_map_conversions
 	url = git@github.com:DLR-TS/adore_map_conversions.git
+[submodule "ros2_workspace/src/conversions/adore_math_conversions"]
+	path = ros2_workspace/src/conversions/adore_math_conversions
+	url = git@github.com:DLR-TS/adore_math_conversions.git
