@@ -99,3 +99,6 @@
 [submodule "ros2_workspace/src/adore_decision_maker_infrastructure"]
 	path = ros2_workspace/src/decision_maker_infrastructure
 	url = git@github.com:DLR-TS/adore_decision_maker_infrastructure.git
+[submodule "ros2_workspace/src/adore_simulated_infrastructure"]
+	path = ros2_workspace/src/simulated_infrastructure
+	url = git@github.com:DLR-TS/adore_simulated_infrastructure.git
