@@ -81,3 +81,6 @@
 [submodule "libraries/lib/adore_map"]
 	path = libraries/lib/adore_map
 	url = git@github.com:DLR-TS/adore_map.git
+[submodule "libraries/lib/adore_math"]
+	path = libraries/lib/adore_math
+	url = git@github.com:DLR-TS/adore_math.git
