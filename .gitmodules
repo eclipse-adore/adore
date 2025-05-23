@@ -96,3 +96,6 @@
 [submodule "ros2_workspace/src/conversions/adore_math_conversions"]
 	path = ros2_workspace/src/conversions/adore_math_conversions
 	url = git@github.com:DLR-TS/adore_math_conversions.git
+[submodule "ros2_workspace/src/adore_decision_maker_infrastructure"]
+	path = ros2_workspace/src/decision_maker_infrastructure
+	url = git@github.com:DLR-TS/adore_decision_maker_infrastructure.git
