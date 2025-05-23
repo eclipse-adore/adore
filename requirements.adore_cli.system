@@ -18,9 +18,6 @@ clang-tidy
 cpplint
 cppcheck
 
-# Language servers and intellicense
-clangd
-python3-pylsp
 
 ## Plotting
 ros-${ROS_DISTRO}-plotjuggler-ros
@@ -50,7 +47,4 @@ ros-${ROS_DISTRO}-tracetools-launch
 ros-${ROS_DISTRO}-tracetools-read
 ros-${ROS_DISTRO}-tracetools-test
 ros-${ROS_DISTRO}-tracetools-trace
-
-# Carla
-ros-${ROS_DISTRO}-rviz2
 
