@@ -78,3 +78,6 @@
 [submodule "libraries/lib/adore_controllers"]
 	path = libraries/lib/adore_controllers
 	url = git@github.com:DLR-TS/adore_controllers.git
+[submodule "libraries/lib/adore_map"]
+	path = libraries/lib/adore_map
+	url = git@github.com:DLR-TS/adore_map.git
