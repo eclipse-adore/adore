@@ -75,3 +75,6 @@
 [submodule "libraries/lib/adore_planning"]
 	path = libraries/lib/adore_planning
 	url = git@github.com:DLR-TS/adore_planning.git
+[submodule "libraries/lib/adore_controllers"]
+	path = libraries/lib/adore_controllers
+	url = git@github.com:DLR-TS/adore_controllers.git
