@@ -14,8 +14,8 @@ ARCH?=$(shell uname -m)
 DOCKER_PLATFORM?=linux/$(ARCH)
 CROSS_COMPILE?=$(shell if [ "$(shell uname -m)" != "$(ARCH)" ]; then echo "true"; else echo "false"; fi)
 
-PROJECT:=sumo
-TAG := v1_22_0_${ARCH}
+PROJECT:=sumo_installer
+TAG := ${ARCH}
 
 .PHONY: check_cross_compile_deps
 check_cross_compile_deps:
@@ -33,25 +33,24 @@ check_cross_compile_deps:
     fi
 
 .PHONY: build
-build: check_cross_compile_deps  ## Build Sumo
+build: check_cross_compile_deps  ## Build Sumo installer
 	@if [ "$(CROSS_COMPILE)" = "true" ]; then \
-		echo "Cross-compiling ${PROJECT}:${TAG} for $(ARCH)..."; \
-		docker buildx build --platform $(DOCKER_PLATFORM) \
-			--tag ${PROJECT}:${TAG} \
-			--build-arg PROJECT=${PROJECT} \
-			--load .; \
-	else \
-		docker compose build; \
-	fi
-	@container_id=$$(docker create ${PROJECT}:${TAG}); \
-	docker cp $$container_id:/tmp/sumo/build "${ROOT_DIR}/${PROJECT}"; \
-	docker cp $$container_id:/tmp/sumo/bin "${ROOT_DIR}/${PROJECT}"; \
-	docker rm $$container_id > /dev/null
+        echo "Cross-compiling ${PROJECT}:${TAG} for $(ARCH)..."; \
+        docker buildx build --platform $(DOCKER_PLATFORM) \
+            --tag ${PROJECT}:${TAG} \
+            --build-arg PROJECT=${PROJECT} \
+            --load .; \
+    else \
+        docker build --network host \
+                 --tag ${PROJECT}:${TAG} \
+                 --build-arg PROJECT=${PROJECT} . ; \
+    fi;
+	docker cp $$(docker create --rm ${PROJECT}:${TAG}):/tmp/${PROJECT}/build "${ROOT_DIR}/build"
+
 
 .PHONY: clean
 clean:  ## Clean build artifacts 
-	git submodule deinit -f "${ROOT_DIR}/${PROJECT}"
-	git submodule update --init --recursive "${ROOT_DIR}/${PROJECT}"
+	rm -rf "${ROOT_DIR}/build"
 	docker rm $$(docker ps -a -q --filter "ancestor=${PROJECT}:${TAG}") --force 2> /dev/null || true
 	docker rmi $$(docker images -q ${PROJECT}:${TAG}) --force 2> /dev/null || true
 	docker rmi --force $$(docker images --filter "dangling=true" -q --no-trunc) 2> /dev/null || true
