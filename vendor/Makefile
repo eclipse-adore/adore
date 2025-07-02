@@ -10,6 +10,7 @@ MAKEFLAGS += --no-print-directory
 .PHONY:build
 build:
 	cd mathematics_toolbox && make build
+	cd sumo && make build
 	cd OptiNLC && make build
 	cd libOpenDRIVE && make build
 	cd helix && make build
@@ -38,3 +39,4 @@ clean:
 	cd mathematics_toolbox && make clean
 	cd libOpenDRIVE && make clean
 	cd helix && make clean
+	cd sumo && make clean

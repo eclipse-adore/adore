@@ -10,11 +10,16 @@ help:
 
 .PHONY: build
 build: ## Build all ROS2 packages
-	source /opt/ros/$${ROS_DISTRO}/setup.bash && colcon build --parallel-workers $$(nproc) && source install/local_setup.sh
+	source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build --parallel-workers $$(( $$(nproc) -1 )) 
+
+.PHONY: build_single_core
+build_single_core: ## Build all ROS2 packages
+	source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build --executor sequential
 
 .PHONY: build_release
 build_release: ## Build all ROS2 packages
-	source /opt/ros/$${ROS_DISTRO}/setup.bash && colcon build --parallel-workers $$(nproc) --cmake-args -DCMAKE_BUILD_TYPE=Release && source install/local_setup.sh
+	source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build --parallel-workers $$(( $$(nproc) - 2 )) --cmake-args -DCMAKE_BUILD_TYPE=Release && source install/local_setup.sh
+
 
 .PHONY: build_user_libraries
 build_user_libraries: 
