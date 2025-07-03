@@ -13,7 +13,7 @@ on:
 
 
 jobs:
-  CI_native_x86:
+  CI_native_arm64:
     runs-on: ubuntu-24.04-arm
 
     steps:
