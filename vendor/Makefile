@@ -23,8 +23,7 @@ build:  ## build all vendor libraries and copy output to ./build
 	cp libOpenDRIVE/libOpenDRIVE/build build/libOpenDRIVE -r
 	cp helix/build build/helix -r
 	mkdir -p build/sumo
-	cp sumo/sumo/build build/sumo/build -r
-	cp sumo/sumo/bin build/sumo/bin -r
+	cp sumo/build build/sumo/build -r
 
 #	cd build/eigen && find . -type f -exec sed -i "s|/tmp/|$$(pwd)/|g" {} +
 #	cd build/osqp && find . -type f -exec sed -i "s|/tmp/|$$(pwd)/|g" {} +
