@@ -1,5 +1,5 @@
 ---
-name: CI_native_x86
+name: CI_native_arm64
 
 on:
   push:
