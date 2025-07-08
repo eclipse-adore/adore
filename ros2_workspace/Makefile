@@ -3,18 +3,42 @@ SHELL:=/bin/bash
 .DEFAULT_GOAL := help 
 
 ROOT_DIR:=$(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
+RAM_KB := $(shell grep MemTotal /proc/meminfo | awk '{print $$2}')
+RAM_GB := $(shell echo $$(( $(RAM_KB) / 1024 / 1024 )))
+
+HAVE_ENOUGH_RAM := $(shell [ $(RAM_KB) -ge 8000000 ] && echo yes || echo no)
+ifeq ($(HAVE_ENOUGH_RAM),yes)
+  PARALLEL_WORKERS := $(shell echo $$(( $(shell nproc) - 1 )))
+  PARALLEL_WORKERS_RELEASE := $(shell echo $$(( $(shell nproc) - 2 )))
+  EXECUTOR_ARG := --parallel-workers $(PARALLEL_WORKERS)
+  EXECUTOR_ARG_RELEASE := --parallel-workers $(PARALLEL_WORKERS_RELEASE)
+else
+  EXECUTOR_ARG := --executor sequential
+  EXECUTOR_ARG_RELEASE := --executor sequential
+endif
+
 
 .PHONY: help
 help:
 	@printf "Usage: make \033[36m<target>\033[0m\n%s\n" "$$(awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST) | sort | uniq)"
 
+
 .PHONY: build
 build: ## Build all ROS2 packages
-	source /opt/ros/$${ROS_DISTRO}/setup.bash && colcon build --parallel-workers $$(nproc) && source install/local_setup.sh
+	@echo "Detected RAM: $(RAM_KB) kB ($(RAM_GB) GB)"
+	@echo "Executor mode: $(EXECUTOR_ARG)"
+	source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build $(EXECUTOR_ARG)
 
 .PHONY: build_release
-build_release: ## Build all ROS2 packages
-	source /opt/ros/$${ROS_DISTRO}/setup.bash && colcon build --parallel-workers $$(nproc) --cmake-args -DCMAKE_BUILD_TYPE=Release && source install/local_setup.sh
+build_release: ## Build all ROS2 packages in Release mode
+	@echo "Detected RAM: $(RAM_KB) kB ($(RAM_GB) GB)"
+	@echo "Executor mode: $(EXECUTOR_ARG_RELEASE)"
+	source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build $(EXECUTOR_ARG_RELEASE) --cmake-args -DCMAKE_BUILD_TYPE=Release && source install/local_setup.sh
+
+.PHONY: build_single_core
+build_single_core: ## Build all ROS2 packages, force single-threaded build regardless of RAM
+	@echo "Executor mode: --executor sequential"
+	source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build --executor sequential
 
 .PHONY: build_user_libraries
 build_user_libraries: 
