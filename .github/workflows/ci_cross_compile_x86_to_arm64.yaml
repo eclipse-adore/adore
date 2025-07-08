@@ -6,9 +6,10 @@ on:
     branches:
       - 'master'
       - 'develop'
-  pull_request:
-    branches:
-      - '**'
+  # This workflow cannot run on github due to time constraints. This is an example only.  
+  #pull_request:
+  #  branches:
+  #    - '**'
   workflow_dispatch:
 
 jobs:
