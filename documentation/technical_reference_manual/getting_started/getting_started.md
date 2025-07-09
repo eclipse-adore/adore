@@ -50,7 +50,7 @@ make build
 
 ## Running ADORe
 After cloning and satisfying all system prerequisites and building ADORe
-you can start the ADORe CLI interactive shell docker context. 
+you can start the ADORe CLI interactive shell docker context.
 To do this navigate to the root of the ADORe repository directory
 and run the following command:
 ```bash
