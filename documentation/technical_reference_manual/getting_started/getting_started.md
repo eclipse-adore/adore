@@ -10,7 +10,8 @@
 * SPDX-License-Identifier: EPL-2.0 
 *
 * Contributors: 
-*   Andrew Koerner 
+*   Andrew Koerner
+*   Björn Bahn
 ********************************************************************************
 -->
 This guide will help you get your system set up and configured to run ADORe.
@@ -19,12 +20,37 @@ This guide will help you get your system set up and configured to run ADORe.
 
 2. Next review the [Prerequisites 🔗](prerequisites.md) 
 
-3. After installing GNU Make and Docker you are ready to [clone the repository 🔗](cloning_adore.md) 
+## Cloning the ADORe repository
+> **ℹ️INFO:**
+> By default this guide assumes you have ssh keys configured for GitHub your GitHub account.
+> For help on configuring your ssh keys visit: https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account
 
-5. Build ADORe and ADORe CLI with the [Building ADORe 🔗](building_adore.md) guide 
 
+```bash
+git clone git@github.com:DLR-TS/adore.git
+cd adore
+git submodule update --init --recursive
+```
+
+> **⚠️ WARNING:** Failing to update and recursively clone the submodules will result in build failures!
+
+> **ℹ️INFO:** If you would rather clone ADORe anonymously over https please review the [Anonymous Cloning 🔗](../system_and_development/anonymous_cloning.md) guide.
+
+## Building ADORe
+> **⚠️ WARNING:**
+> To use ADORe you must have Docker, and GNU Make installed and configured for you user.
+
+Build the ADORe Docker context, known as ADORe CLI, in the base of the ADORe repository:
+```bash
+make build
+```
+
+> **ℹ️INFO:** On first run of the ADORe CLI the entire system will be built. 
+> Initial build can take 10-15 minutes depending on system and network.
+
+## Running ADORe
 After cloning and satisfying all system prerequisites and building ADORe
-you can start the ADORe CLI interactive shell docker context
+you can start the ADORe CLI interactive shell docker context. 
 To do this navigate to the root of the ADORe repository directory
 and run the following command:
 ```bash

@@ -1,6 +1,6 @@
 # ADORe Prerequisites
 ADORe requires a recent version of make and Docker on your system. ADORe is
-officially supported in Ubuntu 20.04 and 22.04. The following document applies to
+officially supported in Ubuntu 20.04, 22.04 and 24.04. The following document applies to
 that.
 
 ### Check your system
@@ -10,7 +10,7 @@ cat /etc/os-release | grep "VERSION=" | cut -d"=" -f2
 ```
 should yield something such as the following:
 ```text
-"22.04.2 LTS (Jammy Jellyfish)"
+"24.04.2 LTS (Noble Numbat)"
 ```
 
 In principle, any x86 Linux operating system supporting Docker and Make will run
@@ -35,14 +35,13 @@ df -h . | awk 'NR==2 {print "Available Free Space:", $4}'
 
 ### Time
 On the first build of ADORe you will need ~15-20 minutes to download and clone 
-all the sources, dependencies, and context.  Subsequent builds are very quick 
+all the sources, dependencies, and context. Subsequent builds are very quick 
 after requisite caches (apt, docker) have been established.
 
 > **ℹ️ INFO:**
 > Build and fetch times can very greatly depending on system configuration and
 > network.
 
-
 ## Conclusion
-Once you have to correct operating system, adequate free space, as well as, have make and docker
-installed you are good to proceed with using ADORe. 
+Once you have the correct operating system, sufficient free disk space,
+and both Make and Docker installed, you will be ready to proceed with using ADORe.

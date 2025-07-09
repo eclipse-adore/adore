@@ -8,7 +8,7 @@ $(document).ready(function() {
 
 function show(shown) {
   document.getElementById('about').style.display='none';
-  document.getElementById('getting-started').style.display='none';
+  document.getElementById('quickstart').style.display='none';
   document.getElementById('documentation').style.display='none';
   document.getElementById('contribute').style.display='none';
   document.getElementById('sponsors').style.display='none';

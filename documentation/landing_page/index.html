@@ -35,7 +35,7 @@
                             <a class="nav-link" href="#about" onclick="return show('about')">About</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#getting-started" onclick="return show('getting-started')">Getting Started</a>
+                            <a class="nav-link" href="#quickstart" onclick="return show('quickstart')">Quick Start</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="#documentation" onclick="return show('documentation')">Documentation</a>
@@ -75,7 +75,7 @@
 				<a href="https://github.com/DLR-TS/sumo_if_ros">SUMO<i class="fas fa-link"></i></a>.
 			</p>
 			<p>
-				ADORe is <a href="https://ros.org">ROS<i class="fas fa-link"></i></a> based.
+				ADORe is <a href="https://ros.org">ROS 2<i class="fas fa-link"></i></a> based.
 			</p>
 			<p>
 				ADORe is fully containerized with <a href="https://docker.io">Docker<i class="fas fa-link"></i></a>.
@@ -86,23 +86,23 @@
 		</div>
 	</div>
 
-	<div class="container-fluid section" id="getting-started" style="display:none">
-		<h1 class="title">Getting Started</h1>
+	<div class="container-fluid section" id="quickstart" style="display:none">
+		<h1 class="title">Quick Start</h1>
 		<div class="text">
 			<p>
-				If you have curl installed simple run:
+				If you use Ubuntu 20.04, 22.04 or 24.04 and have curl installed simple run:
 			</p>
 			<div class="row">
 				<div class="col-12">
 					<div class="input-group one-liner-field">
-						<input id="getting_started_oneliner" type="text" class="form-control"
+						<input id="quickstart_oneliner" type="text" class="form-control"
 							   value="bash <(curl -sSL https://raw.githubusercontent.com/DLR-TS/adore_tools/master/tools/adore_setup.sh)"
 							   readonly>
 						<div class="input-group-append">
 							<button id="copy_to_clipboard" class="btn btn-primary"
 									type="button" data-bs-toggle="tooltip" data-placement="top"
 									title="Copy to clipboard"
-									data-clipboard-target="#getting_started_oneliner">
+									data-clipboard-target="#quickstart_oneliner">
 								<i class="fas fa-clipboard" alt="Copy to clipboard"></i>
 							</button>
 						</div>
@@ -119,20 +119,27 @@
 			<div class="row">
 				<div class="col-12">
 					<div class="input-group one-liner-field">
-						<input id="getting_started_oneliner_headless" type="text" class="form-control"
+						<input id="quickstart_oneliner_headless" type="text" class="form-control"
 							   value="bash <(curl -sSL https://raw.githubusercontent.com/DLR-TS/adore_tools/master/tools/adore_setup.sh) --headless"
 							   readonly>
 						<div class="input-group-append">
 							<button id="copy_to_clipboard" class="btn btn-primary"
 									type="button" data-bs-toggle="tooltip" data-placement="top"
 									title="Copy to clipboard"
-									data-clipboard-target="#getting_started_oneliner_headless">
+									data-clipboard-target="#quickstart_oneliner_headless">
 								<i class="fas fa-clipboard" alt="Copy to clipboard"></i>
 							</button>
 						</div>
 					</div>
 				</div>
 			</div>
+		</div>
+		<br/>
+		<br/>
+		<div class="text">
+			<p>
+				If you want to develop ADORe follow the build instructions in the <a href="mkdocs//getting_started/getting_started">Technical Reference Manual<i class="fas fa-link"></i></a>.
+			</p>
 		</div>
 	</div>
 
@@ -210,7 +217,7 @@
 		<footer class="bg-body-tertiary text-center text-lg-start">
 			<!-- Copyright -->
 			<div class="text-center p-4">
-				© 2024 Copyright:
+				© 2025 Copyright:
 				<a class="text-black" href="https://www.dlr.de/de" style="text-decoration: none">DLR</a>
 			</div>
 			<!-- Copyright -->

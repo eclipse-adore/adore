@@ -7,7 +7,6 @@ nav:
     - System Requirements: getting_started/system_requirements.md
     - Prerequisites: getting_started/prerequisites.md
     - Installing Docker: getting_started/installing_docker.md
-    - Building ADORe: getting_started/building_adore.md
   - Technical Reference Manual:
     - Documentation: system_and_development/documentation.md
     - Submodules: modules.md

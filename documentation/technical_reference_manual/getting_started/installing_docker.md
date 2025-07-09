@@ -13,8 +13,8 @@ within the Ubuntu central repositories are always very old.
 > overflow issue:
 > [https://stackoverflow.com/questions/66514436/difference-between-docker-compose-and-docker-compose 🔗](https://stackoverflow.com/questions/66514436/difference-between-docker-compose-and-docker-compose)
 
-## Installing Docker: Ubuntu 20.04 and 22.04
-To install the latest version of docker in Ubuntu 20.04 and 22.04 you can follow
+## Installing Docker: Ubuntu 20.04, 22.04 and 24.04
+To install the latest version of docker in Ubuntu 20.04, 22.04 and 24.04 you can follow
 the official Docker document at: [https://docs.docker.com/engine/install/ubuntu/ 🔗](https://docs.docker.com/engine/install/ubuntu/)
 
 Alternatively, ADORe provides a shell script that you can use to install the latest Docker. 

@@ -3,11 +3,10 @@ The following section will detail the recommended hardware/system configuration,
 as well as, required software configuration in order to build and run ADORe and
 it's components.
 
-
 ### Minimum System Configurations 
 **CPU:** 
 
-- Intel CORE i7 7700K or equivalent/better
+- Intel Core i7 7700K or equivalent/better
 - The more cores you have, the more trajectory planners you can run in 
   parallel.
 - No specific graphics card is required as everything (except plotting) runs on 
@@ -26,8 +25,7 @@ Min 8GB for execution. Compilation process is faster with 16+GB
 **Operating system:** 
 
 - Anything that supports newer docker versions. 
-- Recommended: Ubuntu 20.04 or 22.04
-
+- Recommended: Ubuntu 20.04, 22.04, 24.04
 
 **Network:**
 
@@ -51,5 +49,3 @@ For more information review the official docker documentation: [https://docs.doc
 ---
 
 - [GNU Make 🔗](https://www.gnu.org/software/make/) is the backbone of the ADORe build system and is also required.
-
-
