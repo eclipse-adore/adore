@@ -84,7 +84,7 @@ You can now define positions using either **Lat/Long** or **UTM** coordinates wi
 
 **Option A: Using Lat/Long coordinates**
 ```python
-from your_module import Position
+from scenario_helpers.simulated_vehicle import Position
 
 start_position = Position(lat_long=(52.5200, 13.4050), psi=0.0)
 goal_position = Position(lat_long=(52.5300, 13.4150))
@@ -92,7 +92,7 @@ goal_position = Position(lat_long=(52.5300, 13.4150))
 
 **Option B: Using UTM coordinates**
 ```python
-from your_module import Position
+from scenario_helpers.simulated_vehicle import Position
 
 start_position = Position(utm=(413176.0, 5819617.0, 33, 'N'), psi=0.0)
 goal_position = Position(utm=(413276.0, 5819717.0, 33, 'N'))
@@ -140,6 +140,11 @@ start_position = (606529.67, 5797315.01, -3.23)
 goal_position = (606447.98, 5797272.22)
 ```
 ---
+
+For a complete example see the scenario: 
+[simulation_scenarios/simulation_test.py](simulation_scenarios/simulation_test.py)
+
+
 ## 🔁 Final Check
 Before running the scenario:
 - ✅ Validate the file syntax.
