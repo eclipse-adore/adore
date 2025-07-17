@@ -1,5 +1,5 @@
 # Build stage
-FROM node:16 AS build
+FROM node:17 AS build
 
 # Install git and git-lfs
 RUN apt-get update && apt-get install -y git && \
@@ -14,6 +14,7 @@ RUN mv /tmp/lichtblick /src
 WORKDIR /src
 RUN git lfs pull
 
+COPY index.tsx packages/suite-web/src/index.tsx
 RUN corepack enable
 RUN yarn install
 

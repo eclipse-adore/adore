@@ -1,0 +1,152 @@
+{
+  "configById": {
+    "3D!3unykn2": {
+      "cameraState": {
+        "perspective": true,
+        "distance": 68.49572529408535,
+        "phi": 59.99999999999922,
+        "thetaOffset": 45.00000000000004,
+        "targetOffset": [
+          0,
+          0,
+          0
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "fovy": 45,
+        "near": 0.5,
+        "far": 5000
+      },
+      "followMode": "follow-pose",
+      "followTf": "ego_vehicle",
+      "scene": {},
+      "transforms": {},
+      "topics": {
+        "/ego_vehicle/map_grid": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_ego_vehicle": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/controller_trajectory": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/caution_zones": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/infrastructure_traffic_participants": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/local_map": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/mission/goal_position": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/mission/goal_request": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/remote_operation_waypoints": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/route": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/safety_corridor": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/traffic_signals": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/traffic_participants": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/trajectory_decision": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/trajectory_suggestion": {
+          "visible": true
+        },
+        "/initialpose": {
+          "visible": true
+        },
+        "/move_base_simple/goal": {
+          "visible": true
+        }
+      },
+      "layers": {},
+      "publish": {
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      },
+      "imageMode": {}
+    },
+    "Gauge!2dr017d": {
+      "colorMap": "red-yellow-green",
+      "colorMode": "colormap",
+      "gradient": [
+        "#0000ff",
+        "#ff00ff"
+      ],
+      "maxValue": 1,
+      "minValue": 0,
+      "path": "/ego_vehicle/next_vehicle_command.acceleration",
+      "reverse": false,
+      "lichtblickPanelTitle": "Acceleration"
+    },
+    "Plot!yq5kbn": {
+      "paths": [
+        {
+          "timestampMethod": "receiveTime",
+          "value": "/ego_vehicle/next_vehicle_command.steering_angle",
+          "enabled": true,
+          "label": "Steering Angle"
+        },
+        {
+          "timestampMethod": "receiveTime",
+          "value": "/ego_vehicle/next_vehicle_command.acceleration",
+          "enabled": true
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240,
+      "lichtblickPanelTitle": "st"
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": {
+    "speed": 1
+  },
+  "layout": {
+    "first": "3D!3unykn2",
+    "second": {
+      "first": "Plot!yq5kbn",
+      "second": "Gauge!2dr017d",
+      "direction": "column",
+      "splitPercentage": 30
+    },
+    "direction": "row",
+    "splitPercentage": 55.71054925893636
+  }
+}
