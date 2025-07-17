@@ -142,7 +142,7 @@ goal_position = (606447.98, 5797272.22)
 ---
 
 For a complete example see the scenario: 
-[simulation_scenarios/simulation_test.py](simulation_scenarios/simulation_test.py)
+[simulation_scenarios/simulation_test.py](https://github.com/DLR-TS/adore_simulation_scenarios/blob/daa8f94402e19f3b22d5f12fc36126b783f75b50/simulation_test.py)
 
 
 ## 🔁 Final Check
