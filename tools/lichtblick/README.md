@@ -11,7 +11,7 @@ make start
 ```
 
 ## Layouts
-Unless otherwise specified lichtblick will load the default layout: `Default.json`
+Unless otherwise specified lichtblick will load the default layout: `Default.json`, this is saved to `../../adore_scenarios/assets/lichtblick_layouts/`.
 
 To specify a layout use the url parameter: `layout=<layout file>.json`
 ```text

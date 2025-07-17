@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Marker Planner</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+        }
+        
+        #map {
+            flex: 1;
+            height: 100%;
+        }
+        
+        .controls {
+            width: 350px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-left: 1px solid #ddd;
+            overflow-y: auto;
+        }
+        
+        .search-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .search-section input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        .settings-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .marker-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .marker-section h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        
+        .coord-display {
+            margin: 8px 0;
+            font-family: monospace;
+            font-size: 12px;
+            background: #f8f8f8;
+            padding: 8px;
+            border-radius: 3px;
+        }
+        
+        .python-code-input {
+            width: 100%;
+            height: 80px;
+            font-family: monospace;
+            font-size: 11px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            padding: 8px;
+            box-sizing: border-box;
+            margin-top: 8px;
+            resize: none;
+        }
+        
+        .mode-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button.active {
+            background: #007cba;
+            color: white;
+        }
+        
+        button:not(.active) {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .clear-btn {
+            background: #dc3545 !important;
+            color: white !important;
+            width: 100%;
+        }
+        
+        .start-marker { color: #28a745; }
+        .goal-marker { color: #dc3545; }
+        
+        .search-results {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-top: none;
+            background: white;
+            display: none;
+        }
+        
+        .search-result {
+            padding: 8px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            font-size: 12px;
+        }
+        
+        .search-result:hover {
+            background: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    
+    <div class="controls">
+        <h2>Map Marker Planner</h2>
+        
+        <div class="search-section">
+            <h3>Search Location</h3>
+            <input type="text" id="searchInput" placeholder="Enter location..." />
+            <div id="searchResults" class="search-results"></div>
+        </div>
+        
+        <div class="settings-section">
+            <h3>Settings</h3>
+            <div class="checkbox-container">
+                <input type="checkbox" id="routeToggle" checked />
+                <label for="routeToggle">Draw route between markers</label>
+            </div>
+        </div>
+        
+        <div class="mode-buttons">
+            <button id="startMode" class="active">Start Point</button>
+            <button id="goalMode">Goal Point</button>
+        </div>
+        
+        <div class="marker-section">
+            <h3 class="start-marker">🟢 Start Position</h3>
+            <div id="startCoords">
+                <div class="coord-display">Click map to place start marker</div>
+            </div>
+            <textarea id="startPythonCode" class="python-code-input" readonly placeholder="Click map to generate Python code..."></textarea>
+        </div>
+        
+        <div class="marker-section">
+            <h3 class="goal-marker">🔴 Goal Position</h3>
+            <div id="goalCoords">
+                <div class="coord-display">Click map to place goal marker</div>
+            </div>
+            <textarea id="goalPythonCode" class="python-code-input" readonly placeholder="Click map to generate Python code..."></textarea>
+        </div>
+        
+        <button class="clear-btn" onclick="clearMarkers()">Clear All Markers</button>
+    </div>
+
+    <script>
+        const map = L.map('map').setView([52.5200, 13.4050], 13);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        let startMarker = null;
+        let goalMarker = null;
+        let currentMode = 'start';
+        let routePolyline = null;
+        let searchTimeout = null;
+        let startCoords = null;
+        let goalCoords = null;
+        
+        const startModeBtn = document.getElementById('startMode');
+        const goalModeBtn = document.getElementById('goalMode');
+        const searchInput = document.getElementById('searchInput');
+        const searchResults = document.getElementById('searchResults');
+        const routeToggle = document.getElementById('routeToggle');
+        
+        startModeBtn.addEventListener('click', () => setMode('start'));
+        goalModeBtn.addEventListener('click', () => setMode('goal'));
+        routeToggle.addEventListener('change', updateRoute);
+        
+        function setMode(mode) {
+            currentMode = mode;
+            startModeBtn.classList.toggle('active', mode === 'start');
+            goalModeBtn.classList.toggle('active', mode === 'goal');
+        }
+        
+        function latLngToUtm(lat, lng) {
+            const zone = Math.floor((lng + 180) / 6) + 1;
+            const hemisphere = lat >= 0 ? 'N' : 'S';
+            
+            const utmProj = `+proj=utm +zone=${zone} +datum=WGS84 +units=m +no_defs`;
+            const wgs84 = '+proj=longlat +datum=WGS84 +no_defs';
+            
+            const [easting, northing] = proj4(wgs84, utmProj, [lng, lat]);
+            
+            return {
+                zone: zone,
+                hemisphere: hemisphere,
+                easting: Math.round(easting),
+                northing: Math.round(northing)
+            };
+        }
+        
+        function updateCoordinateDisplay(coords, elementId) {
+            const utm = latLngToUtm(coords.lat, coords.lng);
+            
+            document.getElementById(elementId).innerHTML = `
+                <div class="coord-display">
+                    <strong>Lat/Long:</strong><br>
+                    ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}
+                </div>
+                <div class="coord-display">
+                    <strong>UTM:</strong><br>
+                    Zone: ${utm.zone}${utm.hemisphere}<br>
+                    Easting: ${utm.easting.toLocaleString()}m<br>
+                    Northing: ${utm.northing.toLocaleString()}m
+                </div>
+            `;
+        }
+        
+        function updatePythonCode() {
+            const startPythonCode = document.getElementById('startPythonCode');
+            const goalPythonCode = document.getElementById('goalPythonCode');
+            
+            if (startCoords) {
+                const startUtm = latLngToUtm(startCoords.lat, startCoords.lng);
+                const startLatLongCode = `start_position = Position(lat_long=(${startCoords.lat.toFixed(6)}, ${startCoords.lng.toFixed(6)}), psi=0.0)`;
+                const startUtmCode = `start_position = Position(utm=(${startUtm.easting}, ${startUtm.northing}, ${startUtm.zone}, '${startUtm.hemisphere}'), psi=0.0)`;
+                startPythonCode.value = `${startLatLongCode}\n${startUtmCode}`;
+            } else {
+                startPythonCode.value = '';
+            }
+            
+            if (goalCoords) {
+                const goalUtm = latLngToUtm(goalCoords.lat, goalCoords.lng);
+                const goalLatLongCode = `goal_position = Position(lat_long=(${goalCoords.lat.toFixed(6)}, ${goalCoords.lng.toFixed(6)}))`;
+                const goalUtmCode = `goal_position = Position(utm=(${goalUtm.easting}, ${goalUtm.northing}, ${goalUtm.zone}, '${goalUtm.hemisphere}'))`;
+                goalPythonCode.value = `${goalLatLongCode}\n${goalUtmCode}`;
+            } else {
+                goalPythonCode.value = '';
+            }
+        }
+        
+        async function searchLocation(query) {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
+                const results = await response.json();
+                
+                searchResults.innerHTML = '';
+                
+                if (results.length > 0) {
+                    searchResults.style.display = 'block';
+                    results.forEach(result => {
+                        const div = document.createElement('div');
+                        div.className = 'search-result';
+                        div.textContent = result.display_name;
+                        div.onclick = () => {
+                            map.setView([parseFloat(result.lat), parseFloat(result.lon)], 15);
+                            searchResults.style.display = 'none';
+                            searchInput.value = '';
+                        };
+                        searchResults.appendChild(div);
+                    });
+                } else {
+                    searchResults.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                searchResults.style.display = 'none';
+            }
+        }
+        
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            if (e.target.value.length > 2) {
+                searchTimeout = setTimeout(() => {
+                    searchLocation(e.target.value);
+                }, 300);
+            } else {
+                searchResults.style.display = 'none';
+            }
+        });
+        
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (e.target.value.length > 2) {
+                    searchLocation(e.target.value);
+                }
+            }
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.style.display = 'none';
+            }
+        });
+        
+        async function drawRoute() {
+            if (!startMarker || !goalMarker || !routeToggle.checked) {
+                if (routePolyline) {
+                    map.removeLayer(routePolyline);
+                    routePolyline = null;
+                }
+                return;
+            }
+            
+            const startPos = startMarker.getLatLng();
+            const goalPos = goalMarker.getLatLng();
+            
+            try {
+                const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${startPos.lng},${startPos.lat};${goalPos.lng},${goalPos.lat}?overview=full&geometries=geojson`);
+                const data = await response.json();
+                
+                if (data.routes && data.routes.length > 0) {
+                    const coordinates = data.routes[0].geometry.coordinates;
+                    const latLngs = coordinates.map(coord => [coord[1], coord[0]]);
+                    
+                    if (routePolyline) {
+                        map.removeLayer(routePolyline);
+                    }
+                    
+                    routePolyline = L.polyline(latLngs, {
+                        color: '#007cba',
+                        weight: 4,
+                        opacity: 0.7
+                    }).addTo(map);
+                }
+            } catch (error) {
+                console.error('Routing error:', error);
+            }
+        }
+        
+        function updateRoute() {
+            drawRoute();
+        }
+        
+        map.on('click', function(e) {
+            const coords = e.latlng;
+            
+            if (currentMode === 'start') {
+                if (startMarker) {
+                    map.removeLayer(startMarker);
+                }
+                
+                startMarker = L.marker([coords.lat, coords.lng], {
+                    icon: L.icon({
+                        iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                                <circle cx="12" cy="12" r="10" fill="#28a745" stroke="white" stroke-width="2"/>
+                                <text x="12" y="16" text-anchor="middle" fill="white" font-family="Arial" font-size="14" font-weight="bold">S</text>
+                            </svg>
+                        `),
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
+                    })
+                }).addTo(map);
+                
+                startCoords = coords;
+                updateCoordinateDisplay(coords, 'startCoords');
+                updatePythonCode();
+                drawRoute();
+                
+            } else if (currentMode === 'goal') {
+                if (goalMarker) {
+                    map.removeLayer(goalMarker);
+                }
+                
+                goalMarker = L.marker([coords.lat, coords.lng], {
+                    icon: L.icon({
+                        iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+                                <circle cx="12" cy="12" r="10" fill="#dc3545" stroke="white" stroke-width="2"/>
+                                <text x="12" y="16" text-anchor="middle" fill="white" font-family="Arial" font-size="14" font-weight="bold">G</text>
+                            </svg>
+                        `),
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
+                    })
+                }).addTo(map);
+                
+                goalCoords = coords;
+                updateCoordinateDisplay(coords, 'goalCoords');
+                updatePythonCode();
+                drawRoute();
+            }
+        });
+        
+        function clearMarkers() {
+            if (startMarker) {
+                map.removeLayer(startMarker);
+                startMarker = null;
+            }
+            if (goalMarker) {
+                map.removeLayer(goalMarker);
+                goalMarker = null;
+            }
+            if (routePolyline) {
+                map.removeLayer(routePolyline);
+                routePolyline = null;
+            }
+            
+            startCoords = null;
+            goalCoords = null;
+            
+            document.getElementById('startCoords').innerHTML = '<div class="coord-display">Click map to place start marker</div>';
+            document.getElementById('goalCoords').innerHTML = '<div class="coord-display">Click map to place goal marker</div>';
+            updatePythonCode();
+        }
+    </script>
+</body>
+</html>

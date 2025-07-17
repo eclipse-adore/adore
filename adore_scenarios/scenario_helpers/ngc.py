@@ -10,13 +10,13 @@ def create_ngc_nodes(
     debug: bool = False,
     optinlc_route_following: bool = True,
     controller: int = 1,
-    custom_start_pose: tuple[float, float, float] | None = None,
+    custom_start_position: tuple[float, float, float] | None = None,
     request_assistance_polygon: list[float] = [0.0,0.0]) -> list[Node]:
 
     launch_file_dir = os.path.dirname(os.path.realpath(__file__))
     vehicle_param = os.path.abspath(os.path.join(launch_file_dir, "../assets/vehicle_params/"))
     model_file = vehicle_param + "/NGC.json"
-    x, y, psi = custom_start_pose
+    x, y, psi = custom_start_position
     goal_x, goal_y = goal_position
 
     nodes = [

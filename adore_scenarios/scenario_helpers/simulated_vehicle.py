@@ -2,6 +2,9 @@ from launch_ros.actions import Node, ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode
 import os
 import sys
+import math
+import pyproj
+
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
@@ -10,10 +13,54 @@ from scenario_helpers.simulation_planner_params import planner_params
 from scenario_helpers.simulation_controller_params import simulation_pid_params
 
 
+class Position:
+    def __init__(self, lat_long=None, utm=None, psi=0.0):
+        self.psi = psi
+        
+        if lat_long is not None and utm is not None:
+            raise ValueError("Cannot specify both lat_long and utm coordinates")
+        elif lat_long is not None:
+            self.lat, self.long = lat_long
+            self.utm_x, self.utm_y, self.utm_zone, self.utm_hemisphere = self._lat_long_to_utm(self.lat, self.long)
+        elif utm is not None:
+            if len(utm) == 4:
+                self.utm_x, self.utm_y, self.utm_zone, self.utm_hemisphere = utm
+            else:
+                raise ValueError("UTM coordinates must be (x, y, zone, hemisphere)")
+            self.lat, self.long = self._utm_to_lat_long(self.utm_x, self.utm_y, self.utm_zone, self.utm_hemisphere)
+        else:
+            raise ValueError("Must specify either lat_long or utm coordinates")
+    
+    def _lat_long_to_utm(self, lat, long):
+        zone = int(math.floor((long + 180) / 6) + 1)
+        hemisphere = 'N' if lat >= 0 else 'S'
+        
+        utm_proj = pyproj.Proj(proj='utm', zone=zone, datum='WGS84')
+        wgs84_proj = pyproj.Proj(proj='latlong', datum='WGS84')
+        
+        utm_x, utm_y = pyproj.transform(wgs84_proj, utm_proj, long, lat)
+        
+        return utm_x, utm_y, zone, hemisphere
+    
+    def _utm_to_lat_long(self, utm_x, utm_y, zone, hemisphere):
+        utm_proj = pyproj.Proj(proj='utm', zone=zone, datum='WGS84')
+        wgs84_proj = pyproj.Proj(proj='latlong', datum='WGS84')
+        
+        long, lat = pyproj.transform(utm_proj, wgs84_proj, utm_x, utm_y)
+        
+        return lat, long
+    
+    def get_utm_coordinates(self):
+        return self.utm_x, self.utm_y, self.psi
+    
+    def get_lat_long_coordinates(self):
+        return self.lat, self.long, self.psi
+
+
 def create_simulated_vehicle_nodes(
     namespace: str,
-    start_pose: tuple[float, float, float],
-    goal_position: tuple[float, float],
+    start_position,
+    goal_position,
     vehicle_id: int,
     map_file: str,
     model_file: str,
@@ -27,18 +74,18 @@ def create_simulated_vehicle_nodes(
     composable: bool = False,
     local_map_size: float = 50.0,
 ):
-    x, y, psi = start_pose
-    goal_x, goal_y = goal_position
+    if isinstance(start_position, Position):
+        x, y, psi = start_position.get_utm_coordinates()
+    else:
+        x, y, psi = start_position
+    
+    if isinstance(goal_position, Position):
+        goal_x, goal_y, _ = goal_position.get_utm_coordinates()
+    else:
+        goal_x, goal_y = goal_position
 
     if composable:
         components = [
-            # ComposableNode(
-            #     package="adore_v2x_interface",
-            #     plugin="adore::EgoV2XInterface",
-            #     name="adore_v2x_interface",
-            #     namespace=namespace,
-            #     parameters=[{"ego_v2x_id": 222}],
-            # ),
             ComposableNode(
                 package="simulated_vehicle",
                 plugin="adore::simulated_vehicle::SimulatedVehicleNode",
@@ -106,13 +153,6 @@ def create_simulated_vehicle_nodes(
         return [container]
     else:
         return [
-            # Node(
-            #     package="adore_v2x_interface",
-            #     executable="ego_v2x_interface_node",
-            #     name="adore_v2x_interface",
-            #     namespace=namespace,
-            #     parameters=[{"ego_v2x_id": 222}],
-            # ),
             Node(
                 package="simulated_vehicle",
                 executable="simulated_vehicle",
