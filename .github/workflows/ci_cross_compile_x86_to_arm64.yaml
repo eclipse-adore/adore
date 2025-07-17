@@ -1,20 +1,22 @@
 ---
-name: CI_native_x86
+name: CI_crosscompile_x86_to_arm64
 
 on:
   push:
     branches:
       - 'master'
       - 'develop'
-  pull_request:
-    branches:
-      - '**'
+  # This workflow cannot run on github due to time constraints. This is an example only.  
+  #pull_request:
+  #  branches:
+  #    - '**'
   workflow_dispatch:
 
-
 jobs:
-  CI_native_x86:
+  CI_crosscompile_x86_to_arm64:
     runs-on: ubuntu-latest
+    env:
+      ARCH: arm64
 
     steps:
       - name: Init

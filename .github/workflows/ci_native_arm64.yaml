@@ -1,5 +1,5 @@
 ---
-name: CI_native_x86
+name: CI_native_arm64
 
 on:
   push:
@@ -13,8 +13,8 @@ on:
 
 
 jobs:
-  CI_native_x86:
-    runs-on: ubuntu-latest
+  CI_native_arm64:
+    runs-on: ubuntu-24.04-arm
 
     steps:
       - name: Init

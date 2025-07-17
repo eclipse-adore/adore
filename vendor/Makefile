@@ -14,7 +14,6 @@ build:  ## build all vendor libraries and copy output to ./build
 	cd ros2_observer && make build
 	cd libOpenDRIVE && make build
 	cd helix && make build
-	cd sumo && make build
 	mkdir -p build
 	cp mathematics_toolbox/eigen/build build/eigen -r
 	cp mathematics_toolbox/osqp/build build/osqp -r
@@ -22,9 +21,6 @@ build:  ## build all vendor libraries and copy output to ./build
 	cp ros2_observer/build build/ros2_observer -r
 	cp libOpenDRIVE/libOpenDRIVE/build build/libOpenDRIVE -r
 	cp helix/build build/helix -r
-	mkdir -p build/sumo
-	cp sumo/sumo/build build/sumo/build -r
-	cp sumo/sumo/bin build/sumo/bin -r
 
 #	cd build/eigen && find . -type f -exec sed -i "s|/tmp/|$$(pwd)/|g" {} +
 #	cd build/osqp && find . -type f -exec sed -i "s|/tmp/|$$(pwd)/|g" {} +
@@ -45,4 +41,3 @@ clean:
 	cd ros2_observer && make clean
 	cd libOpenDRIVE && make clean
 	cd helix && make clean
-	cd sumo && make clean

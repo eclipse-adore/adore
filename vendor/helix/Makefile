@@ -1,5 +1,13 @@
 
-ARCH:=$(shell uname -m)
+
+.EXPORT_ALL_VARIABLES:
+DOCKER_BUILDKIT?=1
+DOCKER_CONFIG?=
+ARCH?=$(shell uname -m)
+DOCKER_PLATFORM?=linux/$(ARCH)
+CROSS_COMPILE?=$(shell if [ "$(shell uname -m)" != "$(ARCH)" ]; then echo "true"; else echo "false"; fi)
+
+
 URL:=https://github.com/helix-editor/helix/releases/download/25.01.1/helix_25.1.1-1_amd64.deb
 
 .PHONY: build
