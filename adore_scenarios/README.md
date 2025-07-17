@@ -14,7 +14,7 @@ cd adore_scenarios/simulation_scenarios
 ros2 launch simulation_test.py
 ```
 ### Scenario Visualization
-> **ℹ️INFO:**
+> **ℹ️ INFO:**
 > Visualization requires a chrome based browser (see: https://www.chromium.org/chromium-projects/) 
 1. Start `lichtblick suite` aka `foxglove` aka `foxbox`. From the `ADORe` project root run:
 ```bash
