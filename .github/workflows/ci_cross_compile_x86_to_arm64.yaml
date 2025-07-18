@@ -2,10 +2,10 @@
 name: CI_crosscompile_x86_to_arm64
 
 on:
-  push:
-    branches:
-      - 'master'
-      - 'develop'
+  #push:
+  #  branches:
+  #    - 'master'
+  #    - 'develop'
   # This workflow cannot run on github due to time constraints. This is an example only.  
   #pull_request:
   #  branches:
