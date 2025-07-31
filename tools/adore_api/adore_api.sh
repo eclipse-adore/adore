@@ -1,4 +1,3 @@
-
 LOG_DIRECTORY="${ADORE_SOURCE_DIRECTORY}/.log"
 
 start_adore_api() {
@@ -8,9 +7,11 @@ start_adore_api() {
     local PID_FILE="${LOG_DIRECTORY}/adore_api.pid"
     local APP_WORKING_DIRECTORY="${ADORE_SOURCE_DIRECTORY}/tools/adore_api"
     
+    mkdir -p "${LOG_DIRECTORY}"
+    
     if pgrep -f "$APP_NAME" > /dev/null; then
-        local old_pid=$(cat "$PID_FILE")
-        echo "ADORe API is already running (PID: $old_pid)"
+        local old_pid=$(cat "$PID_FILE" 2>/dev/null || echo "unknown")
+        echo "ADORe API is running (PID: $old_pid)"
         echo "Access at: http://localhost:$APP_PORT"
         return 0
     fi
@@ -30,8 +31,8 @@ start_adore_api() {
         fi
     fi
     
-    echo "Starting ADORe API..."
-    nohup bash -c "cd '${APP_WORKING_DIRECTORY}' && python3 '$APP_NAME'" > "$LOG_FILE" 2>&1 &
+    echo "Starting ADORe API with log directory: ${LOG_DIRECTORY}..."
+    nohup bash -c "cd '${APP_WORKING_DIRECTORY}' && python3 '$APP_NAME' --log-directory='${LOG_DIRECTORY}'" > "$LOG_FILE" 2>&1 &
     local app_pid=$!
     
     echo $app_pid > "$PID_FILE"
@@ -41,6 +42,7 @@ start_adore_api() {
         echo "ADORe API started successfully (PID: $app_pid)"
         echo "Access at: http://localhost:$APP_PORT"
         echo "Logs: $LOG_FILE"
+        echo "Bag recordings will be stored in: ${LOG_DIRECTORY}/bag_file_recordings/"
     else
         echo "Failed to start ADORe API"
         rm -f "$PID_FILE"
@@ -76,6 +78,8 @@ status_adore_api() {
     if pgrep -f "${APP_NAME}" > /dev/null; then
         echo "ADORe API is running"
         echo "Access at: http://localhost:$APP_PORT"
+        echo "Log directory: ${LOG_DIRECTORY}"
+        echo "Bag recordings directory: ${LOG_DIRECTORY}/bag_file_recordings/"
         lsof -i :$APP_PORT 2>/dev/null | grep LISTEN
     else
         echo "ADORe API is not running"
