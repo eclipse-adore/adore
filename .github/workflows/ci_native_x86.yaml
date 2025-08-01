@@ -13,7 +13,7 @@ on:
 
 
 jobs:
-  CI_native_x86:
+  prepare:
     runs-on: ubuntu-latest
 
     steps:
@@ -57,6 +57,11 @@ jobs:
         with:
           submodules: 'recursive'
 
+  build_requirements:
+    needs: prepare
+    runs-on: ubuntu-latest
+
+    steps:
       - name: Install requirements
         run: |
           df -h
@@ -69,6 +74,11 @@ jobs:
           make build_vendor_libraries 
           make save || true
 
+  build_cli:
+    needs: build_requirements
+    runs-on: ubuntu-latest
+
+    steps:
       - name: Build ADORe CLI
         run: |
           echo "Building ADORe CLI core..."
@@ -84,7 +94,12 @@ jobs:
           make load || true
           make test_ros2_installation
           make save || true
+  
+  build_services:
+    needs: build_cli
+    runs-on: ubuntu-latest
 
+    steps:
       - name: Build user libraries
         run: |
           make load || true
@@ -106,6 +121,11 @@ jobs:
           make build_services
           make save || true
 
+  test:
+    needs: build_services
+    runs-on: ubuntu-latest
+
+    steps:
       - name: CI Test
         run: |
           df -h
@@ -123,9 +143,24 @@ jobs:
           path: .log
         if: always()
 
-      - name: Upload install archive
+  release:
+    needs: build_services
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Upload build archive
         uses: actions/upload-artifact@v4
         with:
-          name: install
+          name: build
           path: ros2_workspace/install/
           if-no-files-found: error
+
+      - name: Download build archive
+        uses: actions/download-artifact@v4
+        with:
+          name: build
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build.zip
