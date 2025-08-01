@@ -128,5 +128,4 @@ jobs:
         with:
           name: install
           path: ros2_workspace/install/
-          if-no-files-found:
-            error: No built ADORe installation found
+          if-no-files-found: error
