@@ -122,6 +122,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build
+          merge-multiple: true
 
       - name: CI Test
         run: |
@@ -149,6 +150,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build
+          merge-multiple: true
 
       - name: Create release
         uses: softprops/action-gh-release@v2
