@@ -1,6 +1,7 @@
 SCRIPT_DIRECTORY="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 ROS2_WORKSPACE_DIRECTORY="$(realpath "${SCRIPT_DIRECTORY}/ros2_workspace")"
 
+
 if [[ "$SHELL" == *"bash"* ]]; then
     LOCAL_SETUP_SCRIPT="${ROS2_WORKSPACE_DIRECTORY}/install/local_setup.bash"
     ROS_SETUP_SCRIPT="/opt/ros/${ROS_DISTRO}/setup.bash"
@@ -29,4 +30,4 @@ else
     echo "ERROR: script designed to be sourced. Call again with 'source setup.sh'" >&2
     exit 1
 fi
-
+source /tmp/adore/tools/adore_api/adore_api.sh

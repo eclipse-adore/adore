@@ -12,6 +12,7 @@ build:  ## build all vendor libraries and copy output to ./build
 	cd mathematics_toolbox && make build
 	cd OptiNLC && make build
 	cd ros2_observer && make build
+	cd adore_model_checker && make build
 	cd libOpenDRIVE && make build
 	cd helix && make build
 	mkdir -p build
@@ -39,5 +40,6 @@ clean:
 	cd OptiNLC && make clean
 	cd mathematics_toolbox && make clean
 	cd ros2_observer && make clean
+	cd adore_model_checker && make clean
 	cd libOpenDRIVE && make clean
 	cd helix && make clean

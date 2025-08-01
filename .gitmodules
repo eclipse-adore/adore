@@ -16,9 +16,6 @@
 	url = https://github.com/nlohmann/json.git
 	ignore = untracked
 	shallow = true
-[submodule "tools/foxbox/foxbox"]
-	path = tools/foxbox/foxbox
-	url = https://github.com/bmw-software-engineering/foxbox.git
 [submodule "tools/lichtblick/lichtblick"]
 	path = tools/lichtblick/lichtblick
 	url = https://github.com/Lichtblick-Suite/lichtblick.git
@@ -105,3 +102,6 @@
 [submodule "ros2_workspace/src/adore_simulated_remote_operator"]
 	path = ros2_workspace/src/simulated_remote_operator
 	url = git@github.com:DLR-TS/adore_simulated_remote_operator.git
+[submodule "tools/adore_model_checker"]
+	path = vendor/adore_model_checker
+	url = git@github.com:DLR-TS/adore_model_checker.git
