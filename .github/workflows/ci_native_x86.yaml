@@ -123,3 +123,10 @@ jobs:
           path: .log
         if: always()
 
+      - name: Upload install archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: install
+          path: ros2_workspace/install/
+          if-no-files-found:
+            error: No built ADORe installation found
