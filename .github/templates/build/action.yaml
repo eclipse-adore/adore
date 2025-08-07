@@ -1,4 +1,4 @@
-name: build_adore
+name: Build ADORe
 
 inputs:
   archive_name:

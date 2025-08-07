@@ -38,11 +38,11 @@ jobs:
           ref: ${{ github.event.workflow_run.head_branch }}
 
       - name: build
-        uses: "./.github/templates/build"
+        uses: ".github/templates/build"
         with:
           archive_name: "build_arm64"
 
-  release:
+  release_x86:
     needs: build_native_x86
     runs-on: ubuntu-latest
 
@@ -52,19 +52,32 @@ jobs:
       attestations: write
 
     steps:
-      - name: Download build archive
-        uses: actions/download-artifact@v4
+      - name: Checkout
+        uses: actions/checkout@v2
         with:
-          name: build_x86
+          ref: ${{ github.event.workflow_run.head_branch }}
 
-      - name: Create release archive
-        run: |
-          tar -caf adore_${{ github.ref_name }}_latest_x86.txz *
-
-      - name: Release
-        uses: pyTooling/Actions/releaser@r0
+      - name: build
+        uses: ".github/templates/release"
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag: latest
-          files: |
-            adore_${{ github.ref_name }}_latest_x86.txz
+          archive_name: "build_x86"
+
+  release_arm64:
+    needs: build_native_arm64
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      actions: write
+      attestations: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+
+      - name: build
+        uses: ".github/templates/release"
+        with:
+          archive_name: "build_arm64"

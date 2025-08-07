@@ -1,0 +1,31 @@
+name: Release ADORe
+
+inputs:
+  archive_name:
+    description: 'Name of the uploaded build archive'
+    required: true
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Get clean branch name
+    # From https://github.com/DLR-TS/make_gadgets/blob/master/tools/branch_name.sh
+      run: echo "BUILD_BRANCH=$(echo ${{ github.ref_name }} | tr -d '[:space:]' | tr -s -c "[:alnum:][:blank:]\.\_\-" _ | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+    - name: Download build archive
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.archive_name }}
+
+    - name: Create release archive
+      run: |
+        tar -caf adore_${BUILD_BRANCH}_latest_${{ inputs.archive_name }}.txz *
+
+    - name: Release
+      uses: pyTooling/Actions/releaser@r0
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag: latest
+        files: |
+          adore_*_latest_${{ inputs.archive_name }}.txz
