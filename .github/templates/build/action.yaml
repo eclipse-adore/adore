@@ -5,6 +5,7 @@ runs:
 
   steps:
     - name: Init
+      shell: bash
       run: |
         df -h
         sudo apt-get update
@@ -22,6 +23,7 @@ runs:
         swap-storage: true
 
     - name: Freespace Check
+      shell: bash
       run: |
         df -h
         REQUIRED_FREE_SPACE=25
@@ -45,18 +47,21 @@ runs:
         submodules: 'recursive'
 
     - name: Install requirements
+      shell: bash
       run: |
         df -h
         sudo apt-get update
         sudo apt-get install -y make curl jq
 
     - name: Build vendor libraries
+      shell: bash
       run: |
         echo "Building vendor..."
         make build_vendor_libraries 
         make save || true
 
     - name: Build ADORe CLI
+      shell: bash
       run: |
         echo "Building ADORe CLI core..."
         make load || true
@@ -65,7 +70,8 @@ runs:
         make build_adore_cli
         make save || true
 
-    - name: Test ROS2 installation 
+    - name: Test ROS2 installation
+      shell: bash
       run: |
         echo "Testing the ROS 2 installation in the ADORe CLI..."
         make load || true
@@ -73,6 +79,7 @@ runs:
         make save || true
 
     - name: Build user libraries
+      shell: bash
       run: |
         make load || true
         echo "Building user libraries..."
@@ -80,6 +87,7 @@ runs:
         make save || true
 
     - name: Build ROS nodes
+      shell: bash
       run: |
         make load || true
         echo "Building nodes..."
@@ -87,6 +95,7 @@ runs:
         make save || true
 
     - name: Build Services
+      shell: bash
       run: |
         make load || true
         echo "Building services..."
@@ -94,11 +103,13 @@ runs:
         make save || true
 
     - name: CI Test
+      shell: bash
       run: |
         df -h
         make ci_test
     
     - name: Documentation Lint
+      shell: bash
       run: |
         cd documentation
         make lint
