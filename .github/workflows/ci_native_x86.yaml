@@ -1,5 +1,5 @@
 ---
-name: CI_native_x86
+name: ADORe CI
 
 on:
   push:
@@ -25,6 +25,22 @@ jobs:
 
       - name: build
         uses: "./.github/templates/build"
+        with:
+          archive_name: "build_x86"
+
+  build_native_arm64:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+
+      - name: build
+        uses: "./.github/templates/build"
+        with:
+          archive_name: "build_arm64"
 
   release:
     needs: build_native_x86
@@ -39,7 +55,7 @@ jobs:
       - name: Download build archive
         uses: actions/download-artifact@v4
         with:
-          name: build
+          name: build_x86
 
       - name: Create release archive
         run: |

@@ -1,5 +1,10 @@
 name: build_adore
 
+inputs:
+  archive_name:
+    description: 'Name of the uploaded build archive'
+    required: true
+
 runs:
   using: "composite"
 
@@ -124,6 +129,6 @@ runs:
     - name: Upload build archive
       uses: actions/upload-artifact@v4
       with:
-        name: build
+        name: ${{ inputs.archive_name }}
         path: ros2_workspace/install/*
         if-no-files-found: error
