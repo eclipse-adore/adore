@@ -19,7 +19,8 @@ jobs:
 
     steps:
       - name: build
-        uses: "./.github/templates/build.yaml"
+      - uses: actions/checkout@v4
+      - uses: "./.github/templates/build.yaml"
 
   release:
     needs: build_native_x86
