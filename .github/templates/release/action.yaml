@@ -10,7 +10,8 @@ runs:
 
   steps:
     - name: Get clean branch name
-    # From https://github.com/DLR-TS/make_gadgets/blob/master/tools/branch_name.sh
+      shell: bash
+      # From https://github.com/DLR-TS/make_gadgets/blob/master/tools/branch_name.sh
       run: echo "BUILD_BRANCH=$(echo ${{ github.ref_name }} | tr -d '[:space:]' | tr -s -c "[:alnum:][:blank:]\.\_\-" _ | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
     - name: Download build archive
@@ -19,6 +20,7 @@ runs:
         name: ${{ inputs.archive_name }}
 
     - name: Create release archive
+      shell: bash
       run: |
         tar -caf adore_${BUILD_BRANCH}_latest_${{ inputs.archive_name }}.txz *
 
