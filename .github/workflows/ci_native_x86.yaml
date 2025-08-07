@@ -123,6 +123,7 @@ jobs:
         with:
           name: build
           merge-multiple: true
+          path: .
 
       - name: CI Test
         run: |
@@ -151,6 +152,7 @@ jobs:
         with:
           name: build
           merge-multiple: true
+          path: .
 
       - name: Create release
         uses: softprops/action-gh-release@v2
