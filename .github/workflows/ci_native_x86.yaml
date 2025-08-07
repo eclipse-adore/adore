@@ -106,25 +106,6 @@ jobs:
           make build_services
           make save || true
 
-      - name: Upload build archive
-        uses: actions/upload-artifact@v4
-        with:
-          name: build
-          path: .
-          if-no-files-found: error
-
-  test:
-    needs: prepare_and_build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download build archive
-        uses: actions/download-artifact@v4
-        with:
-          name: build
-          merge-multiple: true
-          path: .
-
       - name: CI Test
         run: |
           df -h
@@ -142,19 +123,36 @@ jobs:
           path: .log
         if: always()
 
+      - name: Upload build archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: ros2_workspace/install/*
+          if-no-files-found: error
+
   release:
     needs: prepare_and_build
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      actions: write
+      attestations: write
 
     steps:
       - name: Download build archive
         uses: actions/download-artifact@v4
         with:
           name: build
-          merge-multiple: true
-          path: .
 
-      - name: Create release
-        uses: softprops/action-gh-release@v2
+      - name: Create release archive
+        run: |
+          tar -caf adore_latest.txz *
+
+      - name: Release
+        uses: pyTooling/Actions/releaser@r0
         with:
-          files: ros2_workspace/install/*
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: latest
+          files: |
+            adore_latest.txz
