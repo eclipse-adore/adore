@@ -38,7 +38,7 @@ jobs:
           ref: ${{ github.event.workflow_run.head_branch }}
 
       - name: build
-        uses: ".github/templates/build"
+        uses: "./.github/templates/build"
         with:
           archive_name: "build_arm64"
 
@@ -58,7 +58,7 @@ jobs:
           ref: ${{ github.event.workflow_run.head_branch }}
 
       - name: build
-        uses: ".github/templates/release"
+        uses: "./.github/templates/release"
         with:
           archive_name: "build_x86"
 
@@ -78,6 +78,6 @@ jobs:
           ref: ${{ github.event.workflow_run.head_branch }}
 
       - name: build
-        uses: ".github/templates/release"
+        uses: "./.github/templates/release"
         with:
           archive_name: "build_arm64"
