@@ -62,6 +62,14 @@ jobs:
         with:
           archive_name: "build_x86"
 
+      - name: Release
+        uses: pyTooling/Actions/releaser@r0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: latest
+          files: |
+            adore_*_latest_build_x86.txz
+
   release_arm64:
     needs: build_native_arm64
     runs-on: ubuntu-latest
@@ -81,3 +89,11 @@ jobs:
         uses: "./.github/templates/release"
         with:
           archive_name: "build_arm64"
+
+      - name: Release
+        uses: pyTooling/Actions/releaser@r0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: latest
+          files: |
+            adore_*_latest_build_arm64.txz
