@@ -22,9 +22,9 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.workflow_run.head_branch }}
-          
+
       - name: build
-        uses: "./.github/templates/build.yaml"
+        uses: ".github/templates/build"
 
   release:
     needs: build_native_x86
