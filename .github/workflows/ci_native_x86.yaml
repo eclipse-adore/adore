@@ -18,9 +18,10 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - name: build
       - uses: actions/checkout@v4
-      - uses: "./.github/templates/build.yaml"
+
+      - name: build
+        uses: "./.github/templates/build.yaml"
 
   release:
     needs: build_native_x86
