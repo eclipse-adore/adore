@@ -18,16 +18,9 @@ runs:
       uses: actions/download-artifact@v4
       with:
         name: ${{ inputs.archive_name }}
+        merge-multiple: true
 
     - name: Create release archive
       shell: bash
       run: |
         tar -caf adore_${BUILD_BRANCH}_latest_${{ inputs.archive_name }}.txz *
-
-    - name: Release
-      uses: pyTooling/Actions/releaser@r0
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        tag: latest
-        files: |
-          adore_*_latest_${{ inputs.archive_name }}.txz
