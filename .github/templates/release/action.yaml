@@ -24,5 +24,4 @@ runs:
     - name: Create release archive
       shell: bash
       run: |
-        cd package
-        tar -caf adore_${BUILD_BRANCH}_latest_${{ inputs.archive_name }}.txz *
+        tar -caf adore_${BUILD_BRANCH}_latest_${{ inputs.archive_name }}.txz -C package .
