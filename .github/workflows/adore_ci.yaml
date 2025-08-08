@@ -16,12 +16,7 @@ on:
 jobs:
   build_native_x86:
     runs-on: ubuntu-24.04
-
-    permissions:
-      contents: write
-      actions: write
-      attestations: write
-
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -33,6 +28,21 @@ jobs:
         with:
           archive_name: "build_x86"
 
+  release_native_x86:
+    runs-on: ubuntu-24.04
+    needs: build_native_x86
+
+    permissions:
+      contents: write
+      actions: write
+      attestations: write
+
+    steps:
+      - name: Prepare Release
+        uses: "./.github/templates/release"
+        with:
+          archive_name: "build_x86"
+    
       - name: Release
         uses: pyTooling/Actions/releaser@r0
         with:
@@ -73,10 +83,10 @@ jobs:
       attestations: write
 
     steps:
-      - name: Download build archive
-        uses: actions/download-artifact@v4
+      - name: Prepare Release
+        uses: "./.github/templates/release"
         with:
-          name: build_arm64
+          archive_name: "build_arm64"
     
       - name: Release
         uses: pyTooling/Actions/releaser@r0
