@@ -132,6 +132,11 @@ runs:
         tar --create --auto-compress --preserve-permissions --file=adore_${{ inputs.archive_name }}.txz \
           ros2_workspace/install/*
 
+    - name: List package
+      shell: bash
+      run: |
+        ls -lah
+
     - name: Upload build archive
       uses: actions/upload-artifact@v4
       with:
