@@ -1,0 +1,66 @@
+cff-version: 1.2.0
+authors:
+  - name: "Mikkel Skov Maarssoe"
+  - name: "Sanath Himasekhar Konthala"
+  - name: "Marko Mizdrak"
+  - name: "Giovanni Lucente"
+  - name: "Matthias Nichting"
+  - name: "Andrew Benjamin Koerner"
+  - name: "Thomas Lobig"
+message: "If you use this software, please cite both the conference paper from preferred-citation and the software itself."
+title: "ADORe: Unified Modular Framework for Vehicle and Infrastructure-Based System Level Automation"
+abstract: "Recent advancements in automated driving have primarily focused on achieving autonomy within individual vehicles. 
+However, a broader paradigm shift is emerging that leverages both vehicle-level autonomy and collaboration with other road 
+users and infrastructure to optimize traffic flow and enhance safety. This paper introduces ADORe®(Automated Driving Open Research), 
+an open-source Automated Driving System developed by the German Aerospace Center (DLR). ADORe adopts a modular, system-level approach, 
+enabling seamless integration between Single-Agent Automated Driving for local autonomy and Multi-Agent Autonomous Driving for 
+infrastructure-assisted decision-making. By utilizing vehicle-to-infrastructure (V2X) communication,
+ADORe facilitates coordinated multi-agent planning, dynamic route optimization, and improved situational
+awareness through shared data. The framework supports flexible testing via simulation tools like CARLA and
+SUMO, alongside deployment on research vehicles equipped with advanced sensors and teleoperation capa-
+bilities. Successful demonstrations in research projects like the German national Gaia-X4ROMS and MAD
+Urban validate ADORe’s capability to bridge the gap between isolated autonomous driving and cooperative
+traffic systems. This collaborative approach highlights the potential of automated driving systems as a corner-
+stone of intelligent transportation systems, advancing safety, efficiency, and interoperability."
+keywords:
+  - automated driving 
+  - cooperative automated driving 
+  - research framework 
+  - modular software 
+  - open-source
+  - system-level automation
+date-released: "2025-04-04"
+version: 2.0
+doi: 10.5220/0013405200003941
+repository-code: "https://github.com/DLR-TS/adore"
+type: software
+url: "https://github.com/DLR-TS/adore"
+identifiers:
+  - description: "The GitHub tag"
+    type: url
+    value: "https://github.com/DLR-TS/adore"
+license:
+  - "EPL-2.0"
+  - "GPL-2.0-or-later"
+license-url: "https://www.eclipse.org/legal/epl-2.0/"
+preferred-citation:
+  authors:
+    - family-names: Maarssoe
+      given-names: Mikkel Skov
+    - family-names: Konthala
+      given-names: Sanath
+    - family-names: Mizdrak
+      given-names: Marko
+    - family-names: Lucente
+      given-names: Giovanni
+    - family-names: Nichting
+      given-names: Matthias
+    - family-names: Lobig
+      given-names: Thomas
+    - family-names: Koerner
+      given-names: Andrew
+  title: "ADORe: Unified Modular Framework for Vehicle and Infrastructure-Based System Level Automation"
+  type: "conference-paper"
+contact:
+  - email: sumo-user@eclipse.org
+    name: "Automated Driving Open Research (ADORe)"
