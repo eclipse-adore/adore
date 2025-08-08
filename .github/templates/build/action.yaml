@@ -133,4 +133,8 @@ runs:
         path: |
           ros2_workspace/install/*
           adore_scenarios
+          setup.sh
+          README.md
+          NOTICE.md
+          LICENSE
         if-no-files-found: error
