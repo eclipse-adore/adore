@@ -25,6 +25,13 @@ runs:
       run: |
         tar --extract --preserve-permissions --file=adore_${{ inputs.archive_name }}.txz --directory=build
 
+    - name: List release contents
+      shell: bash
+      run: |
+        ls -lah
+        ls -lah build
+        ls -lah clean_repo
+
     - name: Get clean branch name
       shell: bash
       # From https://github.com/DLR-TS/make_gadgets/blob/master/tools/branch_name.sh
@@ -42,3 +49,8 @@ runs:
           clean_repo/README.md \
           clean_repo/NOTICE.md \
           clean_repo/LICENSE
+
+    - name: List package
+      shell: bash
+      run: |
+        ls -lah
