@@ -138,8 +138,14 @@ runs:
           ros2_workspace/install/* \
           adore_scenarios \
           tools/adore_api \
-          tools/lichtblick \
           setup.sh \
           README.md \
           NOTICE.md \
           LICENSE
+
+    - name: Upload build archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: build_arm64
+          path: |
+             adore_*_latest_build_arm64.txz
