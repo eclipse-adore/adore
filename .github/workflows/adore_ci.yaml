@@ -1,4 +1,3 @@
----
 name: ADORe CI
 
 on:
@@ -18,7 +17,7 @@ jobs:
     runs-on: ubuntu-24.04
     
     steps:
-      - name: Checkout
+      - name: Checkout action templates
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.workflow_run.head_branch }}
@@ -38,6 +37,11 @@ jobs:
       attestations: write
 
     steps:
+      - name: Checkout action templates
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+    
       - name: Prepare Release
         uses: "./.github/templates/release"
         with:
@@ -55,7 +59,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
 
     steps:
-      - name: Checkout
+      - name: Checkout action templates
         uses: actions/checkout@v2
         with:
           ref: ${{ github.event.workflow_run.head_branch }}
@@ -83,6 +87,11 @@ jobs:
       attestations: write
 
     steps:
+      - name: Checkout action templates
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+    
       - name: Prepare Release
         uses: "./.github/templates/release"
         with:
