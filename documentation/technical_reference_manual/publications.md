@@ -11,3 +11,7 @@ If you find ADORe to be useful in your research, please consider citing our work
   doi       = {10.5220/0013405200003941}
 }
 ```
+
+## Publications using ADORe
+
+- Giovanni Lucente, Mikkel Skov Maarssoe, Sanath Himasekhar Konthala, Anas Abulehia, Reza Dariani, Julian Schindler, *DeepGame-TP: Integrating Dynamic Game Theory and Deep Learning for Trajectory Planning*, *IEEE Open Journal of Intelligent Transportation Systems* (Volume 5), 2024. DOI: [10.1109/OJITS.2024.3515270](https://doi.org/10.1109/OJITS.2024.3515270).
