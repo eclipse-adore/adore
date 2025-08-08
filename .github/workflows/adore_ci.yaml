@@ -44,11 +44,6 @@ jobs:
   build_native_arm64:
     runs-on: ubuntu-24.04-arm
 
-    permissions:
-      contents: write
-      actions: write
-      attestations: write
-
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -60,6 +55,27 @@ jobs:
         with:
           archive_name: "build_arm64"
 
+      - name: Upload build archive
+        uses: actions/download-artifact@v4
+        with:
+          name: build_arm64
+      
+
+  release_native_arm64:
+    runs-on: ubuntu-24.04
+    needs: build_native_arm64
+
+    permissions:
+      contents: write
+      actions: write
+      attestations: write
+
+    steps:
+      - name: Download build archive
+        uses: actions/download-artifact@v4
+        with:
+          name: build_arm64
+    
       - name: Release
         uses: pyTooling/Actions/releaser@r0
         with:
