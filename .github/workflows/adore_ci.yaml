@@ -56,9 +56,11 @@ jobs:
           archive_name: "build_arm64"
 
       - name: Upload build archive
-        uses: actions/download-artifact@v4
+        uses: actions/upload-artifact@v4
         with:
           name: build_arm64
+          path: |
+             adore_*_latest_build_arm64.txz
       
 
   release_native_arm64:
