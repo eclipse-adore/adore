@@ -131,11 +131,11 @@ runs:
       with:
         name: ${{ inputs.archive_name }}
         path: |
-          ros2_workspace/install/*  # Build artifacts
-          adore_scenarios           # Default scenarios
-          tools/adore_api           # ADORe API
-          tools/lichtblick          # Visualization tooling
-          setup.sh                  # Sourcable setup script
+          ros2_workspace/install/*
+          adore_scenarios
+          tools/adore_api
+          tools/lichtblick
+          setup.sh
           README.md
           NOTICE.md
           LICENSE
