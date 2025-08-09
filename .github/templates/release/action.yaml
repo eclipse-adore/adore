@@ -9,11 +9,11 @@ runs:
   using: "composite"
 
   steps:
-     - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.workflow_run.head_branch }}
-          path: clean_repo
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.workflow_run.head_branch }}
+        path: clean_repo
 
     - name: Download build archive
       uses: actions/download-artifact@v4
