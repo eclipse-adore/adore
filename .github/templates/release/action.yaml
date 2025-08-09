@@ -20,9 +20,15 @@ runs:
       with:
         name: ${{ inputs.archive_name }}
 
+    - name: List downloads
+      shell: bash
+      run: |
+        ls -lah
+
     - name: Unpack build archive
       shell: bash
       run: |
+        mkdir -p build
         tar --extract --preserve-permissions --file=adore_${{ inputs.archive_name }}.txz --directory=build
 
     - name: List release contents
