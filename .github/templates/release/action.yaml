@@ -14,6 +14,7 @@ runs:
       with:
         ref: ${{ github.event.workflow_run.head_branch }}
         path: clean_repo
+        submodules: 'recursive'
 
     - name: Download build archive
       uses: actions/download-artifact@v4
