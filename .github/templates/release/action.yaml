@@ -46,14 +46,15 @@ runs:
     - name: Create release archive
       shell: bash
       run: |
-        tar --create --auto-compress --preserve-permissions --file=adore_${BUILD_BRANCH}_latest_${{ inputs.archive_name }}.txz --directory build .
-        tar --append --auto-compress --preserve-permissions --file=adore_${BUILD_BRANCH}_latest_${{ inputs.archive_name }}.txz --directory clean_repo \
+        tar --create --preserve-permissions --file=adore_latest.tar --directory build .
+        tar --append --preserve-permissions --file=adore_latest.tar --directory clean_repo \
           adore_scenarios \
           tools/adore_api \
           setup.sh \
           README.md \
           NOTICE.md \
           LICENSE
+        xz --to-stdout adore_latest.tar > adore_${BUILD_BRANCH}_latest_${{ inputs.archive_name }}.txz
 
     - name: List package
       shell: bash
