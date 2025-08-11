@@ -1,0 +1,217 @@
+name: Build ADORe
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        description: 'Runner name'
+        required: true
+      archive_name:
+        description: 'Name of the uploaded build archive'
+        required: true
+
+jobs:
+  build:
+    runs-on: ${{ inputs.archive_name }}
+
+    steps:
+      - name: Init
+        shell: bash
+        run: |
+          df -h
+          sudo apt update -y
+
+      - name: Disable man-db to make package install and removal faster
+        shell: bash
+        # From https://github.com/jlumbroso/free-disk-space/issues/40
+        run: |
+          echo 'set man-db/auto-update false' | sudo debconf-communicate >/dev/null
+          sudo dpkg-reconfigure man-db
+
+      - name: Maximize free space
+        id: maximize-space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Freespace Check
+        shell: bash
+        run: |
+          df -h
+          REQUIRED_FREE_SPACE=25
+          free_space=$(df -h . | awk '{print $4}' | grep "G")
+          free_space="${free_space%G}"
+          if [ -z "$free_space" ]; then
+              echo "ERROR: free_space variable is empty or not set." >&2
+              exit 1
+          fi
+          df -h
+          echo "Free space (required): ${REQUIRED_FREE_SPACE} GB"
+          echo "Free space (available): ${free_space} GB"
+          if (( REQUIRED_FREE_SPACE > free_space )); then
+              echo "ERROR: Insufficient free space: ${free_space} GB available, ${REQUIRED_FREE_SPACE} GB required." >&2
+              exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+          submodules: 'recursive'
+
+      - name: Install requirements
+        shell: bash
+        run: |
+          df -h
+          sudo apt update -y
+          sudo apt install -y make curl jq
+
+      - name: Build vendor libraries
+        shell: bash
+        run: |
+          echo "Building vendor..."
+          make build_vendor_libraries 
+          make save || true
+
+      - name: Build ADORe CLI
+        shell: bash
+        run: |
+          echo "Building ADORe CLI core..."
+          make load || true
+          make build_adore_cli_core
+          echo "Building ADORe CLI..."
+          make build_adore_cli
+          make save || true
+
+      - name: Test ROS2 installation
+        shell: bash
+        run: |
+          echo "Testing the ROS 2 installation in the ADORe CLI..."
+          make load || true
+          make test_ros2_installation
+          make save || true
+
+      - name: Build user libraries
+        shell: bash
+        run: |
+          make load || true
+          echo "Building user libraries..."
+          make build_user_libraries
+          make save || true
+
+      - name: Build ROS nodes
+        shell: bash
+        run: |
+          make load || true
+          echo "Building nodes..."
+          make build_ros_nodes
+          make save || true
+
+      - name: Build Services
+        shell: bash
+        run: |
+          make load || true
+          echo "Building services..."
+          make build_services
+          make save || true
+
+      - name: CI Test
+        shell: bash
+        run: |
+          df -h
+          make ci_test
+      
+      - name: Documentation Lint
+        shell: bash
+        run: |
+          cd documentation
+          make lint
+
+      - name: Upload Logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: .log
+        if: always()
+
+      - name: Create build archive
+        shell: bash
+        run: |
+          tar --create --auto-compress --preserve-permissions --file=adore_${{ inputs.archive_name }}.txz \
+            ros2_workspace/install/*
+
+      - name: List package
+        shell: bash
+        run: |
+          ls -lah
+
+      - name: Upload build archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.archive_name }}
+          if-no-files-found: error
+          path: |
+            adore_${{ inputs.archive_name }}.txz
+
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+          path: clean_repo
+          submodules: 'recursive'
+
+      - name: Download build archive
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.archive_name }}
+
+      - name: List downloads
+        shell: bash
+        run: |
+          ls -lah
+
+      - name: Unpack build archive
+        shell: bash
+        run: |
+          mkdir -p build
+          tar --extract --preserve-permissions --file=adore_${{ inputs.archive_name }}.txz --directory=build
+
+      - name: List release contents
+        shell: bash
+        run: |
+          ls -lah
+          ls -lah build
+          ls -lah clean_repo
+
+      - name: Get clean branch name
+        shell: bash
+        # From https://github.com/DLR-TS/make_gadgets/blob/master/tools/branch_name.sh
+        run: echo "BUILD_BRANCH=$(echo ${{ github.ref_name }} | tr -d '[:space:]' | tr -s -c "[:alnum:][:blank:]\.\_\-" _ | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Create release archive
+        shell: bash
+        run: |
+          tar --create --preserve-permissions --file=adore_latest.tar --directory build .
+          tar --append --preserve-permissions --file=adore_latest.tar --directory clean_repo \
+            adore_scenarios \
+            tools/adore_api \
+            setup.sh \
+            README.md \
+            NOTICE.md \
+            LICENSE
+          xz --to-stdout adore_latest.tar > adore_${BUILD_BRANCH}_latest_${{ inputs.archive_name }}.txz
+
+      - name: List package
+        shell: bash
+        run: |
+          ls -lah
