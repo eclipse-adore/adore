@@ -1,4 +1,4 @@
-name: ADORe Workflows
+name: ADORe Reusable Workflow
 
 on:
   workflow_call:
