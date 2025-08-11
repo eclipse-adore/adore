@@ -14,7 +14,7 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ inputs.archive_name }}
+    runs-on: ${{ inputs.platform }}
 
     steps:
       - name: Init
