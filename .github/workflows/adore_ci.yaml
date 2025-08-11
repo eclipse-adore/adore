@@ -5,93 +5,25 @@ on:
     branches:
       - 'master'
       - 'develop'
+      - '**'
   pull_request:
     branches:
       - '**'
-  workflow_dispatch:
 
 
 jobs:
-  build_native_x86:
-    runs-on: ubuntu-24.04
-    
-    steps:
-      - name: Checkout action templates
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.workflow_run.head_branch }}
+  x86_64:
+    name: Native x86_64
+    uses: ./.github/workflows/reuse-build.yaml
+    with:
+      platform: 'ubuntu-24.04'
+      archive_name: 'x86_64'
+    secrets: inherit
 
-      - name: Build
-        uses: "./.github/templates/build"
-        with:
-          archive_name: "build_x86"
-
-  release_native_x86:
-    runs-on: ubuntu-24.04
-    needs: build_native_x86
-
-    permissions:
-      contents: write
-      actions: write
-      attestations: write
-
-    steps:
-      - name: Checkout action templates
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.workflow_run.head_branch }}
-    
-      - name: Prepare Release
-        uses: "./.github/templates/release"
-        with:
-          archive_name: "build_x86"
-    
-      - name: Release
-        uses: pyTooling/Actions/releaser@r0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag: latest
-          files: |
-            adore_*_latest_build_x86.txz
-
-  build_native_arm64:
-    runs-on: ubuntu-24.04-arm
-
-    steps:
-      - name: Checkout action templates
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.workflow_run.head_branch }}
-
-      - name: Build
-        uses: "./.github/templates/build"
-        with:
-          archive_name: "build_arm64"      
-
-  release_native_arm64:
-    runs-on: ubuntu-24.04
-    needs: build_native_arm64
-
-    permissions:
-      contents: write
-      actions: write
-      attestations: write
-
-    steps:
-      - name: Checkout action templates
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ github.event.workflow_run.head_branch }}
-    
-      - name: Prepare Release
-        uses: "./.github/templates/release"
-        with:
-          archive_name: "build_arm64"
-    
-      - name: Release
-        uses: pyTooling/Actions/releaser@r0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag: latest
-          files: |
-            adore_*_latest_build_arm64.txz
+  arm64:
+    name: Native arm64
+    uses: ./.github/workflows/reuse-build.yaml
+    with:
+      platform: 'ubuntu-24.04-arm'
+      archive_name: 'arm64'
+    secrets: inherit
