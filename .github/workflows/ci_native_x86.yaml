@@ -13,14 +13,18 @@ on:
 
 
 jobs:
-  adore_amd64:
+  x86_64:
+    name: x86_64
     uses: ./.github/workflows/reuse-build.yaml
     with:
       platform: 'ubuntu-24.04'
       archive_name: 'build_x86'
+    secrets: inherit
 
-  adore_arm64:
+  arm64:
+    name: arm64
     uses: ./.github/workflows/reuse-build.yaml
     with:
       platform: 'ubuntu-24.04-arm'
       archive_name: 'build_arm64'
+    secrets: inherit

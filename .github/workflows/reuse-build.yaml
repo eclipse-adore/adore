@@ -14,6 +14,7 @@ on:
 
 jobs:
   build:
+    name: Build
     runs-on: ${{ inputs.platform }}
 
     steps:
@@ -162,8 +163,14 @@ jobs:
             adore_${{ inputs.archive_name }}.txz
 
   release:
+    name: Release
     runs-on: ubuntu-latest
     needs: build
+
+    permissions:
+      contents: write
+      actions: write
+      attestations: write
 
     steps:
       - name: Checkout
@@ -218,3 +225,11 @@ jobs:
         shell: bash
         run: |
           ls -lah
+
+      - name: Release
+        uses: pyTooling/Actions/releaser@r0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: latest
+          files: |
+            adore_*_latest_build_${{ inputs.archive_name }}.txz
