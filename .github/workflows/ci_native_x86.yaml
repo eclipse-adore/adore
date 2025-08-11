@@ -1,5 +1,5 @@
 ---
-name: CI_native_x86
+name: ADORe CI
 
 on:
   push:
