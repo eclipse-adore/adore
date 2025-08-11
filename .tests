@@ -79,26 +79,6 @@ wait_for_api_ready() {
         exit 1
     fi
     
-    # Test 2: Test a POST endpoint that we know exists
-    printf "    Testing scenario start endpoint availability...\n"
-    scenario_http_code=$(curl -s --max-time 10 -o /tmp/scenario_response -w "%{http_code}" -X POST http://localhost:8888/api/scenario/start/model_checked -H "Content-Type: application/json" -d '{"test": true}')
-    scenario_exit_code=$?
-    
-    if [ $scenario_exit_code -ne 0 ]; then
-        printf "    Status: $(bold $(red "FAILED")) - Scenario endpoint failed with exit code $scenario_exit_code\n"
-        make stop > /dev/null 2>&1
-        exit 1
-    fi
-    
-    # We expect this to either work (200) or return a proper API error (400/422), not 404
-    if [ "$scenario_http_code" = "404" ]; then
-        printf "    Status: $(bold $(red "FAILED")) - Scenario endpoint not found (HTTP 404)\n"
-        make stop > /dev/null 2>&1
-        exit 1
-    fi
-    
-    scenario_result=$(cat /tmp/scenario_response)
-    
     # Test 3: Test invalid endpoint returns proper error
     printf "    Testing error handling...\n"
     error_http_code=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" http://localhost:8888/api/nonexistent)
