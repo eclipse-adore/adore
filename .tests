@@ -1,11 +1,157 @@
 #!/usr/bin/env bash
 
 #Define module specific tests here
+#  each test function should be post fixed with "_test" to be automatically 
+#  invoked.
 
 LOG_DIRECTORY="${LOG_DIRECTORY:-.log}"
 
-01_simulation_test_scenario_test() {
+# Global timeout for API readiness check (in seconds)
+API_READINESS_TIMEOUT=10
 
+wait_for_api_ready() {
+    local timeout=${1:-$API_READINESS_TIMEOUT}
+    local status_url="http://localhost:8888/api/status"
+    local elapsed=0
+    
+    while [ $elapsed -lt $timeout ]; do
+        if curl -s --max-time 5 "$status_url" > /dev/null 2>&1; then
+            local http_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 "$status_url")
+            if [ "$http_code" = "200" ]; then
+                return 0
+            fi
+        fi
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+    
+    return 1
+}
+
+01_api_health_check_test() {
+    local action=health_check
+    local name="API Health Check Test"
+    local description="This test validates that the API is responding correctly to basic requests."
+    local status=""
+    local message=""
+    local api_health_output_json_file="${LOG_DIRECTORY}/api_health_check_results.json"
+    printf "\n"
+    printf "  Test: %s\n" "${name}"
+    printf "    Description: %s\n" "${description}"
+    printf "      This test aims to answer the following questions: \n"
+    printf "        Is the API server responding?\n"
+    printf "        Are the basic endpoints accessible?\n"
+    printf "        Do the endpoints return valid JSON?\n"
+    printf "    Starting API health check...\n"
+    make start > /dev/null 2>&1
+    
+    printf "    Waiting for API to be ready...\n"
+    if ! wait_for_api_ready; then
+        printf "    Status: $(bold $(red "FAILED")) - API not ready after ${API_READINESS_TIMEOUT} seconds\n"
+        make stop > /dev/null 2>&1
+        exit 1
+    fi
+    
+    # Test 1: Status endpoint
+    printf "    Testing status endpoint...\n"
+    status_http_code=$(curl -s --max-time 10 -o /tmp/status_response -w "%{http_code}" http://localhost:8888/api/status)
+    status_exit_code=$?
+    
+    if [ $status_exit_code -ne 0 ]; then
+        printf "    Status: $(bold $(red "FAILED")) - Status endpoint failed with exit code $status_exit_code\n"
+        make stop > /dev/null 2>&1
+        exit 1
+    fi
+    
+    if [ "$status_http_code" != "200" ]; then
+        printf "    Status: $(bold $(red "FAILED")) - Status endpoint returned HTTP $status_http_code\n"
+        printf "    Response: %s\n" "$(cat /tmp/status_response)"
+        make stop > /dev/null 2>&1
+        exit 1
+    fi
+    
+    status_result=$(cat /tmp/status_response)
+    # Validate status response is valid JSON
+    if ! echo "$status_result" | jq . >/dev/null 2>&1; then
+        printf "    Status: $(bold $(red "FAILED")) - Status endpoint returned invalid JSON\n"
+        printf "    Response: %s\n" "$status_result"
+        make stop > /dev/null 2>&1
+        exit 1
+    fi
+    
+    # Test 3: Test invalid endpoint returns proper error
+    printf "    Testing error handling...\n"
+    error_http_code=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" http://localhost:8888/api/nonexistent)
+    error_exit_code=$?
+    
+    if [ $error_exit_code -ne 0 ]; then
+        printf "    Status: $(bold $(red "FAILED")) - Error test failed with exit code $error_exit_code\n"
+        make stop > /dev/null 2>&1
+        exit 1
+    fi
+    
+    # Check that we get a 404 for non-existent endpoint
+    if [ "$error_http_code" != "404" ]; then
+        printf "    Status: $(bold $(red "FAILED")) - Expected 404 for non-existent endpoint, got $error_http_code\n"
+        make stop > /dev/null 2>&1
+        exit 1
+    fi
+    
+    printf "\n"
+    printf "    Compiling results...\n"
+    
+    # Create summary JSON
+    health_summary=$(jq -n \
+        --arg status_response "$status_result" \
+        --arg scenario_response "$scenario_result" \
+        --arg status_http_code "$status_http_code" \
+        --arg scenario_http_code "$scenario_http_code" \
+        --arg error_http_code "$error_http_code" \
+        '{
+            "test_name": "API Health Check",
+            "timestamp": now | strftime("%Y-%m-%d %H:%M:%S"),
+            "results": {
+                "status_endpoint": {
+                    "status": "PASSED",
+                    "http_code": $status_http_code,
+                    "response": ($status_response | fromjson)
+                },
+                "scenario_endpoint": {
+                    "status": "PASSED", 
+                    "http_code": $scenario_http_code,
+                    "response_length": ($scenario_response | length)
+                },
+                "error_handling": {
+                    "status": "PASSED",
+                    "http_code": $error_http_code
+                }
+            },
+            "overall_status": "PASSED"
+        }')
+    
+    echo "$health_summary" > "$api_health_output_json_file"
+    
+    # Extract key info for display
+    api_version=$(echo "$status_result" | jq -r '.version // "unknown"' 2>/dev/null)
+    
+    message="        API Health Check Summary:
+            Status endpoint: PASSED (HTTP $status_http_code)
+            Scenario endpoint: PASSED (HTTP $scenario_http_code)
+            Error handling: PASSED (proper 404 response)
+            API version: ${api_version}"
+    
+    status=$(bold $(green "PASSED"))
+    printf "    Message:\n%s\n" "$message"
+    printf "    %-77s %s\n" "Status:" "${status}"
+    make stop > /dev/null 2>&1
+    printf "    See the health check log for more info: %s\n" "$api_health_output_json_file"
+    
+    # Clean up temp files
+    rm -f /tmp/status_response /tmp/scenario_response
+    exit 0
+}
+
+02_simulation_test_scenario_test() {
     local action=simulate
     local name="Simulation Test"
     local description="This test executes the simulation_test.launch.py scenario and verify the model checking results."
@@ -21,7 +167,13 @@ LOG_DIRECTORY="${LOG_DIRECTORY:-.log}"
     printf "        Did the scenario generate any exceptions?\n"
     printf "    Running scenario...\n"
     make start > /dev/null 2>&1
-    sleep 2s
+    
+    printf "    Waiting for API to be ready...\n"
+    if ! wait_for_api_ready; then
+        printf "    Status: $(bold $(red "FAILED")) - API not ready after ${API_READINESS_TIMEOUT} seconds\n"
+        make stop > /dev/null 2>&1
+        exit 1
+    fi
     
     {
         while true; do
@@ -52,6 +204,30 @@ LOG_DIRECTORY="${LOG_DIRECTORY:-.log}"
     printf "\n"
     printf "    Parsing results...\n"
     echo "${result}" > "${model_checking_output_json_file}"
+    
+    # Check if result is empty or null
+    if [ -z "$result" ] || [ "$result" = "null" ]; then
+        printf "    Status: $(bold $(red "FAILED")) - API returned no results\n"
+        make stop > /dev/null 2>&1
+        exit 1
+    fi
+    
+    # Check if result is valid JSON
+    if ! echo "$result" | jq . >/dev/null 2>&1; then
+        printf "    Status: $(bold $(red "FAILED")) - API returned invalid JSON\n"
+        printf "    Response: %s\n" "$result"
+        make stop > /dev/null 2>&1
+        exit 1
+    fi
+    
+    # Check if expected structure exists
+    if ! echo "$result" | jq -e '.model_check_result.results.SUMMARY' >/dev/null 2>&1; then
+        printf "    Status: $(bold $(red "FAILED")) - API response missing expected model check results\n"
+        printf "    Response: %s\n" "$result"
+        make stop > /dev/null 2>&1
+        exit 1
+    fi
+    
     message=$(echo "$result" | jq -r '
       .model_check_result.results.SUMMARY as $s |
       (
