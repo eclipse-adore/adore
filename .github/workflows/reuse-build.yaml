@@ -232,4 +232,4 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: latest
           files: |
-            adore_*_latest_build_${{ inputs.archive_name }}.txz
+            adore_*_latest_${{ inputs.archive_name }}.txz
