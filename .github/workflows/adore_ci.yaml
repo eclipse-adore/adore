@@ -1,0 +1,42 @@
+name: ADORe CI
+
+on:
+  push:
+    branches:
+      - 'master'
+      - 'develop'
+      - '**'
+  pull_request:
+    branches:
+      - '**'
+      
+jobs:
+  x86_64:
+    name: Native x86_64
+
+    permissions:
+      contents: write
+      actions: write
+      attestations: write
+
+    secrets: inherit
+    
+    uses: ./.github/workflows/reuse-build.yaml
+    with:
+      platform: 'ubuntu-24.04'
+      archive_name: 'x86_64'
+
+  arm64:
+    name: Native arm64
+
+    permissions:
+      contents: write
+      actions: write
+      attestations: write
+
+    secrets: inherit
+    
+    uses: ./.github/workflows/reuse-build.yaml
+    with:
+      platform: 'ubuntu-24.04-arm'
+      archive_name: 'arm64'
