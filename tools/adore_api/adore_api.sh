@@ -44,9 +44,8 @@ start_adore_api() {
         echo "Logs: $LOG_FILE"
         echo "Bag recordings will be stored in: ${LOG_DIRECTORY}/bag_file_recordings/"
     else
-        echo "Failed to start ADORe API"
+        echo "Failed to start ADORe API, review the API log for more info: ${LOG_FILE}"
         rm -f "$PID_FILE"
-        return 1
     fi
 }
 
