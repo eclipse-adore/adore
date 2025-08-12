@@ -167,6 +167,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
 
+    # Only create a release on a push, not for other events
+    if: github.event_name == 'push'
+
     permissions:
       contents: write
       actions: write
