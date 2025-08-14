@@ -7,3 +7,7 @@ find_package(ament_cmake_gtest REQUIRED)
 # required for unit testing with gtest
 find_package(ament_cmake_gtest REQUIRED)
 
+
+# required to use ADORe messages 
+find_package(adore_ros2_msgs REQUIRED)
+

@@ -21,14 +21,14 @@ def is_path_ignored(path, ignore_patterns):
 def main():
     if len(sys.argv) != 3:
         print("Usage: python ignore.py <path> <ignorefile>")
-        sys.exit(1)
+        sys.exit(2)
 
     path = sys.argv[1]
     ignorefile = sys.argv[2]
 
     if not os.path.exists(ignorefile):
-        print(f"Ignore file '{ignorefile}' not found.")
-        sys.exit(1)
+        logging.info(f"Ignore file '{ignorefile}' not found. Path {path} not ignored.")
+        sys.exit(0)
 
     with open(ignorefile, 'r') as f:
         ignore_patterns = [

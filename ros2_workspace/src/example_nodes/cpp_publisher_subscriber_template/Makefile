@@ -24,14 +24,15 @@ ROS2_WORKSPACE := $(shell \
 )
 
 ROS2_PACKAGE := $(shell grep -oP '<name>\K[^<]*' $(SCRIPT_DIRECTORY)/package.xml | tr -d '[:space:]')
-DEPENDENCIES := $(shell grep -oP '<depend>\K[^<]*' $(SCRIPT_DIRECTORY)/package.xml | tr '\n' ' ' | tr -s ' ' | sed 's/ $$//')
+DEPENDENCIES := $(shell grep -oP '<(?:depend|build_depend)>\K[^<]*' $(SCRIPT_DIRECTORY)/package.xml | tr '\n' ' ' | tr -s ' ' | sed 's/ $$//')
+
 
 
 .PHONY: build
 build: build_dependencies ##         Build ROS2 Node. Same as running `colcon build --packages-select <package name>`
 	@echo "Building: ${ROS2_PACKAGE}"
 	@echo "  Using ROS 2 workspace: ${ROS2_WORKSPACE}"
-	cd $(ROS2_WORKSPACE) && colcon build --packages-select ${ROS2_PACKAGE}
+	cd $(ROS2_WORKSPACE) && colcon build --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo --packages-select ${ROS2_PACKAGE}
 
 .PHONY: build_dependencies
 build_dependencies: ## Build all node dependencies
@@ -50,8 +51,6 @@ test: build ##         Execute unit tests
         exit 1; \
     fi && \
     cd $(ROS2_WORKSPACE) && colcon test --packages-select ${ROS2_PACKAGE} --event-handlers console_direct+
-	colcon test-result --verbose
-
 
 .PHONY: run
 run: ##         Run the node
