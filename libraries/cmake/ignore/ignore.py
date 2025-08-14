@@ -1,9 +1,7 @@
 import fnmatch
 import os
 import sys
-
 import logging
-import os
 
 log_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ignore.log')
 logging.basicConfig(filename=log_file_path, level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -11,13 +9,13 @@ logging.basicConfig(filename=log_file_path, level=logging.DEBUG, format='%(ascti
 def is_path_ignored(path, ignore_patterns):
     for pattern in ignore_patterns:
         if fnmatch.fnmatch(path, pattern):
-            logging.info("path: " + path + " pattern: " + pattern + " match: true")
+            logging.info(f"path: {path} pattern: {pattern} match: fnmatch")
             return True
         elif pattern in path:
-            logging.info("path: " + path + " pattern: " + pattern + " match: true")
+            logging.info(f"path: {path} pattern: {pattern} match: substring")
             return True
 
-    logging.info("path: " + path + " match: false")
+    logging.info(f"path: {path} match: false")
     return False
 
 def main():
@@ -33,11 +31,13 @@ def main():
         sys.exit(1)
 
     with open(ignorefile, 'r') as f:
-        ignore_patterns = [line.strip() for line in f.readlines() if not line.lstrip().startswith('#')]
-        if ignore_patterns == None:
-            ignore_patterns = []
-        ignore_patterns = list(filter(None, ignore_patterns))
+        ignore_patterns = [
+            line.strip() for line in f.readlines() 
+            if line.strip() and not line.lstrip().startswith('#')
+        ]
 
+    logging.info(f"Checking path: {path} against {len(ignore_patterns)} patterns")
+    
     if is_path_ignored(path, ignore_patterns):
         sys.exit(1)
     else:
@@ -45,4 +45,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

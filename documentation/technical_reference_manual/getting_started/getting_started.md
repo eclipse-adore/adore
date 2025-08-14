@@ -67,4 +67,4 @@ make cli
 ```
 
 
-> **✅ INFO:** Next steps...
+Next proceed to [Running Your First Scenario 🔗](running_your_first_scenario.md) 

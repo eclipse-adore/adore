@@ -8,13 +8,17 @@ nav:
     - System Requirements: getting_started/system_requirements.md
     - Prerequisites: getting_started/prerequisites.md
     - Installing Docker: getting_started/installing_docker.md
+    - Running Your First Scenario In ADORe: getting_started/running_your_first_scenario.md
   - Technical Reference Manual:
     - Table of Contents: technical_reference_manual.md
     - Documentation: system_and_development/documentation.md
     - ADORe ROS Nodes: generated/ROS_NODES_SUMMARY.md
     - ADORe ROS Messages: generated/adore_ros2_msgs/README.md
     - ADORe ROS Topics:   generated/adore_ros2_msgs/topics.md
-    - ADORe User Libraries: generated/user_libraries.md
+    - ADORe User Libraries:
+      - ADORe User Libraries: generated/libraries/README.md 
+      - Creating A New Library: generated/libraries/library_creation_guide.md 
+      - ADORe CMake Target/Library Auto-Generation: generated/libraries/cmake_library_auto_generation.md 
     - ADORe REST API:
       - About The ADORe REST API: generated/api/adore_api/README.md
       - ADORe Mission Control Web Interface: generated/api/adore_api/adore_mission_control.md
@@ -31,12 +35,19 @@ nav:
     - Style Guide: styleguide.md
   - Contact: contact.md
 
+extra:
+  github_issues: "https://github.com/eclipse-adore/adore/issues"
+
 theme:
   name: material 
   logo: ../img/logo.png
   favicon: ../img/favicon.ico
   features:
     - content.code.copy
+  footer:
+    links:
+      - title: "Help"
+        url: "https://github.com/eclipse-adore/adore/issues"
 
 plugins:
   - search

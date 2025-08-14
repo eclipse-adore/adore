@@ -1,9 +1,9 @@
 
 .PHONY: save
-save: save_docker_images
+save: save_docker_images ## Save all ADORe Docker images to disk in .docker_cache
 
 .PHONY: load_docker_images
-load: load_docker_images
+load: load_docker_images ## Load all from the .docker_cache
 
 .PHONY: debug
 debug:
@@ -67,7 +67,7 @@ nmap:
 	nmap -sP $(shell ip -o -4 addr show up | awk '/(eth|enp|wlo)[0-9]/ && !/veth/ {sub(/\/.*/, "", $$4); print $$4"/24"}')
 
 .PHONY: package
-package:
+package: ## Package and compress entire workspace as .tar.gz archive and output to build/, invoke `make save` first
 	echo "${ADORE_TAG}"
 	cd ../ && tar -czvf adore_${ADORE_TAG}.tar.gz adore
 	mkdir -p build

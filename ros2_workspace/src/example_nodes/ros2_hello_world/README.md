@@ -8,11 +8,11 @@ This node/program provides a GNU Makefile for building, testing, and running.
 ```bash
 make build
 ```
-3. Test the node:
+2. Test the node:
 ```bash
 make test
 ```
-2. Run the node:
+3. Run the node:
 ```bash
 make run
 ```
