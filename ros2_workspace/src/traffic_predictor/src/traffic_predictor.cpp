@@ -75,8 +75,8 @@ public:
 private:
     void trafficCallback(const adore_ros2_msgs::msg::TrafficParticipantSet& msg)
     {
-        // RCLCPP_DEBUG(this->get_logger(), "Received traffic participant set with %zu participants", 
-        //              msg->data.size());
+        RCLCPP_DEBUG(this->get_logger(), "Received traffic participant set with %zu participants", 
+                     msg.data.size());
         
         std::lock_guard<std::mutex> lock(data_mutex_);
         latest_traffic_data_ = dynamics::conversions::to_cpp_type( msg );
@@ -87,49 +87,94 @@ private:
         }
 
         traffic_data_received_ = true;
+        last_traffic_update_time_ = this->get_clock()->now();
     }
+    
     void trafficEgoCallback(const adore_ros2_msgs::msg::TrafficParticipant& msg)
     {
-        // RCLCPP_DEBUG(this->get_logger(), "Received traffic participant set with %zu participants", 
-        //              msg->data.size());
+        RCLCPP_DEBUG(this->get_logger(), "Received ego traffic participant data");
         
         std::lock_guard<std::mutex> lock(data_mutex_);
         latest_ego_traffic_data_ = dynamics::conversions::to_cpp_type( msg );
         ego_traffic_data_received_ = true;
+        last_ego_update_time_ = this->get_clock()->now();
     }
 
     void mapCallback(const adore_ros2_msgs::msg::Map& msg)
     {
-        // RCLCPP_DEBUG(this->get_logger(), "Received map data with %zu elements", msg.data.size());
+        RCLCPP_DEBUG(this->get_logger(), "Received map data with %zu elements", msg.data.size());
         
         std::lock_guard<std::mutex> lock(data_mutex_);
         latest_map_data_ = map::conversions::to_cpp_type( msg );
         map_data_received_ = true;
+        last_map_update_time_ = this->get_clock()->now();
     }
 
     void planningCallback()
     {
+        auto start_time = std::chrono::high_resolution_clock::now();
         std::lock_guard<std::mutex> lock(data_mutex_);
         
-        if (!traffic_data_received_ || !map_data_received_) {
-            RCLCPP_DEBUG_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
-                                  "Waiting for data - Traffic: %s, Map: %s",
-                                  traffic_data_received_ ? "OK" : "Missing",
-                                  map_data_received_ ? "OK" : "Missing");
+        if (!traffic_data_received_) {
+            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 3000,
+                                  "NO TRAFFIC DATA RECEIVED");
             return;
         }
 
-        if (!traffic_data_received_ || !map_data_received_) {
-            // RCLCPP_WARN(this->get_logger(), "Data pointers are null");
+        if (!map_data_received_) {
+            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 3000,
+                                  "NO MAP DATA RECEIVED");
             return;
         }
 
-        auto start_time = std::chrono::high_resolution_clock::now();
+        if (!ego_traffic_data_received_) {
+            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                                  "NO EGO VEHICLE DATA RECEIVED");
+            return;
+        }
+
+        auto current_time = this->get_clock()->now();
         
+        if ((current_time - last_traffic_update_time_).seconds() > 1.0) {
+            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+                                  "Traffic data is stale (%.2f seconds old)",
+                                  (current_time - last_traffic_update_time_).seconds());
+        }
+
+        if ((current_time - last_map_update_time_).seconds() > 5.0) {
+            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
+                                  "Map data is stale (%.2f seconds old)",
+                                  (current_time - last_map_update_time_).seconds());
+        }
+
+        RCLCPP_DEBUG(this->get_logger(), "Planning for %zu traffic participants", 
+                     latest_traffic_data_.get_participants().size());
+
         int status_from_planner = multi_agent_PID_planner.plan_trajectories( latest_traffic_data_ );
+        
+        if (status_from_planner != 0) {
+            RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                                   "Planning failed with status: %d", status_from_planner);
+            planning_error_count_++;
+            if (planning_error_count_ > 10) {
+                RCLCPP_ERROR(this->get_logger(), "Multiple consecutive planning failures detected");
+            }
+        } else {
+            planning_error_count_ = 0;
+        }
 
         prediction_publisher_->publish( dynamics::conversions::to_ros_msg( latest_traffic_data_  ));
 
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+        
+        if (duration.count() > 50) {
+            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+                                  "Planning cycle took %ld ms (exceeds 50ms threshold)", 
+                                  duration.count());
+        }
+
+        RCLCPP_DEBUG(this->get_logger(), "Planning cycle completed in %ld ms", duration.count());
     }
 
     rclcpp::Subscription<adore_ros2_msgs::msg::TrafficParticipantSet>::SharedPtr traffic_subscriber_;
@@ -145,6 +190,11 @@ private:
     bool ego_traffic_data_received_ = false;
     bool traffic_data_received_ = false;
     bool map_data_received_ = false;
+    
+    rclcpp::Time last_traffic_update_time_;
+    rclcpp::Time last_ego_update_time_;
+    rclcpp::Time last_map_update_time_;
+    int planning_error_count_ = 0;
 };
 
 } // namespace planning
