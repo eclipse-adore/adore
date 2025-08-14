@@ -75,106 +75,141 @@ public:
 private:
     void trafficCallback(const adore_ros2_msgs::msg::TrafficParticipantSet& msg)
     {
-        RCLCPP_DEBUG(this->get_logger(), "Received traffic participant set with %zu participants", 
-                     msg.data.size());
+        auto start_time = std::chrono::high_resolution_clock::now();
         
         std::lock_guard<std::mutex> lock(data_mutex_);
+        
+        RCLCPP_INFO(this->get_logger(), "Traffic participants received: %zu", msg.data.size());
+        
+        if (msg.data.empty()) {
+            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+                                 "No traffic participants detected in scene");
+            RCLCPP_ERROR(this->get_logger(), "Traffic participants empty: YES");
+        }
+        
+        for (size_t i = 0; i < msg.data.size(); ++i) {
+            RCLCPP_INFO(this->get_logger(), "Debug information participant index: %d", static_cast<int>(i));
+        }
+        
         latest_traffic_data_ = dynamics::conversions::to_cpp_type( msg );
 
         if ( ego_traffic_data_received_ )
         {
             latest_traffic_data_.update_traffic_participants(latest_ego_traffic_data_);
+            RCLCPP_INFO(this->get_logger(), "Ego traffic data merged successfully");
+        }
+        else
+        {
+            RCLCPP_ERROR(this->get_logger(), "Ego traffic data not available: NO");
+            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 3000,
+                                 "Ego traffic data has not been received yet");
         }
 
         traffic_data_received_ = true;
-        last_traffic_update_time_ = this->get_clock()->now();
+        
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+        RCLCPP_INFO(this->get_logger(), "Time taken traffic callback: %ld milliseconds", diff.count());
+        
+        if (diff.count() > 50) {
+            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
+                                 "Traffic callback taking excessive time: %ld ms", diff.count());
+        }
     }
     
     void trafficEgoCallback(const adore_ros2_msgs::msg::TrafficParticipant& msg)
     {
-        RCLCPP_DEBUG(this->get_logger(), "Received ego traffic participant data");
+        auto start_time = std::chrono::high_resolution_clock::now();
         
         std::lock_guard<std::mutex> lock(data_mutex_);
+        
+        RCLCPP_INFO(this->get_logger(), "Ego traffic participant received");
+        
         latest_ego_traffic_data_ = dynamics::conversions::to_cpp_type( msg );
         ego_traffic_data_received_ = true;
-        last_ego_update_time_ = this->get_clock()->now();
+        
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+        RCLCPP_INFO(this->get_logger(), "Time taken ego callback: %ld milliseconds", diff.count());
     }
 
     void mapCallback(const adore_ros2_msgs::msg::Map& msg)
     {
-        RCLCPP_DEBUG(this->get_logger(), "Received map data with %zu elements", msg.data.size());
+        auto start_time = std::chrono::high_resolution_clock::now();
         
         std::lock_guard<std::mutex> lock(data_mutex_);
+        
+        RCLCPP_INFO(this->get_logger(), "Map data received");
+        
         latest_map_data_ = map::conversions::to_cpp_type( msg );
         map_data_received_ = true;
-        last_map_update_time_ = this->get_clock()->now();
+        
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+        RCLCPP_INFO(this->get_logger(), "Time taken map callback: %ld milliseconds", diff.count());
     }
 
     void planningCallback()
     {
-        auto start_time = std::chrono::high_resolution_clock::now();
+        auto planning_start_time = std::chrono::high_resolution_clock::now();
+        
         std::lock_guard<std::mutex> lock(data_mutex_);
         
-        if (!traffic_data_received_) {
-            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 3000,
-                                  "NO TRAFFIC DATA RECEIVED");
-            return;
-        }
-
-        if (!map_data_received_) {
-            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 3000,
-                                  "NO MAP DATA RECEIVED");
-            return;
-        }
-
-        if (!ego_traffic_data_received_) {
-            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
-                                  "NO EGO VEHICLE DATA RECEIVED");
-            return;
-        }
-
-        auto current_time = this->get_clock()->now();
-        
-        if ((current_time - last_traffic_update_time_).seconds() > 1.0) {
-            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
-                                  "Traffic data is stale (%.2f seconds old)",
-                                  (current_time - last_traffic_update_time_).seconds());
-        }
-
-        if ((current_time - last_map_update_time_).seconds() > 5.0) {
+        if (!traffic_data_received_ || !map_data_received_) {
+            RCLCPP_DEBUG_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                                  "Waiting for data - Traffic: %s, Map: %s",
+                                  traffic_data_received_ ? "OK" : "Missing",
+                                  map_data_received_ ? "OK" : "Missing");
+                                  
             RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
-                                  "Map data is stale (%.2f seconds old)",
-                                  (current_time - last_map_update_time_).seconds());
+                                 "Planning blocked waiting for required data inputs");
+                                  
+            if (!traffic_data_received_) {
+                RCLCPP_ERROR(this->get_logger(), "Traffic data not ready: NO");
+            }
+            if (!map_data_received_) {
+                RCLCPP_ERROR(this->get_logger(), "Map data not ready: NO");
+            }
+            return;
         }
 
-        RCLCPP_DEBUG(this->get_logger(), "Planning for %zu traffic participants", 
-                     latest_traffic_data_.get_participants().size());
+        if (!traffic_data_received_ || !map_data_received_) {
+            RCLCPP_ERROR(this->get_logger(), "Data validation failed: YES");
+            return;
+        }
 
+        auto planner_start_time = std::chrono::high_resolution_clock::now();
+        
         int status_from_planner = multi_agent_PID_planner.plan_trajectories( latest_traffic_data_ );
         
+        auto planner_end_time = std::chrono::high_resolution_clock::now();
+        auto planner_diff = std::chrono::duration_cast<std::chrono::milliseconds>(planner_end_time - planner_start_time);
+        RCLCPP_INFO(this->get_logger(), "Time taken planner execution: %ld milliseconds", planner_diff.count());
+
         if (status_from_planner != 0) {
-            RCLCPP_ERROR_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
-                                   "Planning failed with status: %d", status_from_planner);
-            planning_error_count_++;
-            if (planning_error_count_ > 10) {
-                RCLCPP_ERROR(this->get_logger(), "Multiple consecutive planning failures detected");
-            }
+            RCLCPP_ERROR(this->get_logger(), "Planner execution failed: YES");
+            RCLCPP_ERROR(this->get_logger(), "Planner status code: %d", status_from_planner);
+            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 3000,
+                                 "Repeated planner failures detected with status: %d", status_from_planner);
         } else {
-            planning_error_count_ = 0;
+            RCLCPP_INFO(this->get_logger(), "Planner execution successful: %d", status_from_planner);
+        }
+
+        if (planner_diff.count() > 80) {
+            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+                                 "Planner execution time exceeding target: %ld ms", planner_diff.count());
         }
 
         prediction_publisher_->publish( dynamics::conversions::to_ros_msg( latest_traffic_data_  ));
 
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+        auto planning_end_time = std::chrono::high_resolution_clock::now();
+        auto planning_diff = std::chrono::duration_cast<std::chrono::milliseconds>(planning_end_time - planning_start_time);
+        RCLCPP_INFO(this->get_logger(), "Time taken complete planning cycle: %ld milliseconds", planning_diff.count());
         
-        if (duration.count() > 50) {
-            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
-                                  "Planning cycle took %ld ms (exceeds 50ms threshold)", 
-                                  duration.count());
+        if (planning_diff.count() > 95) {
+            RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+                                 "Planning cycle approaching deadline: %ld ms (target: 100ms)", planning_diff.count());
         }
-
-        RCLCPP_DEBUG(this->get_logger(), "Planning cycle completed in %ld ms", duration.count());
     }
 
     rclcpp::Subscription<adore_ros2_msgs::msg::TrafficParticipantSet>::SharedPtr traffic_subscriber_;
@@ -190,11 +225,6 @@ private:
     bool ego_traffic_data_received_ = false;
     bool traffic_data_received_ = false;
     bool map_data_received_ = false;
-    
-    rclcpp::Time last_traffic_update_time_;
-    rclcpp::Time last_ego_update_time_;
-    rclcpp::Time last_map_update_time_;
-    int planning_error_count_ = 0;
 };
 
 } // namespace planning
@@ -212,6 +242,7 @@ int main(int argc, char** argv)
         rclcpp::spin(node);
     } catch (const std::exception& e) {
         RCLCPP_FATAL(node->get_logger(), "Node crashed: %s", e.what());
+        RCLCPP_ERROR(node->get_logger(), "Exception occurred: YES");
         return 1;
     }
     
