@@ -14,6 +14,7 @@ make build
 
 1. Build the package with (within the ADORe CLI):
 ```bash
+make cli
 cd ros2_workspace/src/traffic_predictor
 make build
 ```
@@ -25,17 +26,20 @@ ros2 launch adso_demo_1.py
 ```
 or
 ```bash
+make cli
 cd adore_scenarios/simuation_scenarios
 ros2 launch adso_demo_2.py
 ```
 
 3. Run the node(within the ADORe CLI):
 ```bash
+make cli
 cd ros2_workspace/src/traffic_predictor
 make run
 ```
 
-4. In another scenario the output can be observed(within the ADORe CLI):
+4. In another terminal/shell the output can be observed(within the ADORe CLI):
 ```bash
+make cli
 ros2 topic echo /ego_vehicle/traffic_prediction
 ```
