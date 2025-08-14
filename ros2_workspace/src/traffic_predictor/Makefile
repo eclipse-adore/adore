@@ -24,7 +24,7 @@ ROS2_WORKSPACE := $(shell \
 )
 
 ROS2_PACKAGE := $(shell grep -oP '<name>\K[^<]*' $(SCRIPT_DIRECTORY)/package.xml | tr -d '[:space:]')
-DEPENDENCIES := $(shell grep -oP '<depend>\K[^<]*' $(SCRIPT_DIRECTORY)/package.xml | tr '\n' ' ' | tr -s ' ' | sed 's/ $$//')
+DEPENDENCIES := $(shell grep -oP '<build_depend>\K[^<]*' $(SCRIPT_DIRECTORY)/package.xml | tr '\n' ' ' | tr -s ' ' | sed 's/ $$//')
 
 
 .PHONY: build
