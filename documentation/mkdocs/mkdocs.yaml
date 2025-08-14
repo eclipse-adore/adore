@@ -1,4 +1,5 @@
 site_name: ADORe Documentation
+repo_url: https://github.com/eclipse-adore/adore
 nav:
   - About ADORe: README.md
   - Quick Start: quick_start.md
@@ -8,11 +9,25 @@ nav:
     - Prerequisites: getting_started/prerequisites.md
     - Installing Docker: getting_started/installing_docker.md
   - Technical Reference Manual:
+    - Table of Contents: technical_reference_manual.md
     - Documentation: system_and_development/documentation.md
-    - Submodules: modules.md
+    - ADORe ROS Nodes: generated/ROS_NODES_SUMMARY.md
+    - ADORe ROS Messages: generated/adore_ros2_msgs/README.md
+    - ADORe ROS Topics:   generated/adore_ros2_msgs/topics.md
+    - ADORe User Libraries: generated/user_libraries.md
+    - ADORe REST API:
+      - About The ADORe REST API: generated/api/adore_api/README.md
+      - ADORe Mission Control Web Interface: generated/api/adore_api/adore_mission_control.md
+      - ADORE API Reference: generated/api/adore_api/api_reference.md
+      - ADORE API Examples: generated/api/adore_api/api_reference_curl_examples.md
+    - Creating A New Node: system_and_development/creating_a_new_node.md
+    - Scenario Visualization: generated/visualization/lichtblick/README.md
+    - Submodules: generated/modules/modules.md
     - Troubleshooting: problems_and_solutions.md
     - Licensing: licensing.md
-    - Contributing: CONTRIBUTING.md
+    - Publicaitons: publications.md
+    - Contributing: generated/CONTRIBUTING.md
+    - Code of Conduct: generated/CODE_OF_CONDUCT.md
     - Style Guide: styleguide.md
   - Contact: contact.md
 

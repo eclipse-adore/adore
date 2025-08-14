@@ -1,4 +1,4 @@
-personal_ws-1.1 en 82 utf-8
+personal_ws-1.1 en 90 utf-8
 ADORe
 BUFWu
 Bahn
@@ -21,10 +21,12 @@ Lobig
 MAPEM
 MCM
 Makefile
+Natively
 Numbat
 OpenDrive
 Pre
 QAMXNIC
+QEMU
 ROS
 SHA
 SPATEM
@@ -38,6 +40,7 @@ borked
 cd
 cli
 config
+cp
 df
 doxygen
 ec
@@ -48,6 +51,7 @@ gdb
 gh
 github
 gitmodules
+html
 htop
 https
 init
@@ -55,14 +59,17 @@ insteadOf
 io
 licensable
 licensecheck
+lichtblick
 md
 merchantability
 mkdocs
+natively
 nginx
 nmap
 nproc
 os
 publickey
+py
 readme
 recurse
 repo
@@ -78,15 +85,7 @@ sudo
 traceroute
 untrusted
 url
+utm
 ve
 wget
 zsh
-Natively
-natively
-QEMU
-cp
-py
-lichtblick
-html
-utm
-UTM

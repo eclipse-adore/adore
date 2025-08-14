@@ -1,6 +1,10 @@
 SCRIPT_DIRECTORY="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 ROS2_WORKSPACE_DIRECTORY="$(realpath "${SCRIPT_DIRECTORY}/ros2_workspace")"
 
+if [ ! -f /.dockerenv ]; then
+    echo "ERROR: This script must be sourced inside the ADORe CLI context." >&2
+    return 1
+fi
 
 if [[ "$SHELL" == *"bash"* ]]; then
     LOCAL_SETUP_SCRIPT="${ROS2_WORKSPACE_DIRECTORY}/install/local_setup.bash"
@@ -10,8 +14,8 @@ elif [[ "$SHELL" == *"zsh"* ]]; then
     ROS_SETUP_SCRIPT="/opt/ros/${ROS_DISTRO}/setup.zsh"
 else
     echo shell $SHELL
-    echo "Unsupported shell: $SHELL" >&2
-    exit 1
+    echo "ERROR: Unsupported shell: $SHELL" >&2
+    return 1
 fi
 
 source "$ROS_SETUP_SCRIPT"
@@ -28,6 +32,10 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
     fi
 else
     echo "ERROR: script designed to be sourced. Call again with 'source setup.sh'" >&2
-    exit 1
+    return 1
 fi
-source /tmp/adore/tools/adore_api/adore_api.sh
+
+(
+source "${SCRIPT_DIRECTORY}/adore.env"
+source ${SCRIPT_DIRECTORY}/tools/adore_api/adore_api.sh
+)

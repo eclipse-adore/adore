@@ -90,4 +90,6 @@ alias stop_adore="stop_adore_api"
 alias restart_adore="restart_adore_api"
 alias status_adore="status_adore_api"
 
-start_adore_api
+if [ "$(printf '%s' "$ENABLE_ADORE_API" | tr '[:upper:]' '[:lower:]')" != "false" ]; then
+    start_adore_api
+fi

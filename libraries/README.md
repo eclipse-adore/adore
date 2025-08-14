@@ -1,9 +1,18 @@
-# Target generation
+# ADORe Libraries
+
+This project contains C++ support libraries for **ADORe**.  
+For details on each library, see the corresponding README:  
+
+- [adore_map](./lib/adore_map/README.md)  
+- [adore_dynamics](./lib/adore_dynamics/README.md)  
+- [adore_planning](./lib/adore_planning/README.md)  
+- [adore_math](./lib/adore_math/README.md)  
+- [adore_controllers](./lib/adore_controllers/README.md)
+
+
+## Target generation
 This project contains cmake helper functions to auto-generate library and
-executable targets
-
-## Libraries
-
+executable targets.
 
 ### Interface Library
 To create an interface library make a directory in `lib/<library name>/include`

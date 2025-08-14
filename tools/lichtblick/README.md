@@ -1,14 +1,23 @@
+# Visualization
+Scenario Visualization in ADORe is done with 
+[Lichtblicke-Suite 🔗](https://github.com/lichtblick-suite/lichtblick). 
+ADORe comes with a docker project to build and run lichtblick.
 
 ## Building lichtblick-suite
-run:
+from the lichtblick directory run:
 ```bash
+cd tools/lichtblick
 make build
 ```
 
 ## Running lichtblick-suite
+from the lichtblick directory run:
 ```bash
+cd tools/lichtblick
 make start
 ```
+This will start the lichtblick docker service
+
 
 ## Layouts
 Unless otherwise specified lichtblick will load the default layout: `Default.json`, this is saved to `../../adore_scenarios/assets/lichtblick_layouts/`.

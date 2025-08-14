@@ -27,7 +27,7 @@ This guide will help you get your system set up and configured to run ADORe.
 
 
 ```bash
-git clone git@github.com:DLR-TS/adore.git
+git clone git@github.com:eclipse-adore/adore.git
 cd adore
 git submodule update --init --recursive
 ```

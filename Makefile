@@ -32,7 +32,7 @@ include utils.mk
 include tools/adore_cli/adore_cli.mk
 
 .PHONY: build
-build: clean stop_adore_cli build_vendor_libraries build_adore_cli_core build_adore_cli build_user_libraries build_ros_nodes ## Build and setup adore cli
+build: clean stop_adore_cli build_vendor_libraries build_adore_cli_core build_adore_cli build_user_libraries build_ros_nodes build_services ## Build and setup adore cli
 
 .PHONY: build_all
 build_all: clean build build_services

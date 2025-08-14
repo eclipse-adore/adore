@@ -4,11 +4,12 @@ get_filename_component(CURRENT_DIR_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 string(TOLOWER ${CURRENT_DIR_NAME} PROJECT)
 project(${PROJECT})
 
+include($ENV{SOURCE_DIRECTORY}/libraries/adore_libraries.cmake)
+
 include(requirements.cmake)
 
 add_executable(${PROJECT} src/ros2_syslog.cpp)
 
-include(../../../libraries/adore_libraries.cmake)
 add_all_target_include_directories(${PROJECT})
 add_all_target_link_libraries(${PROJECT})
 

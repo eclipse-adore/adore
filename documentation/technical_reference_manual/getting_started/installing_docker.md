@@ -19,7 +19,7 @@ the official Docker document at: [https://docs.docker.com/engine/install/ubuntu/
 
 Alternatively, ADORe provides a shell script that you can use to install the latest Docker. 
 ```bash
-curl -sSL https://raw.githubusercontent.com/DLR-TS/adore_tools/master/tools/install_docker.sh | bash -
+curl -sSL https://raw.githubusercontent.com/eclipse-adore/adore/develop/tools/install_docker.sh | bash -
 ```
 Follow the prompts until the installation completes. Once complete you should be greeted with something such as this:
 ```text

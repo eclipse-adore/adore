@@ -21,7 +21,7 @@ If you attempt to clone without configuring your account keys you will receive
 the following error:
 
 ```bash
-git clone git@github.com:DLR-TS/adore.git
+git clone git@github.com:eclipse-adore/adore.git
 Cloning into 'adore'...
 The authenticity of host 'github.com (140.82.121.3)' can't be established.
 ECDSA key fingerprint is SHA256:p2QAMXNIC1TJYWeIOttrVc98/R1BUFWu3/LiyKgUfQM.
@@ -46,5 +46,5 @@ git config --global url."https://".insteadOf git://
 
 Next, you can clone the repository as normal except use https:
 ```bash
-git clone --recurse-submodules -j$(nproc) https://github.com/DLR-TS/adore.git
+git clone --recurse-submodules -j$(nproc) https://github.com/eclipse-adore/adore.git
 ```

@@ -1,6 +1,6 @@
 ARG PROJECT
 
-FROM debian:stable-slim AS libopendrive_requirements_base
+FROM debian:bookworm-slim AS libopendrive_requirements_base
 
 ARG PROJECT
 ARG REQUIREMENTS_FILE="requirements.libOpenDRIVE.system"

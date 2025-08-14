@@ -2,10 +2,22 @@
 
 REST API for autonomous driving scenario management, model checking, data recording, and ROS2 system integration.
 
+The ADORe REST API is automatically started with the ADORE CLI.
+There is no need to manually start it.
+
+> **⚠️ SECURITY WARNING:**  
+> The ADORe API includes a REST interface that **may allow remote code execution**.  
+> This system has **not** undergone a security audit and is intended **for research purposes only**.  
+> **Do not** expose it to the public internet or run it on any publicly accessible system.  
+
+To disable the ADORe API modify the `adore.env` file before launching the ADORE CLI
+
+
 ## Quick Start
 
 ```bash
 # Start the API server
+cd tools/adore_api
 python adore_api.py
 
 # Check status

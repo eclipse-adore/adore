@@ -5,6 +5,7 @@ ADORe provides:
 - Algorithms and data models applied in real automated driving system for motion planning and control
 - Mechanisms for safe interaction with other CAVs, infrastructure, traffic management, interactions with human-driven vehicles, bicyclists, pedestrians
 - Integration with typical tools and formats such as ROS 2, [SUMO](https://github.com/eclipse/sumo), CARLA, OpenDrive, Road2Simulation, ITS-G5 V2X (MAPEM, SPATEM, DENM, MCM, SREM)
+- REST API for management of scenarios, interaction with ROS, CTL Model checking and more
 
 # Overview
 An ADORe control system works in concert with a perception stack (not provided) to control an autonomous vehicle platform.
