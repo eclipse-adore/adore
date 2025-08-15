@@ -1,6 +1,12 @@
 
 set(ADORE_LIBRARIES_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}")
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+
 include("${ADORE_LIBRARIES_DIRECTORY}/cmake/util_functions.cmake")
 include("${ADORE_LIBRARIES_DIRECTORY}/cmake/debugging_functions.cmake")
 include("${ADORE_LIBRARIES_DIRECTORY}/cmake/package_functions.cmake")
