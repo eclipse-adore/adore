@@ -1,0 +1,23 @@
+# syntax=docker/dockerfile:1.7-labs
+FROM docker.io/ros:jazzy-ros-base
+
+ENV DEBIAN_FRONTEND noninteractive
+
+# Install minimal requirements for 
+RUN apt update -y \
+	&& apt upgrade -y \
+	&& apt install -y python3-pyproj ros-jazzy-foxglove-bridge ros-jazzy-cv-bridge \
+	&& rm -rf /var/lib/apt/lists/*
+
+RUN mkdir /ros2_ws
+COPY build /ros2_ws
+COPY --parents clean_repo/./adore_scenarios /ros2_ws
+COPY --parents clean_repo/./tools/adore_api /ros2_ws
+COPY clean_repo/setup.sh /ros2_ws
+COPY clean_repo/tools/adore_release/files/entrypoint.sh /entrypoint.sh
+COPY clean_repo/tools/adore_release/files/README.md /ros2_ws/
+COPY clean_repo/tools/adore_release/files/LICENSE /ros2_ws/
+COPY clean_repo/tools/adore_release/files/NOTICE.md /ros2_ws/
+
+WORKDIR /ros2_ws
+ENTRYPOINT /entrypoint.sh

@@ -11,6 +11,10 @@ on:
         description: 'Name of the uploaded build archive'
         required: true
         type: string
+      image_platform:
+        description: 'Docker compatible platform reference'
+        required: true
+        type: string
 
 jobs:
   build:
@@ -157,7 +161,7 @@ jobs:
       - name: Upload build archive
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.archive_name }}
+          name: build-${{ inputs.archive_name }}
           if-no-files-found: error
           path: |
             adore_${{ inputs.archive_name }}.txz
@@ -186,23 +190,14 @@ jobs:
       - name: Download build archive
         uses: actions/download-artifact@v4
         with:
-          name: ${{ inputs.archive_name }}
-
-      - name: List downloads
-        shell: bash
-        run: |
-          ls -lah
+          name: build-${{ inputs.archive_name }}
 
       - name: Unpack build archive
         shell: bash
         run: |
           mkdir -p build
-          tar --extract --preserve-permissions --file=adore_${{ inputs.archive_name }}.txz --directory=build
-
-      - name: List release contents
-        shell: bash
-        run: |
           ls -lah
+          tar --extract --preserve-permissions --file=adore_${{ inputs.archive_name }}.txz --directory=build
           ls -lah build
           ls -lah clean_repo
 
@@ -236,3 +231,57 @@ jobs:
           tag: latest
           files: |
             adore_*_latest_${{ inputs.archive_name }}.txz
+
+  image:
+    name: Image
+    runs-on: ${{ inputs.platform }}
+    needs: build
+
+    # Only create a release on a push, not for other events
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+          path: clean_repo
+          submodules: 'recursive'
+
+      - name: Download build archive
+        uses: actions/download-artifact@v4
+        with:
+          name: build-${{ inputs.archive_name }}
+
+      - name: Unpack build archive
+        shell: bash
+        run: |
+          mkdir -p build
+          ls -lah
+          tar --extract --preserve-permissions --file=adore_${{ inputs.archive_name }}.txz --directory=build
+          ls -lah build
+          ls -lah clean_repo
+
+      - name: Get clean branch name
+        shell: bash
+        # From https://github.com/DLR-TS/make_gadgets/blob/master/tools/branch_name.sh
+        run: echo "BUILD_BRANCH=$(echo ${{ github.ref_name }} | tr -d '[:space:]' | tr -s -c "[:alnum:][:blank:]\.\_\-" _ | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Build image
+        shell: bash
+        run: |
+          docker build --file=clean_repo/tools/adore_release/Containerfile --tag adore:${BUILD_BRANCH}-${{ inputs.image_platform }} --build-arg ARCH=${{ inputs.image_platform }} .
+          docker image tag adore:${BUILD_BRANCH}-${{ inputs.image_platform }} ghcr.io/${{ github.repository_owner }}/adore:${BUILD_BRANCH}-${{ inputs.image_platform }}
+          docker image ls -a
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push image
+        shell: bash
+        run: |
+          docker image push ghcr.io/${{ github.repository_owner }}/adore:${BUILD_BRANCH}-${{ inputs.image_platform }}
