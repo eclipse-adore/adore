@@ -10,6 +10,8 @@ ifeq ($(MAKE_GADGETS_HAS_FILES),)
     $(shell git submodule update --init --recursive >&2 || true)
 endif
 
+$(shell git config core.hooksPath .githooks >&2 || true)
+
 include ${MAKE_GADGETS_DIR}/make_gadgets.mk
 #include tools/make_gadgets/docker/docker-tools.mk
 
