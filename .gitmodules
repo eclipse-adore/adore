@@ -23,10 +23,10 @@
 	shallow = true
 [submodule "vendor/OptiNLC"]
 	path = vendor/OptiNLC
-	url = git@github.com:eclipse-adore/OptiNLC.git
+	url = git@github.com:DLR-TS/OptiNLC.git
 [submodule "vendor/mathematics_toolbox"]
 	path = vendor/mathematics_toolbox
-	url = git@github.com:eclipse-adore/mathematics_toolbox.git
+	url = git@github.com:DLR-TS/mathematics_toolbox.git
 [submodule "ros2_workspace/src/ros2_messages/adore_ros2_msgs"]
 	path = ros2_workspace/src/ros2_messages/adore_ros2_msgs
 	url = git@github.com:eclipse-adore/adore_ros2_msgs.git
@@ -65,7 +65,7 @@
 	url = git@github.com:carla-simulator/ros-carla-msgs.git
 [submodule "vendor/ros2_observer"]
 	path = vendor/ros2_observer
-	url = git@github.com:eclipse-adore/ros2_observer.git
+	url = git@github.com:DLR-TS/ros2_observer.git
 [submodule "adore_scenarios/simulation_scenarios"]
 	path = adore_scenarios/simulation_scenarios
 	url = git@github.com:eclipse-adore/adore_simulation_scenarios.git
@@ -104,4 +104,4 @@
 	url = git@github.com:eclipse-adore/adore_simulated_remote_operator.git
 [submodule "tools/adore_model_checker"]
 	path = vendor/adore_model_checker
-	url = git@github.com:eclipse-adore/adore_model_checker.git
+	url = git@github.com:DLR-TS/adore_model_checker.git
