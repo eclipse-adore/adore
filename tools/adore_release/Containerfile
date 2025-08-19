@@ -5,8 +5,8 @@ ENV DEBIAN_FRONTEND noninteractive
 
 # Install minimal requirements for 
 RUN apt update -y \
-	&& apt upgrade -y \
-	&& apt install -y python3-pyproj ros-jazzy-foxglove-bridge ros-jazzy-cv-bridge \
+	&& apt upgrade -y --no-install-recommends \
+	&& apt install -y --no-install-recommends python3-pyproj ros-jazzy-foxglove-bridge ros-jazzy-cv-bridge \
 	&& rm -rf /var/lib/apt/lists/*
 
 RUN mkdir /ros2_ws
