@@ -1,11 +1,11 @@
-LOG_DIRECTORY="${ADORE_SOURCE_DIRECTORY}/.log"
+LOG_DIRECTORY="${SOURCE_DIRECTORY}/.log"
 
 start_adore_api() {
     local APP_NAME="adore_api.py"
     local APP_PORT="8888"
     local LOG_FILE="${LOG_DIRECTORY}/adore_api.log"
     local PID_FILE="${LOG_DIRECTORY}/adore_api.pid"
-    local APP_WORKING_DIRECTORY="${ADORE_SOURCE_DIRECTORY}/tools/adore_api"
+    local APP_WORKING_DIRECTORY="${SOURCE_DIRECTORY}/tools/adore_api"
     
     mkdir -p "${LOG_DIRECTORY}"
     

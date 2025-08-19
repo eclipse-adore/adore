@@ -6,6 +6,7 @@ nav:
   - Getting Started:
     - Getting Started: getting_started/getting_started.md
     - System Requirements: getting_started/system_requirements.md
+    - Anonymous Cloning: system_and_development/anonymous_cloning.md
     - Prerequisites: getting_started/prerequisites.md
     - Installing Docker: getting_started/installing_docker.md
     - Running Your First Scenario In ADORe: getting_started/running_your_first_scenario.md
@@ -26,6 +27,10 @@ nav:
       - ADORE API Examples: generated/api/adore_api/api_reference_curl_examples.md
     - Creating A New Node: system_and_development/creating_a_new_node.md
     - Scenario Visualization: generated/visualization/lichtblick/README.md
+    - Creating A New Scenario: system_and_development/scenario_generation.md
+    - ADORe CLI: 
+        - ADORe CLI: generated/adore_cli/README.md
+        - Multi-arch Build Support: system_and_development/multiarch_support.md
     - Submodules: generated/modules/modules.md
     - Troubleshooting: problems_and_solutions.md
     - Licensing: licensing.md

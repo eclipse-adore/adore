@@ -467,25 +467,105 @@ class ScenarioManager:
             
         except Exception as e:
             return {"success": False, "message": f"Failed to stop scenario: {str(e)}"}
-    
+
     def halt_all(self):
         try:
-            subprocess.run(["pkill", "-f", "ros2"], check=False)
-            subprocess.run(["ros2", "daemon", "stop"], check=False)
-            
-            if self.current_process:
+            # Get all processes to analyze what we should and shouldn't kill
+            all_processes = []
+            try:
+                result = subprocess.run(["ps", "aux"], capture_output=True, text=True, check=False)
+                if result.stdout:
+                    all_processes = result.stdout.strip().split('\n')[1:]  # Skip header
+            except:
+                pass
+    
+            # Find ROS2 processes to kill, excluding Docker and system processes
+            ros2_pids_to_kill = []
+            for line in all_processes:
+                if 'ros2' in line.lower():
+                    parts = line.split()
+                    if len(parts) >= 11:
+                        pid = parts[1]
+                        command = ' '.join(parts[10:])
+                        
+                        # Skip if it's a Docker-related process
+                        if any(exclude in command.lower() for exclude in [
+                            'docker exec',
+                            'docker-',
+                            'containerd',
+                            'sleep infinity',
+                            'rsyslogd',
+                            'entrypoint.sh',
+                            '/bin/bash',
+                            '/bin/zsh',
+                            'adore-cli-main'
+                        ]):
+                            continue
+                        
+                        # Skip if it's the main shell or system process
+                        if any(exclude in command.lower() for exclude in [
+                            'bash -c',
+                            'zsh -c', 
+                            '/usr/bin/zsh',
+                            '/bin/bash',
+                            'source ~/.zshrc'
+                        ]):
+                            continue
+                        
+                        # Only kill actual ROS2 application processes
+                        # Fixed the syntax error here:
+                        if any(include in command.lower() for include in [
+                            'ros2 launch',
+                            'ros2 run',
+                            'ros2 bag',
+                            'ros2 topic',
+                            'ros2 service',
+                            'ros2 node',
+                            '_node',
+                            'launch.py'
+                        ]) or ('python3' in command.lower() and 'ros2' in command.lower()):
+                            ros2_pids_to_kill.append(pid)
+    
+            # Kill identified ROS2 processes
+            for pid in ros2_pids_to_kill:
                 try:
-                    self.current_process.kill()
+                    subprocess.run(["kill", "-TERM", pid], check=False, timeout=5)
                 except:
                     pass
-            
+    
+            # Wait a moment for graceful shutdown
+            import time
+            time.sleep(2)
+    
+            # Force kill any remaining identified processes
+            for pid in ros2_pids_to_kill:
+                try:
+                    subprocess.run(["kill", "-KILL", pid], check=False, timeout=5)
+                except:
+                    pass
+    
+            # Stop ROS2 daemon (this is usually safe)
+            subprocess.run(["ros2", "daemon", "stop"], check=False, timeout=10)
+    
+            # Handle the specific process this class is tracking
+            if self.current_process:
+                try:
+                    self.current_process.terminate()
+                    self.current_process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    self.current_process.kill()
+                    self.current_process.wait()
+                except:
+                    pass
+    
             self.status = "idle"
             self.current_process = None
-            return {"success": True, "message": "All scenarios halted"}
-            
+            return {"success": True, "message": f"Halted {len(ros2_pids_to_kill)} ROS2 processes"}
+    
         except Exception as e:
             return {"success": False, "message": f"Failed to halt scenarios: {str(e)}"}
-    
+
+   
     def restart_scenario(self):
         self.halt_all()
         time.sleep(2)

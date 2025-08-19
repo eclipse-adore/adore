@@ -18,6 +18,8 @@ else
     return 1
 fi
 
+bash ${SCRIPT_DIRECTORY}/tools/check_adore_binaries.sh
+
 source "$ROS_SETUP_SCRIPT"
 
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
@@ -35,7 +37,6 @@ else
     return 1
 fi
 
-(
 source "${SCRIPT_DIRECTORY}/adore.env"
 source ${SCRIPT_DIRECTORY}/tools/adore_api/adore_api.sh
-)
+

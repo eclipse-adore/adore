@@ -1,10 +1,13 @@
 # Contributing to ADORe
 
-> ADORe is proudly open source. Sponsor features by sending a pull request.  
-> We would also love to know how you are using ADORe – reach out to us on GitHub.  
+> ADORe is proudly open source. Sponsor features by sending a pull request.
+> We would also love to know how you are using ADORe – reach out to us on GitHub.
 >
-> Did you find a bug? Then submit a GitHub [issue 🔗](https://github.com/eclipse/adore/issues) or provide a solution by  
-> sending a [pull request 🔗](https://github.com/eclipse/adore/pulls), contributions are welcome!
+> Did you find a bug? Then submit a GitHub [issue 🔗](https://github.com/eclipse-adore/adore/issues) or provide a solution by
+> sending a [pull request 🔗](https://github.com/eclipse-adore/adore/pulls), contributions are welcome!
+
+⚠️ **Important:** In order for pull requests to be accepted, contributors **must sign the [Eclipse Contributor Agreement (ECA)](https://www.eclipse.org/legal/ECA.php)**.  
+PRs from contributors without a valid ECA cannot be merged.
 
 ---
 
@@ -12,20 +15,20 @@
 
 1. Fork the repository to your own GitHub account.
 2. Clone your fork:
-   ```bash
-   git clone https://github.com/your-username/adore.git
-   cd adore
-   ```
+   `bash  
+   git clone https://github.com/your-username/adore.git  
+   cd adore  
+   `
 3. Set up the upstream remote:
-   ```bash
-   git remote add upstream https://github.com/eclipse/adore.git
-   git fetch upstream
-   ```
+   `bash  
+   git remote add upstream https://github.com/eclipse/adore.git  
+   git fetch upstream  
+   `
 4. Ensure you're working off the `develop` branch:
-   ```bash
-   git checkout develop
-   git pull upstream develop
-   ```
+   `bash  
+   git checkout develop  
+   git pull upstream develop  
+   `
 
 Refer to the repository’s **README** for details about system requirements, installation steps (including Docker and ROS 2), and quick-start examples.
 
@@ -48,20 +51,21 @@ Refer to the repository’s **README** for details about system requirements, in
 ### Submitting Pull Requests (PRs)
 
 1. Create a feature branch:
-   ```bash
-   git checkout -b feature/my-enhancement
-   ```
+   `bash  
+   git checkout -b feature/my-enhancement  
+   `
 2. Commit changes with descriptive messages.
 3. Rebase on the latest `develop` branch to keep history clean:
-   ```bash
-   git fetch upstream
-   git rebase upstream/develop
-   ```
+   `bash  
+   git fetch upstream  
+   git rebase upstream/develop  
+   `
 4. Push to your fork and open a PR against `develop`.
 5. In your PR description, explain:
    - What the change addresses.
    - Any new dependencies or configuration adjustments.
    - How to test it.
+6. Ensure you have signed the Eclipse Contributor Agreement (ECA); PRs from contributors without a signed ECA will not be merged.
 
 ### Code Style & Quality
 - Adhere to the repository’s formatting and style rules.
@@ -76,7 +80,12 @@ Refer to the repository’s **README** for details about system requirements, in
   - Usage examples or reference manual
   - Architecture overviews, etc.
 - Keep documentation consistent with existing style and structure.
-- spell check you contributions with `aspell`
+- Spell check your contributions with `aspell`. This is included in the documentation directory. 
+Run the following command to spell check your documentation:
+```
+cd documentation
+make spellcheck
+```
 
 ---
 
@@ -99,9 +108,8 @@ Refer to the repository’s **README** for details about system requirements, in
 
 ## 5. Code of Conduct
 
-By participating, you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md), 
+By participating, you agree to follow our [Code of Conduct](CODE_OF_CONDUCT.md),
 which aims to foster a welcoming and respectful environment.
-
 
 ---
 

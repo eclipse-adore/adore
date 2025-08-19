@@ -48,3 +48,9 @@ Next, you can clone the repository as normal except use https:
 ```bash
 git clone --recurse-submodules -j$(nproc) https://github.com/eclipse-adore/adore.git
 ```
+
+To undo these global configuration changes you can run:
+```bash
+git config --global --unset url."git@github.com:".insteadof
+git config --global --unset url."git://".insteadof
+```

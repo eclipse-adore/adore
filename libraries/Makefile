@@ -17,26 +17,32 @@ check_resources:
 	echo "Using $$JOBS job(s) for build..."; \
 	true
 
-.PHONY: clean
-clean:
-	rm -rf build
-
 .PHONY: build
-build: check_resources build_release ## Build ADORe libraries (default)
+build: build_release ## Build ADORe libraries (default)
+	@echo "✅ Libraries build complete"
+	@touch build/build.success
 
 .PHONY: build_release
 build_release: check_resources ## Build ADORe libraries in Release mode
 	@JOBS=$$(if [ "$(RAM_KB)" -ge 8000000 ]; then echo $$(nproc); else echo 1; fi); \
 	rm -rf build; \
 	mkdir -p build; \
-	cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j $$JOBS && cd .. && mv build/CMakeCache.txt build/CMakeCache.txt.libraries
+	cd build && cmake -DCMAKE_BUILD_TYPE=Release .. \
+		&& make -j $$JOBS \
+		&& mv CMakeCache.txt CMakeCache.txt.libraries
+	@echo "✅ Libraries release build complete"
+	@touch build/build_release.success
 
 .PHONY: build_debug
 build_debug: check_resources ## Build ADORe libraries in Debug mode
 	@JOBS=$$(if [ "$(RAM_KB)" -ge 8000000 ]; then echo $$(nproc); else echo 1; fi); \
 	rm -rf build; \
 	mkdir -p build; \
-	cd build && cmake -DCMAKE_BUILD_TYPE=Debug .. && make -j $$JOBS && cd .. && mv build/CMakeCache.txt build/CMakeCache.txt.libraries
+	cd build && cmake -DCMAKE_BUILD_TYPE=Debug .. \
+		&& make -j $$JOBS \
+		&& mv CMakeCache.txt CMakeCache.txt.libraries
+	@echo "✅ Libraries debug build complete"
+	@touch build/build_debug.success
 
 .PHONY: clean
 clean:
