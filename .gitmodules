@@ -23,31 +23,31 @@
 	shallow = true
 [submodule "vendor/OptiNLC"]
 	path = vendor/OptiNLC
-	url = git@github.com:DLR-TS/OptiNLC.git
+	url = git@github.com:eclipse-adore/OptiNLC.git
 [submodule "vendor/mathematics_toolbox"]
 	path = vendor/mathematics_toolbox
-	url = git@github.com:DLR-TS/mathematics_toolbox.git
+	url = git@github.com:eclipse-adore/mathematics_toolbox.git
 [submodule "ros2_workspace/src/ros2_messages/adore_ros2_msgs"]
 	path = ros2_workspace/src/ros2_messages/adore_ros2_msgs
-	url = git@github.com:DLR-TS/adore_ros2_msgs.git
+	url = git@github.com:eclipse-adore/adore_ros2_msgs.git
 [submodule "ros2_workspace/src/adore_simulated_vehicle"]
 	path = ros2_workspace/src/simulated_vehicle
-	url = git@github.com:DLR-TS/adore_simulated_vehicle.git
+	url = git@github.com:eclipse-adore/adore_simulated_vehicle.git
 [submodule "mission_control"]
 	path = ros2_workspace/src/mission_control
-	url = git@github.com:DLR-TS/adore_mission_control.git
+	url = git@github.com:eclipse-adore/adore_mission_control.git
 [submodule "ros2_workspace/src/adore_visualizer"]
 	path = ros2_workspace/src/visualizer
-	url = git@github.com:DLR-TS/adore_visualizer.git
+	url = git@github.com:eclipse-adore/adore_visualizer.git
 [submodule "ros2_workspace/src/adore_decision_maker"]
 	path = ros2_workspace/src/decision_maker
-	url = git@github.com:DLR-TS/adore_decision_maker.git
+	url = git@github.com:eclipse-adore/adore_decision_maker.git
 [submodule "ros2_workspace/src/adore_trajectory_tracker"]
 	path = ros2_workspace/src/trajectory_tracker
-	url = git@github.com:DLR-TS/adore_trajectory_tracker.git
+	url = git@github.com:eclipse-adore/adore_trajectory_tracker.git
 [submodule "adore_scenarios/adore_simulation_scenarios"]
 	path = adore_scenarios/simulation_scenarios
-	url = git@github.com:DLR-TS/adore_simulation_scenarios.git
+	url = git@github.com:eclipse-adore/adore_simulation_scenarios.git
 [submodule "vendor/libOpenDRIVE/libOpenDRIVE"]
 	path = vendor/libOpenDRIVE/libOpenDRIVE
 	url = git@github.com:markomiz/libOpenDRIVE.git
@@ -56,52 +56,52 @@
 	url = git@github.com:eclipse/sumo.git
 [submodule "ros2_workspace/src/sumo_bridge"]
 	path = ros2_workspace/src/interfaces/sumo_bridge
-	url = git@github.com:DLR-TS/sumo_if_ros.git
+	url = git@github.com:eclipse-adore/sumo_if_ros.git
 [submodule "ros2_workspace/src/carla_bridge"]
 	path = ros2_workspace/src/interfaces/carla_bridge
-	url = git@github.com:dlr-ts/adore_if_carla.git
+	url = git@github.com:eclipse-adore/adore_if_carla.git
 [submodule "ros2_workspace/src/ros2_messages/ros-carla-msgs"]
 	path = ros2_workspace/src/ros2_messages/ros-carla-msgs
 	url = git@github.com:carla-simulator/ros-carla-msgs.git
 [submodule "vendor/ros2_observer"]
 	path = vendor/ros2_observer
-	url = git@github.com:DLR-TS/ros2_observer.git
+	url = git@github.com:eclipse-adore/ros2_observer.git
 [submodule "adore_scenarios/simulation_scenarios"]
 	path = adore_scenarios/simulation_scenarios
-	url = git@github.com:DLR-TS/adore_simulation_scenarios.git
+	url = git@github.com:eclipse-adore/adore_simulation_scenarios.git
 [submodule "libraries/lib/adore_planning"]
 	path = libraries/lib/adore_planning
-	url = git@github.com:DLR-TS/adore_planning.git
+	url = git@github.com:eclipse-adore/adore_planning.git
 [submodule "libraries/lib/adore_controllers"]
 	path = libraries/lib/adore_controllers
-	url = git@github.com:DLR-TS/adore_controllers.git
+	url = git@github.com:eclipse-adore/adore_controllers.git
 [submodule "libraries/lib/adore_map"]
 	path = libraries/lib/adore_map
-	url = git@github.com:DLR-TS/adore_map.git
+	url = git@github.com:eclipse-adore/adore_map.git
 [submodule "libraries/lib/adore_math"]
 	path = libraries/lib/adore_math
-	url = git@github.com:DLR-TS/adore_math.git
+	url = git@github.com:eclipse-adore/adore_math.git
 [submodule "libraries/lib/adore_dynamics"]
 	path = libraries/lib/adore_dynamics
-	url = git@github.com:DLR-TS/adore_dynamics.git
+	url = git@github.com:eclipse-adore/adore_dynamics.git
 [submodule "ros2_workspace/src/conversions/adore_dynamics_conversions"]
 	path = ros2_workspace/src/conversions/adore_dynamics_conversions
-	url = git@github.com:DLR-TS/adore_dynamics_conversions.git
+	url = git@github.com:eclipse-adore/adore_dynamics_conversions.git
 [submodule "ros2_workspace/src/conversions/adore_map_conversions"]
 	path = ros2_workspace/src/conversions/adore_map_conversions
-	url = git@github.com:DLR-TS/adore_map_conversions.git
+	url = git@github.com:eclipse-adore/adore_map_conversions.git
 [submodule "ros2_workspace/src/conversions/adore_math_conversions"]
 	path = ros2_workspace/src/conversions/adore_math_conversions
-	url = git@github.com:DLR-TS/adore_math_conversions.git
+	url = git@github.com:eclipse-adore/adore_math_conversions.git
 [submodule "ros2_workspace/src/adore_decision_maker_infrastructure"]
 	path = ros2_workspace/src/decision_maker_infrastructure
-	url = git@github.com:DLR-TS/adore_decision_maker_infrastructure.git
+	url = git@github.com:eclipse-adore/adore_decision_maker_infrastructure.git
 [submodule "ros2_workspace/src/adore_simulated_infrastructure"]
 	path = ros2_workspace/src/simulated_infrastructure
-	url = git@github.com:DLR-TS/adore_simulated_infrastructure.git
+	url = git@github.com:eclipse-adore/adore_simulated_infrastructure.git
 [submodule "ros2_workspace/src/adore_simulated_remote_operator"]
 	path = ros2_workspace/src/simulated_remote_operator
-	url = git@github.com:DLR-TS/adore_simulated_remote_operator.git
+	url = git@github.com:eclipse-adore/adore_simulated_remote_operator.git
 [submodule "tools/adore_model_checker"]
 	path = vendor/adore_model_checker
-	url = git@github.com:DLR-TS/adore_model_checker.git
+	url = git@github.com:eclipse-adore/adore_model_checker.git
