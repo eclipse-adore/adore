@@ -54,6 +54,8 @@ https://www.mozilla.org/en-US/MPL/2.0/
 - libOpenDrive (https://github.com/DLR-TS/libOpenDRIVE, fork of https://github.com/pageldev/libOpenDRIVE)
 - OSQP (https://osqp.org/)
 - ROS 2 (https://docs.ros.org/)
+- ROS2_Observer (https://github.com/dlr-ts/ros2_observer/)
+- adore_model_checker (https://github.com/dlr-ts/adore_model_checker/)
 
 This product includes software licensed under the Apache License, Version 2.0.  
 You may obtain a copy at:  
