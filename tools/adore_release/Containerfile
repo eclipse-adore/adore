@@ -8,8 +8,17 @@ ENV ADORE_SOURCE_DIRECTORY /ros2_ws
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt update -y \
 	&& apt upgrade -y --no-install-recommends \
-	&& apt install -y --no-install-recommends python3-pyproj ros-jazzy-foxglove-bridge ros-jazzy-cv-bridge \
+	&& apt install -y --no-install-recommends \
+		ros-jazzy-foxglove-bridge \
+		ros-jazzy-cv-bridge \
+	&& apt install -y --no-install-recommends \
+		python3-pip \
+		python3-pyproj \
 	&& rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m pip install --break-system-packages \
+	flask \
+	flask-cors
 
 RUN mkdir /ros2_ws
 COPY build /ros2_ws
