@@ -115,6 +115,24 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+## Documentation Tools
 
+This project makes use of the following third-party documentation tools:
 
+### MkDocs
+- **Website:** https://www.mkdocs.org/  
+- **License:** BSD 2-Clause "Simplified" License  
+- Copyright (c) 2014-2024, MkDocs Project contributors
+
+### Doxygen
+- **Website:** https://www.doxygen.nl/  
+- **License:** GNU General Public License v2.0  
+- Copyright (c) 1997-2024, Dimitri van Heesch
+
+### Sphinx
+- **Website:** https://www.sphinx-doc.org/  
+- **License:** BSD 2-Clause "Simplified" License  
+- Copyright (c) 2007-2024, Georg Brandl and the Sphinx team
+
+ 
 
