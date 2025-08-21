@@ -30,4 +30,5 @@ else
     echo "ERROR: script designed to be sourced. Call again with 'source setup.sh'" >&2
     exit 1
 fi
-source /tmp/adore/tools/adore_api/adore_api.sh
+
+source ${SCRIPT_DIRECTORY}/tools/adore_api/adore_api.sh
