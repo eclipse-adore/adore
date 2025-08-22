@@ -301,13 +301,7 @@ ros_topic_benchmark_test() {
     } &
     dot_pid=$!
     
-    # Set environment variables for the test
-    export ROS_BENCHMARK_SCENARIO="simulation_test.launch.py"
-    export ROS_BENCHMARK_TOPIC="/ego_vehicle/vehicle_state/dynamic"
-    export ROS_BENCHMARK_MIN_RATE=15
-    export ROS_BENCHMARK_MAX_JITTER=0.05
-    export ROS_BENCHMARK_MAX_STD=0.02
-    
+    source adore.env 
     # Run the benchmark script
     benchmark_result=$(make run cmd="bash tools/ros_topic_benchmark.sh" 2>&1)
     benchmark_exit_code=$?
