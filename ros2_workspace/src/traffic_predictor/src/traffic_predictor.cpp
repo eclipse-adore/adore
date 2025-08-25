@@ -34,6 +34,7 @@
 #include <adore_dynamics_conversions.hpp>
 #include <adore_map/map.hpp>
 #include "planning/multi_agent_PID.hpp"
+#include "planning/dynamic_game_planner.hpp"
 
 namespace adore
 {
@@ -45,25 +46,26 @@ class TrafficPredictorNode : public rclcpp::Node
 public:
 
     planner::MultiAgentPID              multi_agent_PID_planner;
+    planner::DynamicGamePlanner         dynamic_game_planner;
 
     TrafficPredictorNode() : Node("traffic_predictor_node")
     {
         RCLCPP_INFO(this->get_logger(), "Initializing Traffic Predictor Node");
         
        traffic_subscriber_ = this->create_subscription<adore_ros2_msgs::msg::TrafficParticipantSet>(
-            "ego_vehicle/traffic_participants", 10,
+            "/ego_vehicle/traffic_participants", 10,
             std::bind(&TrafficPredictorNode::trafficCallback, this, std::placeholders::_1));
 
        ego_traffic_subscriber_ = this->create_subscription<adore_ros2_msgs::msg::TrafficParticipant>(
-            "ego_vehicle/traffic_participant", 10,
+            "/ego_vehicle/traffic_participant", 10,
             std::bind(&TrafficPredictorNode::trafficEgoCallback, this, std::placeholders::_1));
 
         map_subscriber_ = this->create_subscription<adore_ros2_msgs::msg::Map>(
-            "ego_vehicle/local_map", 10,
+            "/ego_vehicle/local_map", 10,
             std::bind(&TrafficPredictorNode::mapCallback, this, std::placeholders::_1));
 
         prediction_publisher_ = this->create_publisher<adore_ros2_msgs::msg::TrafficParticipantSet>(
-            "ego_vehicle/traffic_prediction", 10);
+            "/ego_vehicle/dynamic_game_traffic_prediction", 10);
 
         timer_ = this->create_wall_timer(
             std::chrono::milliseconds(100),
@@ -73,6 +75,7 @@ public:
     }
 
 private:
+
     void trafficCallback(const adore_ros2_msgs::msg::TrafficParticipantSet& msg)
     {
         auto start_time = std::chrono::high_resolution_clock::now();
@@ -151,6 +154,11 @@ private:
 
     void planningCallback()
     {
+        if( map_data_received_ == true )
+        {
+            compute_routes_for_traffic_participant_set( latest_traffic_data_ );
+        }
+        
         auto planning_start_time = std::chrono::high_resolution_clock::now();
         
         std::lock_guard<std::mutex> lock(data_mutex_);
@@ -180,7 +188,9 @@ private:
 
         auto planner_start_time = std::chrono::high_resolution_clock::now();
         
-        int status_from_planner = multi_agent_PID_planner.plan_trajectories( latest_traffic_data_ );
+        int status_from_planner = 0;
+        //int status_from_planner = multi_agent_PID_planner.plan_trajectories( latest_traffic_data_ );
+        dynamic_game_planner.plan_trajectories(latest_traffic_data_);
         
         auto planner_end_time = std::chrono::high_resolution_clock::now();
         auto planner_diff = std::chrono::duration_cast<std::chrono::milliseconds>(planner_end_time - planner_start_time);
@@ -212,9 +222,49 @@ private:
         }
     }
 
+    void compute_routes_for_traffic_participant_set( dynamics::TrafficParticipantSet& traffic_participant_set )
+    {
+        math::Point2d goal_position;
+        bool one_goal_present = false;
+
+        for( auto& [id, participant] : traffic_participant_set.participants )
+        {
+            bool has_goal  = participant.goal_point.has_value();
+            bool has_route = participant.route.has_value();
+            
+            if ( has_goal )
+            {
+                goal_position = participant.goal_point.value();
+                one_goal_present = true;
+            }
+            if ( !has_goal && one_goal_present )
+            {
+                participant.goal_point = goal_position;
+                has_goal = true;
+            }
+
+            if( has_goal && !has_route)
+            {
+                participant.route = map::Route( participant.state, participant.goal_point.value(), latest_map_data_ );
+                if( participant.route->center_lane.empty() )
+                {
+                    participant.route = std::nullopt;
+                    std::cerr << "No route found for traffic participant" << std::endl;
+                }
+            }
+
+            if (has_route)
+            {
+                participant.route->map = std::make_shared<map::Map>( latest_map_data_ );
+            }
+            
+        }
+    }
+
     rclcpp::Subscription<adore_ros2_msgs::msg::TrafficParticipantSet>::SharedPtr traffic_subscriber_;
     rclcpp::Subscription<adore_ros2_msgs::msg::TrafficParticipant>::SharedPtr ego_traffic_subscriber_;
     rclcpp::Subscription<adore_ros2_msgs::msg::Map>::SharedPtr map_subscriber_;
+    rclcpp::Subscription<adore_ros2_msgs::msg::Route>::SharedPtr route_subscriber;
     rclcpp::Publisher<adore_ros2_msgs::msg::TrafficParticipantSet>::SharedPtr prediction_publisher_;
     rclcpp::TimerBase::SharedPtr timer_;
     
@@ -225,6 +275,7 @@ private:
     bool ego_traffic_data_received_ = false;
     bool traffic_data_received_ = false;
     bool map_data_received_ = false;
+    bool debug_mode_active = false;
 };
 
 } // namespace planning
