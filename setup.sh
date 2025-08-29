@@ -19,7 +19,7 @@ else
 fi
 
 bash ${SCRIPT_DIRECTORY}/tools/check_adore_binaries.sh
-
+printf "\n"
 source "$ROS_SETUP_SCRIPT"
 
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then

@@ -13,6 +13,7 @@ nav:
   - Technical Reference Manual:
     - Table of Contents: technical_reference_manual.md
     - Documentation: system_and_development/documentation.md
+    - Configuring ADORe: generated/configuring_adore/configuring_adore.md
     - ADORe ROS Nodes: generated/ROS_NODES_SUMMARY.md
     - ADORe ROS Messages: generated/adore_ros2_msgs/README.md
     - ADORe ROS Topics:   generated/adore_ros2_msgs/topics.md
@@ -26,7 +27,15 @@ nav:
       - ADORE API Reference: generated/api/adore_api/api_reference.md
       - ADORE API Examples: generated/api/adore_api/api_reference_curl_examples.md
     - Creating A New Node: system_and_development/creating_a_new_node.md
+    - Running A Scenario In ADORe: getting_started/running_your_first_scenario.md
     - Scenario Visualization: generated/visualization/lichtblick/README.md
+    - Scenario Model Checking: 
+        - Scenario Model Checking Quick Start: generated/adore_model_checker/model_checking_quick_start.md 
+        - Scenario Model Checking API Quick Start: generated/adore_model_checker/model_checking_api_quick_start.md 
+        - Scenario Model Checking README: generated/adore_model_checker/README.md 
+        - Scenario Model Checking With The ADORe Mission Control: system_and_development/model_checking_with_the_adore_mission_control.md
+    - ADORe And CARLa: generated/calra_bridge/README.md
+    - ADORe And SUMO:  generated/sumo_bridge/README.md
     - Creating A New Scenario: system_and_development/scenario_generation.md
     - ADORe CLI: 
         - ADORe CLI: generated/adore_cli/README.md
@@ -34,6 +43,8 @@ nav:
     - Submodules: generated/modules/modules.md
     - Troubleshooting: problems_and_solutions.md
     - Licensing: licensing.md
+    - Third-Party: generated/THIRD-PARTY.md
+    - Notices: generated/NOTICES.md
     - Publicaitons: publications.md
     - Contributing: generated/CONTRIBUTING.md
     - Code of Conduct: generated/CODE_OF_CONDUCT.md
