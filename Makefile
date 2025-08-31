@@ -82,6 +82,14 @@ lint_nodes:
         make run cmd="clang-format -Werror -i --checks=* -output-replacements-xml -dry-run $(shell find ros2_workspace/src -type f \( -name "*.cpp" -or -name "*.hpp" -or -name "*.h" \))"; \
     fi
 
+.PHONY: benchmark
+benchmark: ## Run the ROS Topic benchmark script 
+	if [ -f /.dockerenv ]; then \
+		bash tools/ros_topic_benchmark.sh; \
+	else \
+		make run cmd="bash tools/ros_topic_benchmark.sh"; \
+	fi
+
 .PHONY: test
 test: ci_test
 
