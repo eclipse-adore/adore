@@ -84,51 +84,52 @@ jobs:
         run: |
           echo "Building vendor..."
           make build_vendor_libraries 
-          make save || true
+          #make save || true
 
       - name: Build ADORe CLI
         shell: bash
         run: |
           echo "Building ADORe CLI..."
           make build_adore_cli
-          make save || true
+          #make save || true
 
       - name: Test ROS2 installation
         shell: bash
         run: |
           echo "Testing the ROS 2 installation in the ADORe CLI..."
-          make load || true
+          #make load || true
           make test_ros2_installation
-          make save || true
+          #make save || true
 
       - name: Build user libraries
         shell: bash
         run: |
-          make load || true
+          #make load || true
           echo "Building user libraries..."
           make build_libraries
-          make save || true
+          #make save || true
 
       - name: Build ROS nodes
         shell: bash
         run: |
-          make load || true
+          #make load || true
           echo "Building ROS nodes..."
           make build_nodes
-          make save || true
+          #make save || true
 
       - name: Build Services
         shell: bash
         run: |
-          make load || true
+          #make load || true
           echo "Building services..."
           make build_services
-          make save || true
+          #make save || true
 
       - name: CI Test
         shell: bash
         run: |
           df -h
+          make save || true
           make ci_test
       
       - name: Documentation Lint
@@ -139,10 +140,10 @@ jobs:
 
       - name: Upload Logs
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: logs
-          path: .log
-        if: always()
+          path: .log/**
 
       - name: Create build archive
         shell: bash
