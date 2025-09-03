@@ -18,6 +18,8 @@ ci_teststand/**
 __init__.py
 libraries/cmake/**
 
+libraries/lib/adore_math/include/adore_math/spline.h
+
 # Build directories
 build/
 install/
