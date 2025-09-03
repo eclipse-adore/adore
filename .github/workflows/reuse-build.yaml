@@ -281,7 +281,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push image
+      - name: Push docker images
         shell: bash
         run: |
           docker image push ghcr.io/${{ github.repository_owner }}/adore:${BUILD_BRANCH}-${{ inputs.image_platform }}
+          make push_core_image
