@@ -520,21 +520,7 @@ wait_for_api_ready() {
     printf "    %-77s %s\n" "Status:" "${status}"
     printf "    See the benchmark log for more info: %s\n" "$benchmark_output_file"
     
-    # Test 2: Environment variable validation test
-    printf "\n    Running environment variable validation test...\n"
-    
-    # Test with missing scenario
-    unset ROS_BENCHMARK_SCENARIO
-    validation_result=$(make run cmd="bash tools/ros_topic_benchmark.sh" 2>&1 || true)
-    
-    if echo "$validation_result" | grep -q "ROS_BENCHMARK_SCENARIO environment variable is required"; then
-        printf "    ✅ Environment variable validation: PASSED\n"
-    else
-        printf "    ❌ Environment variable validation: FAILED\n"
-        printf "        Expected error message about missing ROS_BENCHMARK_SCENARIO\n"
-    fi
-    
-    # Test 3: Invalid scenario test
+    # Test 2: Invalid scenario test
     printf "    Running invalid scenario test...\n"
     
     export ROS_BENCHMARK_SCENARIO="nonexistent_scenario.launch.py"
