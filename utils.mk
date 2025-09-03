@@ -67,8 +67,9 @@ nmap:
 	nmap -sP $(shell ip -o -4 addr show up | awk '/(eth|enp|wlo)[0-9]/ && !/veth/ {sub(/\/.*/, "", $$4); print $$4"/24"}')
 
 .PHONY: package
+DIRNAME := $(notdir $(CURDIR))
 package: ## Package and compress entire workspace as .tar.gz archive and output to build/, invoke `make save` first
 	echo "${ADORE_TAG}"
-	cd ../ && tar -czvf adore_${ADORE_TAG}.tar.gz adore
+	cd ../ && tar -czvf $(DIRNAME)_${ADORE_TAG}.tar.gz $(DIRNAME)
 	mkdir -p build
-	mv ../adore_${ADORE_TAG}.tar.gz build/
+	mv ../$(DIRNAME)_${ADORE_TAG}.tar.gz build/

@@ -17,6 +17,7 @@ All are included under the licenses listed below. Paths indicate where the conte
 | ROS 2              | Apache License 2.0               | System dependency                        | https://docs.ros.org/ |
 | MkDocs             | BSD 2-Clause "Simplified"        | `documentation/`                         | https://www.mkdocs.org/                    |
 | Doxygen            | GNU General Public License v2    | `documentation/`                         | https://www.doxygen.nl/                    |
+| spline.h            | GNU General Public License v2    | `libraries/lib/adore_math/include/spline.h` | https://kluge.in-chemnitz.de/opensource/spline/spline.h                    |
 | Sphinx             | BSD 2-Clause "Simplified"        | `documentation/`                         | https://www.sphinx-doc.org/                |
 
 ---
@@ -26,7 +27,7 @@ All are included under the licenses listed below. Paths indicate where the conte
 - **Mozilla Public License 2.0 (MPL-2.0)** — [link](https://www.mozilla.org/en-US/MPL/2.0/)  
 - **Apache License 2.0** — [link](http://www.apache.org/licenses/LICENSE-2.0)  
 - **MIT License** — [link](https://opensource.org/licenses/MIT)  
-- **GNU LGPL v3.0 / GPL** — [link](https://www.gnu.org/licenses/)  
+- **GNU LGPL v2.0 / GPL** — [link](https://www.gnu.org/licenses/)  
 - **Eclipse Public License 2.0 (EPL-2.0)** — [link](https://www.eclipse.org/legal/epl-2.0/)  
 - **BSD License** — [link](https://opensource.org/licenses/BSD-3-Clause)  
 

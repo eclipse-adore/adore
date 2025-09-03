@@ -51,16 +51,26 @@ build_vendor_libraries: docker_host_context_check ## Builds vendor libraries loc
 	cd "${VENDOR_PATH}" && make build
 
 .PHONY: build_libraries
-build_libraries: docker_host_context_check ## Builds ADORe user libraries located in: ${ADORE_LIBRARY_PATH}
-	make run cmd="cd libraries && make build"
+build_libraries: ## Builds ADORe user libraries located in: ${ADORE_LIBRARY_PATH}
+	if [ -f /.dockerenv ]; then \
+		cd libraries && make build; \
+	else \
+		make run cmd="cd libraries && make build"; \
+	fi
 
 .PHONY: build_documentation
 build_documentation: docker_host_context_check ## Builds ADORe Documentation in: ./documentation
 	cd documentation && make build
 
+.PHONY: build_nodes
+build_nodes: build_ros_nodes ## Builds ROS2 nodes located in: ${ROS_NODE_PATH}
 .PHONY: build_ros_nodes
-build_ros_nodes: docker_host_context_check ## Builds ROS2 nodes located in: ${ROS_NODE_PATH}
-	make run cmd="cd ros2_workspace && make build"
+build_ros_nodes: ## Builds ROS2 nodes located in: ${ROS_NODE_PATH}
+	if [ -f /.dockerenv ]; then \
+		cd ros2_workspace && make build; \
+	else \
+		make run cmd="cd ros2_workspace && make build"; \
+	fi
 
 .PHONY: check_adore_binaries
 check_adore_binaries: ## Checks for ADORe binaries
@@ -81,6 +91,16 @@ lint_nodes:
         make run cmd="clang-format -Werror -i --checks=* -output-replacements-xml -dry-run $(shell find ros2_workspace/src -type f \( -name "*.cpp" -or -name "*.hpp" -or -name "*.h" \))"; \
     fi
 
+.PHONY: due_diligence_scan
+due_diligence_scan: ## Scan repo for eclipse due diligence, checks if source files have the proper doc header.
+	python3 tools/eclipse_due_diligence_scanner.py --ignore tools/.eclipse_due_diligance_ignore 
+
+.PHONY: due_diligence_fix
+due_diligence_fix: ## Fix due diligence issues
+	python3 tools/eclipse_due_diligence_scanner.py --ignore tools/.eclipse_due_diligance_ignore --fix
+
+
 .PHONY: test
-test: ci_test
+test: ci_test ## Run ADORe Unit Tests
+	cd tools/adore_cli && make test
 

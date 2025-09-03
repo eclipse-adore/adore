@@ -1,8 +1,21 @@
+# ********************************************************************************
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License 2.0 which is available at
+# https://www.eclipse.org/legal/epl-2.0
+#
+# SPDX-License-Identifier: EPL-2.0
+# ********************************************************************************
+
 LOG_DIRECTORY="${SOURCE_DIRECTORY}/.log"
 
 start_adore_api() {
     local APP_NAME="adore_api.py"
-    local APP_PORT="8888"
+    local APP_PORT="${ADORE_API_PORT}"
     local LOG_FILE="${LOG_DIRECTORY}/adore_api.log"
     local PID_FILE="${LOG_DIRECTORY}/adore_api.pid"
     local APP_WORKING_DIRECTORY="${SOURCE_DIRECTORY}/tools/adore_api"
@@ -11,8 +24,7 @@ start_adore_api() {
     
     if pgrep -f "$APP_NAME" > /dev/null; then
         local old_pid=$(cat "$PID_FILE" 2>/dev/null || echo "unknown")
-        echo "ADORe API is running (PID: $old_pid)"
-        echo "Access at: http://localhost:$APP_PORT"
+        echo "ADORe API is running (PID: $old_pid), access at: http://localhost:$APP_PORT"
         return 0
     fi
     
@@ -24,7 +36,7 @@ start_adore_api() {
     if [ -f "$PID_FILE" ]; then
         local old_pid=$(cat "$PID_FILE")
         if kill -0 "$old_pid" 2>/dev/null; then
-            echo "ADORe API is already running (PID: $old_pid)"
+            echo "ADORe API is running (PID: $old_pid), access at: http://localhost:$APP_PORT"
             return 0
         else
             rm -f "$PID_FILE"
@@ -39,10 +51,9 @@ start_adore_api() {
     
     sleep 2
     if kill -0 "$app_pid" 2>/dev/null; then
-        echo "ADORe API started successfully (PID: $app_pid)"
-        echo "Access at: http://localhost:$APP_PORT"
-        echo "Logs: $LOG_FILE"
-        echo "Bag recordings will be stored in: ${LOG_DIRECTORY}/bag_file_recordings/"
+        echo "ADORe API started successfully (PID: $app_pid), access at: http://localhost:$APP_PORT"
+        echo "    Logs: $LOG_FILE"
+        echo "    Bag recordings will be stored in: ${LOG_DIRECTORY}/bag_file_recordings/"
     else
         echo "Failed to start ADORe API, review the API log for more info: ${LOG_FILE}"
         rm -f "$PID_FILE"
@@ -73,7 +84,7 @@ restart_adore_api() {
 
 status_adore_api() {
     local APP_NAME="adore_api.py"
-    local APP_PORT="8888"
+    local APP_PORT="${ADORE_API_PORT}"
     if pgrep -f "${APP_NAME}" > /dev/null; then
         echo "ADORe API is running"
         echo "Access at: http://localhost:$APP_PORT"

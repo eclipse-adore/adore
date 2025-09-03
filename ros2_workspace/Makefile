@@ -22,31 +22,23 @@ endif
 help:
 	@printf "Usage: make \033[36m<target>\033[0m\n%s\n" "$$(awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST) | sort | uniq)"
 
+
 .PHONY: build
 build: ## Build all ROS2 packages
 	@echo "Detected RAM: $(RAM_KB) kB ($(RAM_GB) GB)"
 	@echo "Executor mode: $(EXECUTOR_ARG)"
 	source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build $(EXECUTOR_ARG)
-	@echo "✅ ROS 2 Nodes build complete"
-	@touch build/build.success
 
 .PHONY: build_release
 build_release: ## Build all ROS2 packages in Release mode
 	@echo "Detected RAM: $(RAM_KB) kB ($(RAM_GB) GB)"
 	@echo "Executor mode: $(EXECUTOR_ARG_RELEASE)"
-	source /opt/ros/${ROS_DISTRO}/setup.bash \
-		&& colcon build $(EXECUTOR_ARG_RELEASE) --cmake-args -DCMAKE_BUILD_TYPE=Release \
-		&& source install/local_setup.sh
-	@echo "✅ ROS 2 Nodes release build complete"
-	@touch build/build_release.success
+	source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build $(EXECUTOR_ARG_RELEASE) --cmake-args -DCMAKE_BUILD_TYPE=Release && source install/local_setup.sh
 
 .PHONY: build_single_core
 build_single_core: ## Build all ROS2 packages, force single-threaded build regardless of RAM
 	@echo "Executor mode: --executor sequential"
 	source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build --executor sequential
-	@echo "✅ ROS 2 Nodes single-core build complete"
-	@touch build/build_single_core.success
-
 
 .PHONY: build_user_libraries
 build_user_libraries: 

@@ -9,6 +9,7 @@ ADORe provides some of the following features and capabilities:
 - Algorithms and data models applied in real automated driving system for 
 motion planning and control
 - Mechanisms for safe interaction with other CAVs, infrastructure, traffic 
+- Interfaces for SUMO and CARLa 
 management, interactions with human-driven vehicles, bicyclists, pedestrians
  - ADORe is [ROS 2 🔗](https://ros.org) based
  - ADORe is fully containerized using [Docker 🔗](https://docker.io)
