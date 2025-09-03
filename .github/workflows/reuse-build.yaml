@@ -89,9 +89,6 @@ jobs:
       - name: Build ADORe CLI
         shell: bash
         run: |
-          echo "Building ADORe CLI core..."
-          make load || true
-          make build_adore_cli_core
           echo "Building ADORe CLI..."
           make build_adore_cli
           make save || true
