@@ -106,15 +106,15 @@ jobs:
         run: |
           make load || true
           echo "Building user libraries..."
-          make build_user_libraries
+          make build_libraries
           make save || true
 
       - name: Build ROS nodes
         shell: bash
         run: |
           make load || true
-          echo "Building nodes..."
-          make build_ros_nodes
+          echo "Building ROS nodes..."
+          make build_nodes
           make save || true
 
       - name: Build Services
