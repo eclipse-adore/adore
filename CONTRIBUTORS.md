@@ -7,6 +7,7 @@ This project exists thanks to these people and more (alphabetically):
 - Daniel Hess
 - Giovanni Lucente
 - Julian Schindler
+- Anas Abulehia
 - Marko Mizdrak
 - Matthias Nichting
 - Mikkel Maarssoe

@@ -17,8 +17,10 @@ All are included under the licenses listed below. Paths indicate where the conte
 | ROS 2              | Apache License 2.0               | System dependency                        | https://docs.ros.org/ |
 | MkDocs             | BSD 2-Clause "Simplified"        | `documentation/`                         | https://www.mkdocs.org/                    |
 | Doxygen            | GNU General Public License v2    | `documentation/`                         | https://www.doxygen.nl/                    |
-| spline.h            | GNU General Public License v2    | `libraries/lib/adore_math/include/spline.h` | https://kluge.in-chemnitz.de/opensource/spline/spline.h                    |
+| spline.h           | GNU General Public License v2    | `libraries/lib/adore_math/include/spline.h` | https://kluge.in-chemnitz.de/opensource/spline/spline.h                    |
 | Sphinx             | BSD 2-Clause "Simplified"        | `documentation/`                         | https://www.sphinx-doc.org/                |
+| Tracecompass       | EPL2                             | `vendor/ros2_observer/trace_compass`     | https://github.com/eclipse-tracecompass/org.eclipse.tracecompass |
+| lttng-scope        | Eclipse Public License - v 1.0   | `vendor/ros2_observer/ltten_scope`       |  https://github.com/lttng/lttng-scope |
 
 ---
 
@@ -29,6 +31,7 @@ All are included under the licenses listed below. Paths indicate where the conte
 - **MIT License** — [link](https://opensource.org/licenses/MIT)  
 - **GNU LGPL v2.0 / GPL** — [link](https://www.gnu.org/licenses/)  
 - **Eclipse Public License 2.0 (EPL-2.0)** — [link](https://www.eclipse.org/legal/epl-2.0/)  
+- **Eclipse Public License 1.0 (EPL-1.0)** — [link](https://www.eclipse.org/legal/epl/epl-v10.html)  
 - **BSD License** — [link](https://opensource.org/licenses/BSD-3-Clause)  
 
 ---

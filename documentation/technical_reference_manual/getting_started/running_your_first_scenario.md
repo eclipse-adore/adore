@@ -4,7 +4,7 @@
 > Visualization requires a chrome based browser (see: https://www.chromium.org/chromium-projects/) 
 
 1. Start `lichtblick suite` aka `foxglove` aka `foxbox`.
-see the [ADORe Lichtlicke-Suite README 🔗](../generated/visualization/lichtblick/README.md). 
+see the [ADORe Lichtblick-Suite README 🔗](../generated/visualization/lichtblick/README.md). 
 
 2. Run a scenario, launch or attach to the `ADORe CLI` from the root of the `ADORe` repo:
 ```bash
@@ -22,7 +22,7 @@ or with a link:
 
 ## Running A Scenario With The ADORe Mission Control Web Interface
 1. Start `lichtblick suite` aka `foxglove` aka `foxbox`.
-see the [ADORe Lichtlicke-Suite README 🔗](../generated/visualization/lichtblick/README.md). 
+see the [ADORe Lichtblick-Suite README 🔗](../generated/visualization/lichtblick/README.md). 
 
 2. start the `ADORe CLI` from the root of the `ADORe` repo:
 ```bash
