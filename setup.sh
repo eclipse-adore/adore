@@ -52,4 +52,3 @@ fi
 
 source "${SCRIPT_DIRECTORY}/adore.env"
 source ${SCRIPT_DIRECTORY}/tools/adore_api/adore_api.sh
-

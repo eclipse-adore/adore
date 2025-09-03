@@ -11,6 +11,8 @@ ifeq ($(MAKE_GADGETS_HAS_FILES),)
     $(shell git submodule update --init --recursive >&2 || true)
 endif
 
+$(shell git config core.hooksPath .githooks >&2 || true)
+
 include ${MAKE_GADGETS_DIR}/make_gadgets.mk
 
 .EXPORT_ALL_VARIABLES:
@@ -99,6 +101,13 @@ due_diligence_scan: ## Scan repo for eclipse due diligence, checks if source fil
 due_diligence_fix: ## Fix due diligence issues
 	python3 tools/eclipse_due_diligence_scanner.py --ignore tools/.eclipse_due_diligance_ignore --fix
 
+.PHONY: benchmark
+benchmark: ## Run the ROS Topic benchmark script 
+	if [ -f /.dockerenv ]; then \
+		bash tools/ros_topic_benchmark.sh; \
+	else \
+		make run cmd="bash tools/ros_topic_benchmark.sh"; \
+	fi
 
 .PHONY: test
 test: ci_test ## Run ADORe Unit Tests

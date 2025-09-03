@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echoerr(){ printf "%b" "$*\n" >&2;}
+exiterr(){ printf "%s\n" "$@" >&2; exit 1;}
+
+SCRIPT_DIRECTORY="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+BASE_REPO_DIR=$(git rev-parse --show-toplevel)
+source "${BASE_REPO_DIR}/adore.env"
+#
+# This hook checks:
+#   1. That commits are signed off (--signoff adds Signed-off-by line).
+#   2. That branch names follow conventions.
+#   3. Max file size enforcement.
+#   4. That contributors are reminded about Eclipse Contributor Agreement (ECA).
+#
+# Exits non-zero to block the commit if checks fail.
+
+COMMIT_MSG_FILE=$1
+BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+
+# --- 1. Check for Signed-off-by
+if ! grep -q "^Signed-off-by: " "$COMMIT_MSG_FILE"; then
+    echo "❌ ERROR: Commit message is missing a Signed-off-by line."
+    echo "   Please use '--signoff' when committing, e.g.:"
+    echo "     git commit --signoff"
+    echo ""
+    echo "ℹ️ Reminder: All contributors must also sign the Eclipse Contributor Agreement (ECA)"
+    echo "   before their Pull Requests can be accepted."
+    echo "   More info: https://www.eclipse.org/legal/ECA.php"
+    exit 1
+fi
+
+# --- 2. Check branch naming conventions
+# Allowed:
+#   feature/<description>   → new features or enhancements
+#   bugfix/<description>    → fixes for known bugs
+#   hotfix/<description>    → urgent fixes on production
+#   release/<version>       → preparing a release (e.g., release/1.2.0)
+#   temporary/<description> → short-lived experiments or spikes (not long-term)
+
+if ! echo "$BRANCH_NAME" | grep -Eq "^(feature|bugfix|hotfix|release|temporary)/[a-z0-9._-]+$"; then
+    echo "❌ ERROR: Branch name '$BRANCH_NAME' does not follow naming standards."
+    echo ""
+    echo "✅ Allowed branch name patterns:"
+    echo "   feature/<description>   → for new features or enhancements"
+    echo "   bugfix/<description>    → for bug fixes"
+    echo "   hotfix/<description>    → for urgent production fixes"
+    echo "   release/<version>       → for preparing releases (e.g., release/2.0.0)"
+    echo "   temporary/<description> → for experiments/WIP (not intended for long-term use)"
+    echo ""
+
+    # Extract a sanitized suffix from current branch name
+    SUFFIX=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9._-]/-/g')
+    [ -z "$SUFFIX" ] && SUFFIX="my-branch"
+
+    echo "👉 To rename your branch, you can copy one of these:"
+    echo "     git branch -m feature/${SUFFIX}"
+    echo "     git branch -m bugfix/${SUFFIX}"
+    echo "     git branch -m hotfix/${SUFFIX}"
+    echo "     git branch -m release/1.0.0"
+    echo "     git branch -m temporary/${SUFFIX}"
+    echo ""
+    echo "ℹ️ Reminder: All contributors must sign the Eclipse Contributor Agreement (ECA)"
+    echo "   before their Pull Requests can be accepted."
+    echo "   More info: https://www.eclipse.org/legal/ECA.php"
+    exit 1
+fi
+
+# --- 3. Large file size check
+large_files=$(git diff --cached --name-only | while read -r file; do
+    if [ -f "$file" ]; then
+        size_kb=$(du -k "$file" | cut -f1)
+        if [ "$size_kb" -gt "${MAX_COMMIT_FILE_SIZE_kB}" ]; then
+            echo "$file ($size_kb KB)"
+        fi
+    fi
+done)
+
+if [ -n "$large_files" ]; then
+    echoerr "❌ ERROR: The following files exceed the size limit of ${MAX_COMMIT_FILE_SIZE_kB} kB:\n"
+    echoerr "    $large_files\n"
+    echoerr "Commit aborted. Please remove large files or reduce their size.\n"
+    echoerr "The commit file size threshold is defined in: ${BASE_REPO_DIR}/adore.env\n"
+    exit 1
+fi
+
+
+
+# --- 4. Friendly reminder always (not blocking)
+echo "ℹ️ Reminder: All contributors must sign the Eclipse Contributor Agreement (ECA)"
+echo "   before their Pull Requests can be accepted."
+echo "   More info: https://www.eclipse.org/legal/ECA"
+
+exit 0
+
