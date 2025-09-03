@@ -138,13 +138,43 @@ jobs:
           cd documentation
           make lint
 
+      - name: Prepare logs for upload
+        shell: bash
+        run: |
+          cp -r .log log
+          ls -la log
+
+      - name: Prepare logs for upload
+        shell: bash
+        run: |
+          find .log -depth -name ".*" -exec bash -c '
+            for file; do
+              dir=$(dirname "$file")
+              base=$(basename "$file")
+              newname="${base#.}"
+              if [ "$base" != "$newname" ]; then
+                mv "$file" "$dir/$newname"
+              fi
+            done
+          ' _ {} +
+          cp -r .log log
+          tar -czf logs.tar.gz .log/
+
+      - name: Upload Archive
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: logs-archive
+          path: logs.tar.gz
+      
+
       - name: Upload Logs
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: logs
-          path: .log/**
-
+          path: log/
+      
       - name: Create build archive
         shell: bash
         run: |
