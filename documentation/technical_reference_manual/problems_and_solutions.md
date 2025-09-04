@@ -22,7 +22,7 @@ make build
  => => exporting layers
 ------
 ```
-## Solution: Clean your docker build cache
+### Solution: Clean your docker build cache
 Layer cache from docker can become stale resulting in `docker build .` failures.
 To fix this clean your docker cache with the following command:
 ```
@@ -50,7 +50,7 @@ Other symptoms include:
 - Network connectivity errors
 - Stale package lists causing dependency conflicts
 
-## Solution: Clear Docker build cache systematically
+### Solution: Clear Docker build cache systematically
 
 Docker's BuildKit cache mounts can become stale when package repositories are updated between builds, WiFi networks change, or after system updates. Follow these steps in order:
 
@@ -86,7 +86,7 @@ This typically occurs after:
 
 Docker's internal networking can retain stale DNS configurations that prevent it from resolving external registry addresses.
 
-## Solution: Restart Docker daemon to refresh network configuration
+### Solution: Restart Docker daemon to refresh network configuration
 
 Docker daemon caches network configuration and DNS settings. When your network environment changes, Docker may still try to use outdated network routes and DNS servers.
 
@@ -101,7 +101,7 @@ on systems with limited CPU or memory. By default, ADORe uses parallel builds,
 which can overwhelm low-resource systems and lead to crashes, freezes, or the
 build being killed by the operating system.
 
-## Solution: Use single-core builds
+### Solution: Use single-core builds
 
 To prevent resource exhaustion, disable parallel builds. You can do this in two ways:
 
@@ -113,3 +113,59 @@ Run the single-core build target(inside the ADORe CLI):
 ```bash
 cd ros2_workspace && make build_single_core
 ```
+
+
+## Problem: Build exits with undefined targets
+Build fails with missing or undefined targets:
+```
+cd ros2_observer && make clean
+make[2]: * No rule to make target 'clean'.  Stop.
+make[1]: * [Makefile:42: clean] Error 2
+make: *** [Makefile:72: clean] Error 2
+```
+The ADORe repositories uses git submodules, if they fail to clone or update 
+this will cause other activities to fail.
+
+
+### Solution:
+Verify that the effected submodule directory is not empty.
+The following is an example of an uninitialized submodule which will cause a build failure:
+```
+adore(feature/documentation_improvements:e1f1960) (130)> ls -la vendor/ros2_observer
+
+total 12  
+drwxrwxr-x 2   4096 Sep 4 10:48 .
+drwxrwxr-x 12   4096 Sep 4 10:26 ..
+-rw-rw-r-- 1   48 Jul 24 12:51 .git
+```
+
+- Try updating the submodules:
+```
+git submodule update --init --recursive
+```
+
+The submodule should be populated with files after initializing:
+```
+ls -lan vendor/ros2_observer'
+
+total 76  
+drwxrwxr-x 5   4096 Sep 4 10:51 .
+drwxrwxr-x 12   4096 Sep 4 10:26 ..
+-rw-rw-r-- 1   778 Sep 4 10:51 Dockerfile
+-rw-rw-r-- 1   32 Sep 4 10:51 .dockerignore
+-rw-rw-r-- 1   48 Jul 24 12:51 .git
+-rw-rw-r-- 1   6 Sep 4 10:51 .gitignore
+-rw-rw-r-- 1   11358 Sep 4 10:51 LICENSE
+-rw-rw-r-- 1   644 Sep 4 10:51 Makefile
+...
+```
+- Try recloning the ADORe repository:
+```
+cd ..
+mv adore adore_partially_clonned
+git clone git@github.com:eclipse-adore/adore.git
+cd adore
+git submodule update --init --recursive
+make build
+```
+

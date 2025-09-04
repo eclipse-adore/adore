@@ -138,47 +138,6 @@ jobs:
           cd documentation
           make lint
       
-      - name: Prepare logs for upload
-        shell: bash
-        run: |
-          cp -r .log log
-          # Create a clean copy of logs with sanitized filenames
-          if [ -d "log" ]; then
-            # First, sanitize filenames by replacing invalid characters
-            find .log -type f -name "*:*" -exec bash -c '
-              for file; do
-                dir=$(dirname "$file")
-                base=$(basename "$file")
-                # Replace colons with underscores and other invalid chars
-                newname=$(echo "$base" | sed "s/[\":><|*?\\r\\n]/_/g")
-                if [ "$base" != "$newname" ]; then
-                  mv "$file" "$dir/$newname"
-                  echo "Renamed: $base -> $newname"
-                fi
-              done
-            ' _ {} +
-            
-            # Remove leading dots from hidden files/directories if needed
-            find log -depth -name ".*" -exec bash -c '
-              for file; do
-                dir=$(dirname "$file")
-                base=$(basename "$file")
-                newname="${base#.}"
-                if [ "$base" != "$newname" ] && [ "$base" != "." ] && [ "$base" != ".." ]; then
-                  mv "$file" "$dir/$newname"
-                  echo "Renamed: $base -> $newname"
-                fi
-              done
-            ' _ {} +
-            
-            # Copy sanitized logs to upload directory
-            echo "Log directory prepared successfully"
-            ls -la log
-          else
-            echo "Warning: .log directory not found"
-            mkdir -p log
-          fi
-      
       - name: Create logs archive
         shell: bash
         run: |
@@ -194,16 +153,8 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: logs-archive
-          path: logs.tar.gz
-      
-      - name: Upload Logs
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
           name: logs
-          path: log/
-          if-no-files-found: warn
+          path: logs.tar.gz
       
       - name: Create build archive
         shell: bash
