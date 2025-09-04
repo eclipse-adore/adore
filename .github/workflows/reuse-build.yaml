@@ -142,19 +142,19 @@ jobs:
         shell: bash
         run: |
           if [ -d ".log" ]; then
-            tar -czf logs.tar.gz .log/
-            echo "Archive created: logs.tar.gz"
+            tar -czf logs_${{ runner.arch }}.tar.gz .log/
+            echo "Archive created: logs_${{ runner.arch }}.tar.gz"
           else
             echo "Warning: .log directory not found for archiving"
-            touch logs.tar.gz
+            touch logs_${{ runner.arch }}.tar.gz
           fi
-      
+
       - name: Upload Archive
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: logs
-          path: logs.tar.gz
+          path: logs_${{ runner.arch }}.tar.gz
       
       - name: Create build archive
         shell: bash
