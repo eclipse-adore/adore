@@ -211,9 +211,7 @@ wait_for_api_ready() {
   } &
   dot_pid=$!
 
-  # Wait for model checking results
-  result=$(curl -s --max-time 30 -X POST http://localhost:8888/api/scenario/start/model_checked -H "Content-Type: application/json" -d '{}')
-  #result=$(curl -s --max-time 30 -X POST http://localhost:8888/api/scenario/start -H "Content-Type: application/json" -d '{"model_check_enabled":true}')
+  result=$(curl -s --max-time 50 -X POST http://localhost:8888/api/scenario/start/model_checked -H "Content-Type: application/json" -d '{"duration":30}')
   curl_exit_code=$?
 
   kill $dot_pid 2> /dev/null
@@ -235,14 +233,12 @@ wait_for_api_ready() {
   printf "    Parsing results...\n"
   echo "${result}" > "${model_checking_output_json_file}"
 
-  # Check if result is empty or null
   if [ -z "$result" ] || [ "$result" = "null" ]; then
     printf "    Status: $(bold $(red "FAILED")) - API returned no results\n"
     make stop > /dev/null 2>&1
     exit 1
   fi
 
-  # Check if result is valid JSON
   if ! echo "$result" | jq . > /dev/null 2>&1; then
     printf "    Status: $(bold $(red "FAILED")) - API returned invalid JSON\n"
     printf "    Response: %s\n" "$result"
@@ -250,7 +246,6 @@ wait_for_api_ready() {
     exit 1
   fi
 
-  # Check if expected structure exists
   if ! echo "$result" | jq -e '.model_check_result.results' > /dev/null 2>&1; then
     printf "    Status: $(bold $(red "FAILED")) - API response missing expected model check results\n"
     printf "    Response: %s\n" "$result"
@@ -286,7 +281,9 @@ wait_for_api_ready() {
     ')
 
   model_checking_status=$(echo "$result" | jq -r '
-      if ((.model_check_result.results.SUMMARY.success_rate // 0) == 1) then 0 else 1 end
+      if ((.model_check_result.results.SUMMARY.success_rate // 0) == 1 and 
+          ([.model_check_result.results | to_entries[] | select(.key != "SUMMARY") | .value.status] | 
+           any(. == "NO_DATA" or . == "FAIL")) | not) then 0 else 1 end
     ')
 
   if [ "$model_checking_status" -eq 0 ]; then
@@ -302,7 +299,7 @@ wait_for_api_ready() {
   exit $model_checking_status
 }
 
-03_eclipse_due_diligence_scan_test() {
+03_eclipse_due_diligence_scan() {
     local action=due_diligence_scan
     local name="Eclipse Due Diligence Scan Test"
     local description="This test runs 'make due_diligence_scan' and validates the scan output."

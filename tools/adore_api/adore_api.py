@@ -926,6 +926,10 @@ bag_manager = None
 def index():
     return render_template('index.html', host=request.host)
 
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    return send_from_directory('static', filename)
+
 @app.route('/api_reference.md')
 def serve_api_reference():
     try:

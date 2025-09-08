@@ -48,4 +48,8 @@ RUN cd /tmp/libOpenDRIVE/libOpenDRIVE/build && \
     ln -s devel install && \
     mv CMakeCache.txt CMakeCache.txt.build
 
+FROM alpine:3.22 AS libopendrive_release
+COPY --from=libopendrive_requirements_base /tmp/libOpenDRIVE/libOpenDRIVE/build /tmp/libOpenDRIVE/libOpenDRIVE/build
+
+
 
