@@ -54,7 +54,6 @@ jobs:
       packages: write
 
     # Only create a release on a push, not for other events
-    if: github.event_name == 'push'
 
     steps:
       - name: Get clean branch name
