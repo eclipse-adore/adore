@@ -237,7 +237,6 @@ jobs:
     needs: build
 
     # Only create a release on a push, not for other events
-    if: github.event_name == 'push'
 
     steps:
       - name: Checkout
