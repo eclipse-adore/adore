@@ -46,10 +46,10 @@ try out the demo scenarios.
 Here you can see one of our automated test vehicles being operated by ADORe:
 [![ADORe example video 🔗](https://github.com/DLR-TS/adore_support/blob/master/vivre_flythrough_screenshot2.png?raw=true)](https://youtu.be/tlhPDtr4yxg)
 
-https://www.youtube.com/watch?v=bRZc1iFohCU 
-https://www.youtube.com/watch?v=MANc_xQ_8sI
-https://www.youtube.com/watch?v=Aqvd82A40S4
-https://www.youtube.com/watch?v=IYbv7Y2nt-k
+[![YouTube Video](https://img.youtube.com/vi/bRZc1iFohCU/0.jpg)](https://www.youtube.com/watch?v=bRZc1iFohCU)
+[![YouTube Video](https://img.youtube.com/vi/MANc_xQ_8sI/0.jpg)](https://www.youtube.com/watch?v=MANc_xQ_8sI)
+[![YouTube Video](https://img.youtube.com/vi/Aqvd82A40S4/0.jpg)](https://www.youtube.com/watch?v=Aqvd82A40S4)
+[![YouTube Video](https://img.youtube.com/vi/IYbv7Y2nt-k/0.jpg)](https://www.youtube.com/watch?v=IYbv7Y2nt-k)
 
 # Example application
 The following video shows an automated vehicle controlled by ADORe in an urban setting in Braunschweig, Germany:
