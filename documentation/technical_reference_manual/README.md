@@ -1,6 +1,6 @@
 # Automated Driving Open Research (ADORe)
 
-![ADORe Logo](/img/adore_logo.png)
+![ADORe Logo](/img/adore_logo_white.png)
 
 ## About ADORe
 Eclipse ADORe is a modular software library and toolkit for decision making, planning, control and simulation of 
