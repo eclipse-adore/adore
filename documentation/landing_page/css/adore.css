@@ -69,12 +69,12 @@ header{
 
 .section{
 	margin-top: 15%;
+	margin-bottom: 15%;
 	justify-content: space-between;
 	overflow: hidden;
 	font-weight: normal;
 	background-color: var(--bg);
 	color: #000;
-	min-height: 400px;
 }
 
 .title{
