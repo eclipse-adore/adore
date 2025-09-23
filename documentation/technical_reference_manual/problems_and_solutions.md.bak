@@ -159,7 +159,7 @@ drwxrwxr-x 12   4096 Sep 4 10:26 ..
 -rw-rw-r-- 1   644 Sep 4 10:51 Makefile
 ...
 ```
-- Try re-cloning the ADORe repository:
+- Try recloning the ADORe repository:
 ```
 cd ..
 mv adore adore_partially_clonned

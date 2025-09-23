@@ -12,7 +12,7 @@ automated vehicles. It is developed by [The German Aerospace Center (DLR), Insti
 - ADORe is developed with algorithms and data models applied in real automated driving system for motion planning and control
 - ADORe features mechanisms for safe interaction with other CAVs, infrastructure, traffic management, interactions with human-driven vehicles, bicyclists, pedestrians
 
-ADORe is designed around both single agent automated driving (SAAD) and multi agent automated driving (MAAD), to allow both individual and cooperative driving behaviors. ADORes features can be seperated into the following categories.
+ADORe is designed around both single agent automated driving (SAAD) and multi agent automated driving (MAAD), to allow both individual and cooperative driving behaviors. ADORes features can be separated into the following categories.
 
 ![ADORe Overview](/img/adore_categories_overview.svg)
 
