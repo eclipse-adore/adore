@@ -1,0 +1,84 @@
+name: ADORe CI
+
+on:
+  push:
+    branches:
+      - 'master'
+      - 'develop'
+  pull_request:
+    branches:
+      - '**'
+      
+jobs:
+  x86_64:
+    name: Native x86_64
+
+    permissions:
+      contents: write
+      actions: write
+      attestations: write
+      packages: write
+
+    secrets: inherit
+    
+    uses: ./.github/workflows/reuse-build.yaml
+    with:
+      platform: 'ubuntu-24.04'
+      archive_name: 'x86_64'
+      image_platform: 'amd64'
+
+  arm64:
+    name: Native arm64
+
+    permissions:
+      contents: write
+      actions: write
+      attestations: write
+      packages: write
+
+    secrets: inherit
+    
+    uses: ./.github/workflows/reuse-build.yaml
+    with:
+      platform: 'ubuntu-24.04-arm'
+      archive_name: 'arm64'
+      image_platform: 'arm64'
+
+  image_manifest:
+    name: Image Manifest
+    runs-on: ubuntu-latest
+    needs: [ x86_64, arm64 ]
+
+    permissions:
+      contents: read
+      packages: write
+
+    # Only create a release on a push, not for other events
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Get clean branch name
+        shell: bash
+        # From https://github.com/DLR-TS/make_gadgets/blob/master/tools/branch_name.sh
+        run: echo "BUILD_BRANCH=$(echo ${{ github.ref_name }} | tr -d '[:space:]' | tr -s -c "[:alnum:][:blank:]\.\_\-" _ | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create image manifest
+        shell: bash
+        run: |
+          docker manifest create \
+            ghcr.io/${{ github.repository_owner }}/adore:${BUILD_BRANCH} \
+            --amend ghcr.io/${{ github.repository_owner }}/adore:${BUILD_BRANCH}-amd64 \
+            --amend ghcr.io/${{ github.repository_owner }}/adore:${BUILD_BRANCH}-arm64
+          docker manifest inspect ghcr.io/${{ github.repository_owner }}/adore:${BUILD_BRANCH}
+
+      - name: Push image
+        shell: bash
+        run: |
+          docker manifest push ghcr.io/${{ github.repository_owner }}/adore:${BUILD_BRANCH}

@@ -2,13 +2,15 @@ SHELL:=/bin/bash
 
 ROOT_DIR:=$(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
 
-MAKE_GADGETS_DIR:=tools/adore_cli/make_gadgets
-
-MAKE_GADGETS_FILES := $(wildcard $(MAKE_GADGETS_DIR)/*)
-ifeq ($(MAKE_GADGETS_FILES),)
-    $(shell git submodule update --init)
+# This will automatically check if submodules have been updated when the 
+# Makefile is invoked for the first time. 
+MAKE_GADGETS_DIR := tools/adore_cli/make_gadgets
+MAKE_GADGETS_HAS_FILES := $(shell [ -d $(MAKE_GADGETS_DIR) ] && [ -n "$$(find $(MAKE_GADGETS_DIR) -mindepth 1 -maxdepth 1 -not -name '.git' 2>/dev/null)" ] && echo "yes")
+ifeq ($(MAKE_GADGETS_HAS_FILES),)
+    $(shell git submodule update --init --recursive >&2 || true)
 endif
 
+$(shell git config core.hooksPath .githooks >&2 || true)
 
 include ${MAKE_GADGETS_DIR}/make_gadgets.mk
 #include tools/make_gadgets/docker/docker-tools.mk
@@ -79,6 +81,14 @@ lint_nodes:
     else \
         make run cmd="clang-format -Werror -i --checks=* -output-replacements-xml -dry-run $(shell find ros2_workspace/src -type f \( -name "*.cpp" -or -name "*.hpp" -or -name "*.h" \))"; \
     fi
+
+.PHONY: benchmark
+benchmark: ## Run the ROS Topic benchmark script 
+	if [ -f /.dockerenv ]; then \
+		bash tools/ros_topic_benchmark.sh; \
+	else \
+		make run cmd="bash tools/ros_topic_benchmark.sh"; \
+	fi
 
 .PHONY: test
 test: ci_test

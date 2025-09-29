@@ -1,0 +1,23 @@
+# ============================================================================
+# requirements.pip3
+# ----------------------------------------------------------------------------
+# This file lists the Python dependencies required for this ROS 2 package.
+# Each dependency should be listed on its own line, using the same syntax as
+# pip (PyPI package names). 
+#
+# Comments can be added by starting a line with '#' and will be ignored
+# when the package is built or installed.
+#
+# The `setup.py` script automatically reads this file to populate the
+# `install_requires` list during installation, so there is no need to 
+# duplicate requirements in multiple places.
+#
+# Example:
+# numpy
+# requests>=2.25.0
+#
+# ============================================================================
+
+setuptools
+numpy
+pytest
