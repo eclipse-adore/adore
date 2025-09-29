@@ -79,6 +79,10 @@ launch: ## Launch a ROS2 scenario
 		echo "No file selected."; \
 	fi
 
+.PHONY: package
+package:
+	bash tools/ros2_debian_packager.sh
+
 .PHONY: integration_tests
 integration_tests: ## Run pytest inside adore_scenarios
 	@base_dir="../adore_scenarios"; \
