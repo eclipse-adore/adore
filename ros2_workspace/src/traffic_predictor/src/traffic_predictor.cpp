@@ -180,19 +180,19 @@ private:
 
         auto planner_start_time = std::chrono::high_resolution_clock::now();
         
-        int status_from_planner = multi_agent_PID_planner.plan_trajectories( latest_traffic_data_ );
+        auto status_from_planner = multi_agent_PID_planner.plan_trajectories( latest_traffic_data_ );
         
         auto planner_end_time = std::chrono::high_resolution_clock::now();
         auto planner_diff = std::chrono::duration_cast<std::chrono::milliseconds>(planner_end_time - planner_start_time);
         RCLCPP_INFO(this->get_logger(), "Time taken planner execution: %ld milliseconds", planner_diff.count());
 
-        if (status_from_planner != 0) {
+        if (status_from_planner.overview_state != 0) {
             RCLCPP_ERROR(this->get_logger(), "Planner execution failed: YES");
-            RCLCPP_ERROR(this->get_logger(), "Planner status code: %d", status_from_planner);
+            RCLCPP_ERROR(this->get_logger(), "Planner status code: %d", status_from_planner.overview_state);
             RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 3000,
-                                 "Repeated planner failures detected with status: %d", status_from_planner);
+                                 "Repeated planner failures detected with status: %d", status_from_planner.overview_state);
         } else {
-            RCLCPP_INFO(this->get_logger(), "Planner execution successful: %d", status_from_planner);
+            RCLCPP_INFO(this->get_logger(), "Planner execution successful: %d", status_from_planner.overview_state);
         }
 
         if (planner_diff.count() > 80) {
