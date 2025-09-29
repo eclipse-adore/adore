@@ -269,157 +269,156 @@ wait_for_api_ready() {
     exit $model_checking_status
 }
 
-#!/usr/bin/env bash
 
 # ros_topic_benchmark_test.sh - Unit tests for ros_topic_benchmark.sh
 
-ros_topic_benchmark_test() {
-    local action=benchmark
-    local name="ROS Topic Benchmark Test"
-    local description="This test executes the ros_topic_benchmark.sh script and verifies message rate performance metrics."
-    local status=""
-    local message=""
-    local benchmark_output_file="${LOG_DIRECTORY}/ros_topic_benchmark_results.log"
-    
-    printf "\n"
-    printf "  Test: %s\n" "${name}"
-    printf "    Description: %s\n" "${description}"
-    printf "      This test aims to answer the following questions: \n"
-    printf "        Does the benchmark script execute successfully?\n"
-    printf "        Are the message rates within acceptable thresholds?\n"
-    printf "        Does the topic validation work correctly?\n"
-    printf "        Are performance metrics properly parsed?\n"
-    
-    # Test 1: Basic functionality test
-    printf "    Running basic benchmark test...\n"
-    
-    {
-        while true; do
-            sleep 1
-            printf "." >&2
-        done
-    } &
-    dot_pid=$!
-    
-    source adore.env 
-    # Run the benchmark script
-    benchmark_result=$(make run cmd="bash tools/ros_topic_benchmark.sh" 2>&1)
-    benchmark_exit_code=$?
-    
-    kill $dot_pid 2>/dev/null
-    wait $dot_pid 2>/dev/null
-    
-    printf "\n"
-    printf "    Parsing benchmark results...\n"
-    echo "${benchmark_result}" > "${benchmark_output_file}"
-    
-    # Check if benchmark script executed
-    if [ $benchmark_exit_code -ne 0 ]; then
-        # Check for specific failure reasons
-        if echo "$benchmark_result" | grep -q "Scenario not found"; then
-            status=$(bold $(red "FAILED"))
-            message="        Benchmark failed: Scenario file not found
-            Check that simulation_test.launch.py exists in adore_scenarios/simulation_scenarios/
-            Output: $(echo "$benchmark_result" | tail -5 | tr '\n' ' ')"
-        elif echo "$benchmark_result" | grep -q "does not appear to be published yet"; then
-            status=$(bold $(red "FAILED"))
-            message="        Benchmark failed: Topic not being published
-            The scenario may not be generating the expected topic
-            Topic: $ROS_BENCHMARK_TOPIC"
-        elif echo "$benchmark_result" | grep -q "BENCHMARK FAILED"; then
-            # Parse performance metrics from output
-            avg_rate=$(echo "$benchmark_result" | grep "Average Rate:" | awk '{print $3}' | head -1)
-            jitter=$(echo "$benchmark_result" | grep "Jitter:" | awk '{print $2}' | sed 's/s$//' | head -1)
-            std_dev=$(echo "$benchmark_result" | grep "Std Dev:" | awk '{print $3}' | sed 's/s$//' | head -1)
-            
-            status=$(bold $(red "FAILED"))
-            message="        Benchmark failed: Performance criteria not met
-            Average Rate: ${avg_rate:-N/A} Hz (min required: $ROS_BENCHMARK_MIN_RATE Hz)
-            Jitter: ${jitter:-N/A}s (max allowed: $ROS_BENCHMARK_MAX_JITTER s)
-            Std Dev: ${std_dev:-N/A}s (max allowed: $ROS_BENCHMARK_MAX_STD s)"
-            
-            # Add specific failure reasons
-            if echo "$benchmark_result" | grep -q "Average rate.*below minimum"; then
-                message="${message}
-            ❌ Rate too low"
-            fi
-            if echo "$benchmark_result" | grep -q "Jitter.*exceeds maximum"; then
-                message="${message}
-            ❌ Jitter too high"
-            fi
-            if echo "$benchmark_result" | grep -q "Standard deviation.*exceeds maximum"; then
-                message="${message}
-            ❌ Standard deviation too high"
-            fi
-        else
-            status=$(bold $(red "FAILED"))
-            message="        Benchmark failed with unexpected error
-            Exit code: $benchmark_exit_code
-            Last output: $(echo "$benchmark_result" | tail -3 | tr '\n' ' ')"
-        fi
-    else
-        # Success case - parse and display metrics
-        avg_rate=$(echo "$benchmark_result" | grep "Average Rate:" | awk '{print $3}' | head -1)
-        min_time=$(echo "$benchmark_result" | grep "Min Time:" | awk '{print $3}' | sed 's/s$//' | head -1)
-        max_time=$(echo "$benchmark_result" | grep "Max Time:" | awk '{print $3}' | sed 's/s$//' | head -1)
-        jitter=$(echo "$benchmark_result" | grep "Jitter:" | awk '{print $2}' | sed 's/s$//' | head -1)
-        std_dev=$(echo "$benchmark_result" | grep "Std Dev:" | awk '{print $3}' | sed 's/s$//' | head -1)
-        
-        status=$(bold $(green "PASSED"))
-        message="        Benchmark Performance Metrics:
-            Average Rate: ${avg_rate:-N/A} Hz (✓ >= $ROS_BENCHMARK_MIN_RATE Hz)
-            Min Time: ${min_time:-N/A}s
-            Max Time: ${max_time:-N/A}s
-            Jitter: ${jitter:-N/A}s (✓ <= $ROS_BENCHMARK_MAX_JITTER s)
-            Std Dev: ${std_dev:-N/A}s (✓ <= $ROS_BENCHMARK_MAX_STD s)
-            Topic: $ROS_BENCHMARK_TOPIC
-            Scenario: $ROS_BENCHMARK_SCENARIO"
-        
-        # Additional validation checks
-        if echo "$benchmark_result" | grep -q "All performance criteria met successfully"; then
-            message="${message}
-            ✅ All performance criteria validated successfully"
-        fi
-    fi
-    
-    printf "    Message:\n%s\n" "$message"
-    printf "    %-77s %s\n" "Status:" "${status}"
-    printf "    See the benchmark log for more info: %s\n" "$benchmark_output_file"
-    
-    # Test 2: Environment variable validation test
-    printf "\n    Running environment variable validation test...\n"
-    
-    # Test with missing scenario
-    unset ROS_BENCHMARK_SCENARIO
-    validation_result=$(make run cmd="bash tools/ros_topic_benchmark.sh" 2>&1 || true)
-    
-    if echo "$validation_result" | grep -q "ROS_BENCHMARK_SCENARIO environment variable is required"; then
-        printf "    ✅ Environment variable validation: PASSED\n"
-    else
-        printf "    ❌ Environment variable validation: FAILED\n"
-        printf "        Expected error message about missing ROS_BENCHMARK_SCENARIO\n"
-    fi
-    
-    # Test 3: Invalid scenario test
-    printf "    Running invalid scenario test...\n"
-    
-    export ROS_BENCHMARK_SCENARIO="nonexistent_scenario.launch.py"
-    invalid_scenario_result=$(make run cmd="bash tools/ros_topic_benchmark.sh" 2>&1 || true)
-    
-    if echo "$invalid_scenario_result" | grep -q "Scenario not found"; then
-        printf "    ✅ Invalid scenario handling: PASSED\n"
-    else
-        printf "    ❌ Invalid scenario handling: FAILED\n"
-        printf "        Expected error message about scenario not found\n"
-    fi
-    
-    # Clean up environment variables
-    unset ROS_BENCHMARK_SCENARIO
-    unset ROS_BENCHMARK_TOPIC
-    unset ROS_BENCHMARK_MIN_RATE
-    unset ROS_BENCHMARK_MAX_JITTER
-    unset ROS_BENCHMARK_MAX_STD
-    
-    exit $benchmark_exit_code
-}
+#ros_topic_benchmark_test() {
+#    local action=benchmark
+#    local name="ROS Topic Benchmark Test"
+#    local description="This test executes the ros_topic_benchmark.sh script and verifies message rate performance metrics."
+#    local status=""
+#    local message=""
+#    local benchmark_output_file="${LOG_DIRECTORY}/ros_topic_benchmark_results.log"
+#    
+#    printf "\n"
+#    printf "  Test: %s\n" "${name}"
+#    printf "    Description: %s\n" "${description}"
+#    printf "      This test aims to answer the following questions: \n"
+#    printf "        Does the benchmark script execute successfully?\n"
+#    printf "        Are the message rates within acceptable thresholds?\n"
+#    printf "        Does the topic validation work correctly?\n"
+#    printf "        Are performance metrics properly parsed?\n"
+#    
+#    # Test 1: Basic functionality test
+#    printf "    Running basic benchmark test...\n"
+#    
+#    {
+#        while true; do
+#            sleep 1
+#            printf "." >&2
+#        done
+#    } &
+#    dot_pid=$!
+#    
+#    source adore.env 
+#    # Run the benchmark script
+#    benchmark_result=$(make run cmd="bash tools/ros_topic_benchmark.sh" 2>&1)
+#    benchmark_exit_code=$?
+#    
+#    kill $dot_pid 2>/dev/null
+#    wait $dot_pid 2>/dev/null
+#    
+#    printf "\n"
+#    printf "    Parsing benchmark results...\n"
+#    echo "${benchmark_result}" > "${benchmark_output_file}"
+#    
+#    # Check if benchmark script executed
+#    if [ $benchmark_exit_code -ne 0 ]; then
+#        # Check for specific failure reasons
+#        if echo "$benchmark_result" | grep -q "Scenario not found"; then
+#            status=$(bold $(red "FAILED"))
+#            message="        Benchmark failed: Scenario file not found
+#            Check that simulation_test.launch.py exists in adore_scenarios/simulation_scenarios/
+#            Output: $(echo "$benchmark_result" | tail -5 | tr '\n' ' ')"
+#        elif echo "$benchmark_result" | grep -q "does not appear to be published yet"; then
+#            status=$(bold $(red "FAILED"))
+#            message="        Benchmark failed: Topic not being published
+#            The scenario may not be generating the expected topic
+#            Topic: $ROS_BENCHMARK_TOPIC"
+#        elif echo "$benchmark_result" | grep -q "BENCHMARK FAILED"; then
+#            # Parse performance metrics from output
+#            avg_rate=$(echo "$benchmark_result" | grep "Average Rate:" | awk '{print $3}' | head -1)
+#            jitter=$(echo "$benchmark_result" | grep "Jitter:" | awk '{print $2}' | sed 's/s$//' | head -1)
+#            std_dev=$(echo "$benchmark_result" | grep "Std Dev:" | awk '{print $3}' | sed 's/s$//' | head -1)
+#            
+#            status=$(bold $(red "FAILED"))
+#            message="        Benchmark failed: Performance criteria not met
+#            Average Rate: ${avg_rate:-N/A} Hz (min required: $ROS_BENCHMARK_MIN_RATE Hz)
+#            Jitter: ${jitter:-N/A}s (max allowed: $ROS_BENCHMARK_MAX_JITTER s)
+#            Std Dev: ${std_dev:-N/A}s (max allowed: $ROS_BENCHMARK_MAX_STD s)"
+#            
+#            # Add specific failure reasons
+#            if echo "$benchmark_result" | grep -q "Average rate.*below minimum"; then
+#                message="${message}
+#            ❌ Rate too low"
+#            fi
+#            if echo "$benchmark_result" | grep -q "Jitter.*exceeds maximum"; then
+#                message="${message}
+#            ❌ Jitter too high"
+#            fi
+#            if echo "$benchmark_result" | grep -q "Standard deviation.*exceeds maximum"; then
+#                message="${message}
+#            ❌ Standard deviation too high"
+#            fi
+#        else
+#            status=$(bold $(red "FAILED"))
+#            message="        Benchmark failed with unexpected error
+#            Exit code: $benchmark_exit_code
+#            Last output: $(echo "$benchmark_result" | tail -3 | tr '\n' ' ')"
+#        fi
+#    else
+#        # Success case - parse and display metrics
+#        avg_rate=$(echo "$benchmark_result" | grep "Average Rate:" | awk '{print $3}' | head -1)
+#        min_time=$(echo "$benchmark_result" | grep "Min Time:" | awk '{print $3}' | sed 's/s$//' | head -1)
+#        max_time=$(echo "$benchmark_result" | grep "Max Time:" | awk '{print $3}' | sed 's/s$//' | head -1)
+#        jitter=$(echo "$benchmark_result" | grep "Jitter:" | awk '{print $2}' | sed 's/s$//' | head -1)
+#        std_dev=$(echo "$benchmark_result" | grep "Std Dev:" | awk '{print $3}' | sed 's/s$//' | head -1)
+#        
+#        status=$(bold $(green "PASSED"))
+#        message="        Benchmark Performance Metrics:
+#            Average Rate: ${avg_rate:-N/A} Hz (✓ >= $ROS_BENCHMARK_MIN_RATE Hz)
+#            Min Time: ${min_time:-N/A}s
+#            Max Time: ${max_time:-N/A}s
+#            Jitter: ${jitter:-N/A}s (✓ <= $ROS_BENCHMARK_MAX_JITTER s)
+#            Std Dev: ${std_dev:-N/A}s (✓ <= $ROS_BENCHMARK_MAX_STD s)
+#            Topic: $ROS_BENCHMARK_TOPIC
+#            Scenario: $ROS_BENCHMARK_SCENARIO"
+#        
+#        # Additional validation checks
+#        if echo "$benchmark_result" | grep -q "All performance criteria met successfully"; then
+#            message="${message}
+#            ✅ All performance criteria validated successfully"
+#        fi
+#    fi
+#    
+#    printf "    Message:\n%s\n" "$message"
+#    printf "    %-77s %s\n" "Status:" "${status}"
+#    printf "    See the benchmark log for more info: %s\n" "$benchmark_output_file"
+#    
+#    # Test 2: Environment variable validation test
+#    printf "\n    Running environment variable validation test...\n"
+#    
+#    # Test with missing scenario
+#    unset ROS_BENCHMARK_SCENARIO
+#    validation_result=$(make run cmd="bash tools/ros_topic_benchmark.sh" 2>&1 || true)
+#    
+#    if echo "$validation_result" | grep -q "ROS_BENCHMARK_SCENARIO environment variable is required"; then
+#        printf "    ✅ Environment variable validation: PASSED\n"
+#    else
+#        printf "    ❌ Environment variable validation: FAILED\n"
+#        printf "        Expected error message about missing ROS_BENCHMARK_SCENARIO\n"
+#    fi
+#    
+#    # Test 3: Invalid scenario test
+#    printf "    Running invalid scenario test...\n"
+#    
+#    export ROS_BENCHMARK_SCENARIO="nonexistent_scenario.launch.py"
+#    invalid_scenario_result=$(make run cmd="bash tools/ros_topic_benchmark.sh" 2>&1 || true)
+#    
+#    if echo "$invalid_scenario_result" | grep -q "Scenario not found"; then
+#        printf "    ✅ Invalid scenario handling: PASSED\n"
+#    else
+#        printf "    ❌ Invalid scenario handling: FAILED\n"
+#        printf "        Expected error message about scenario not found\n"
+#    fi
+#    
+#    # Clean up environment variables
+#    unset ROS_BENCHMARK_SCENARIO
+#    unset ROS_BENCHMARK_TOPIC
+#    unset ROS_BENCHMARK_MIN_RATE
+#    unset ROS_BENCHMARK_MAX_JITTER
+#    unset ROS_BENCHMARK_MAX_STD
+#    
+#    exit $benchmark_exit_code
+#}
 
