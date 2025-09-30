@@ -36,7 +36,7 @@ When using ADORe for control of multiple agent in a cooperative environment, ADO
 In order to get started, it is advised to first check system requirements, follow the installation instruction and then
 try out the demo scenarios.
 
-- [Github Pages](https://eclipse.github.io/adore/)
+- [Github Pages](https://eclipse.github.io/eclipse-adore/adore)
 - [Quick Start](documentation/technical_reference_manual/quick_start.md)
 - [Getting started](documentation/technical_reference_manual/getting_started/getting_started.md)
 - [Technical Reference Manual](https://eclipse-adore.github.io/adore/mkdocs/about_adore/index.html)
