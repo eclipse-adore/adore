@@ -1,0 +1,45 @@
+# Eclipse Header Checker Ignore File
+# Lines starting with # are comments
+
+documentation/**
+documentation/
+libraries/build/**
+ros2_workspace/build/**
+ros2_workspace/install/**
+ros2_workspace/install/**
+vendor/**
+make_gadgets/**
+
+.obj-x86_64-linux-gnu/**
+
+tools/ci_teststand/**
+tools/lichtblick/**
+ci_teststand/**
+__init__.py
+libraries/cmake/**
+
+libraries/lib/adore_math/include/adore_math/spline.h
+
+# Build directories
+build/
+install/
+log/
+
+# Generated files
+*.pb.h
+*.pb.cc
+*_generated.h
+*_generated.cpp
+
+# Third party code
+third_party/
+external/
+vendor/
+
+
+
+# CMake generated files
+CMakeFiles/
+
+# ROS generated files
+devel/

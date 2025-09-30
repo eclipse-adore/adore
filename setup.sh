@@ -1,6 +1,23 @@
+# ********************************************************************************
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License 2.0 which is available at
+# https://www.eclipse.org/legal/epl-2.0
+#
+# SPDX-License-Identifier: EPL-2.0
+# ********************************************************************************
+
 SCRIPT_DIRECTORY="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 ROS2_WORKSPACE_DIRECTORY="$(realpath "${SCRIPT_DIRECTORY}/ros2_workspace")"
 
+if [ ! -f /.dockerenv ]; then
+    echo "ERROR: This script must be sourced inside the ADORe CLI context." >&2
+    return 1
+fi
 
 if [[ "$SHELL" == *"bash"* ]]; then
     LOCAL_SETUP_SCRIPT="${ROS2_WORKSPACE_DIRECTORY}/install/local_setup.bash"
@@ -10,10 +27,12 @@ elif [[ "$SHELL" == *"zsh"* ]]; then
     ROS_SETUP_SCRIPT="/opt/ros/${ROS_DISTRO}/setup.zsh"
 else
     echo shell $SHELL
-    echo "Unsupported shell: $SHELL" >&2
-    exit 1
+    echo "ERROR: Unsupported shell: $SHELL" >&2
+    return 1
 fi
 
+bash ${SCRIPT_DIRECTORY}/tools/check_adore_binaries.sh
+printf "\n"
 source "$ROS_SETUP_SCRIPT"
 
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
@@ -28,7 +47,8 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
     fi
 else
     echo "ERROR: script designed to be sourced. Call again with 'source setup.sh'" >&2
-    exit 1
+    return 1
 fi
 
+source "${SCRIPT_DIRECTORY}/adore.env"
 source ${SCRIPT_DIRECTORY}/tools/adore_api/adore_api.sh

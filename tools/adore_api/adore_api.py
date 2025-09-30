@@ -1,3 +1,16 @@
+# ********************************************************************************
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License 2.0 which is available at
+# https://www.eclipse.org/legal/epl-2.0
+#
+# SPDX-License-Identifier: EPL-2.0
+# ********************************************************************************
+
 import os
 import subprocess
 import threading
@@ -33,8 +46,6 @@ except ImportError as e:
     print(f"⚠ Warning: ros2tools library not found: {e}")
     print("⚠ ros2tools will be disabled")
 
-
-
 try:
     import sys
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -54,6 +65,24 @@ stored_positions = {
     'start': None,
     'goal': None
 }
+
+def sanitize_infinity(obj):
+    """Recursively sanitize data for JSON serialization, replacing infinity and NaN values"""
+    import math
+    
+    if isinstance(obj, dict):
+        return {k: sanitize_infinity(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_infinity(item) for item in obj]
+    elif isinstance(obj, float):
+        if math.isinf(obj):
+            return None 
+        elif math.isnan(obj):
+            return None
+        else:
+            return obj
+    else:
+        return obj
 
 class BagRecordingManager:
     def __init__(self, log_directory):
@@ -363,6 +392,11 @@ class ScenarioManager:
         self.output_lock = threading.Lock()
         self.scenario_start_time = None
         self.loop_active = False
+        self.model_check_enabled = True
+        self.model_check_config = "config/default.yaml"
+        self.current_model_check_run_id = None
+        self.waiting_for_model_check = False
+        self.model_check_lock = threading.Lock()
         
         os.makedirs(self.base_directory, exist_ok=True)
         
@@ -404,7 +438,137 @@ class ScenarioManager:
             return {"success": True, "message": f"Scenario saved as {scenario_name}"}
         except Exception as e:
             return {"success": False, "message": f"Error saving scenario: {str(e)}"}
-    
+
+    def start_model_check_then_scenario(self, scenario_input, is_file=True, model_check_enabled=True, model_check_config="config/default.yaml"):
+        """Start model checking first, then scenario after 5 second delay"""
+        if self.current_process and self.current_process.poll() is None:
+            return {"success": False, "message": "Scenario already running"}
+        
+        try:
+            with self.model_check_lock:
+                self.waiting_for_model_check = False
+                self.current_model_check_run_id = None
+                
+            # Step 1: Start model checking if enabled
+            if model_check_enabled and model_check_blueprint is not None:
+                print("Starting model checking first...")
+                model_check_result = self._start_model_check(model_check_config)
+                print(f"Model check start result: {model_check_result}")
+                
+                if model_check_result["success"]:
+                    run_id = model_check_result.get("run_id")
+                    if run_id is not None:
+                        with self.model_check_lock:
+                            self.current_model_check_run_id = run_id
+                            self.waiting_for_model_check = True
+                        print(f"Model checking started with run ID: {self.current_model_check_run_id}")
+                    else:
+                        print("Error: Model check start succeeded but no run ID returned")
+                        return {
+                            "success": False, 
+                            "message": "Model check start succeeded but no run ID returned",
+                            "debug_info": model_check_result
+                        }
+                else:
+                    error_msg = model_check_result.get('message', 'Unknown error')
+                    print(f"Failed to start model checking: {error_msg}")
+                    return {
+                        "success": False, 
+                        "message": f"Failed to start model checking: {error_msg}",
+                        "debug_info": model_check_result
+                    }
+                
+                # Wait 5 seconds before starting scenario
+                print("Waiting 5 seconds before starting scenario...")
+                time.sleep(5)
+            else:
+                if not model_check_enabled:
+                    print("Model checking disabled")
+                if model_check_blueprint is None:
+                    print("Model check blueprint not available")
+            
+            # Step 2: Start the scenario
+            print("Starting scenario...")
+            scenario_result = self.start_scenario(scenario_input, is_file)
+            scenario_result['model_check_result'] = model_check_result 
+            return scenario_result
+            
+        except Exception as e:
+            print(f"Exception in start_model_check_then_scenario: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"success": False, "message": f"Failed to start model check and scenario: {str(e)}"}
+
+    def _start_model_check(self, config_file):
+        """Start model checking using internal test client"""
+        try:
+            print(f"Starting model check with config: {config_file}")
+            
+            # Check if model checker is available
+            if model_check_blueprint is None:
+                return {"success": False, "message": "Model checker blueprint not available"}
+            
+            # Import here to avoid circular imports
+            try:
+                from adore_model_checker.model_checker_api import _get_api
+            except ImportError as e:
+                print(f"Failed to import model checker API: {e}")
+                return {"success": False, "message": f"Failed to import model checker API: {e}"}
+            
+            # Get the API instance
+            try:
+                api_instance = _get_api()
+                print("Got model checker API instance")
+            except Exception as e:
+                print(f"Failed to get model checker API instance: {e}")
+                return {"success": False, "message": f"Failed to get model checker API instance: {e}"}
+            
+            # Verify the API instance has required components
+            if not hasattr(api_instance, 'worker'):
+                return {"success": False, "message": "Model checker API instance missing worker"}
+            
+            if not hasattr(api_instance.worker, 'queue_online_run'):
+                return {"success": False, "message": "Model checker worker missing queue_online_run method"}
+            
+            # Queue the model check run directly
+            try:
+                print(f"Queuing online run with duration: {self.default_runtime}, vehicle_id: 0")
+                run_id = api_instance.worker.queue_online_run(
+                    config_file=config_file,
+                    duration=self.default_runtime,
+                    vehicle_id=0
+                )
+                self.current_model_check_run_id = run_id
+                print(f"Queued model check run with ID: {run_id}")
+            except Exception as e:
+                print(f"Failed to queue model check run: {e}")
+                import traceback
+                traceback.print_exc()
+                return {"success": False, "message": f"Failed to queue model check run: {e}"}
+            
+            # Verify the run was created
+            if run_id is None:
+                return {"success": False, "message": "Model check run ID is None"}
+            
+            try:
+                run = api_instance.cache.get_run(run_id)
+                if run:
+                    print(f"Verified run {run_id} exists with status: {run.status}")
+                else:
+                    print(f"Warning: Could not verify run {run_id} was created")
+                    return {"success": False, "message": f"Could not verify run {run_id} was created"}
+            except Exception as e:
+                print(f"Error verifying run creation: {e}")
+                # Don't fail here, just log the warning
+            
+            return {"success": True, "run_id": run_id}
+            
+        except Exception as e:
+            print(f"Exception starting model check: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"success": False, "message": f"Exception starting model check: {str(e)}"}
+  
     def start_scenario(self, scenario_input, is_file=True):
         if self.current_process and self.current_process.poll() is None:
             return {"success": False, "message": "Scenario already running"}
@@ -467,31 +631,104 @@ class ScenarioManager:
             
         except Exception as e:
             return {"success": False, "message": f"Failed to stop scenario: {str(e)}"}
-    
+
     def halt_all(self):
         try:
-            subprocess.run(["pkill", "-f", "ros2"], check=False)
-            subprocess.run(["ros2", "daemon", "stop"], check=False)
-            
-            if self.current_process:
+            all_processes = []
+            try:
+                result = subprocess.run(["ps", "aux"], capture_output=True, text=True, check=False)
+                if result.stdout:
+                    all_processes = result.stdout.strip().split('\n')[1:]
+            except:
+                pass
+    
+            ros2_pids_to_kill = []
+            for line in all_processes:
+                if 'ros2' in line.lower():
+                    parts = line.split()
+                    if len(parts) >= 11:
+                        pid = parts[1]
+                        command = ' '.join(parts[10:])
+                        
+                        if any(exclude in command.lower() for exclude in [
+                            'docker exec',
+                            'docker-',
+                            'containerd',
+                            'sleep infinity',
+                            'rsyslogd',
+                            'entrypoint.sh',
+                            '/bin/bash',
+                            '/bin/zsh',
+                            'adore-cli-main'
+                        ]):
+                            continue
+                        
+                        if any(exclude in command.lower() for exclude in [
+                            'bash -c',
+                            'zsh -c', 
+                            '/usr/bin/zsh',
+                            '/bin/bash',
+                            'source ~/.zshrc'
+                        ]):
+                            continue
+                        
+                        if any(include in command.lower() for include in [
+                            'ros2 launch',
+                            'ros2 run',
+                            'ros2 bag',
+                            'ros2 topic',
+                            'ros2 service',
+                            'ros2 node',
+                            '_node',
+                            'launch.py'
+                        ]) or ('python3' in command.lower() and 'ros2' in command.lower()):
+                            ros2_pids_to_kill.append(pid)
+    
+            for pid in ros2_pids_to_kill:
                 try:
-                    self.current_process.kill()
+                    subprocess.run(["kill", "-TERM", pid], check=False, timeout=5)
                 except:
                     pass
-            
+    
+            import time
+            time.sleep(2)
+    
+            for pid in ros2_pids_to_kill:
+                try:
+                    subprocess.run(["kill", "-KILL", pid], check=False, timeout=5)
+                except:
+                    pass
+    
+            subprocess.run(["ros2", "daemon", "stop"], check=False, timeout=10)
+    
+            if self.current_process:
+                try:
+                    self.current_process.terminate()
+                    self.current_process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    self.current_process.kill()
+                    self.current_process.wait()
+                except:
+                    pass
+    
             self.status = "idle"
             self.current_process = None
-            return {"success": True, "message": "All scenarios halted"}
-            
+            return {"success": True, "message": f"Halted {len(ros2_pids_to_kill)} ROS2 processes"}
+    
         except Exception as e:
             return {"success": False, "message": f"Failed to halt scenarios: {str(e)}"}
-    
+   
     def restart_scenario(self):
         self.halt_all()
         time.sleep(2)
         
         if self.current_scenario:
-            return self.start_scenario(self.current_scenario)
+            return self.start_model_check_then_scenario(
+                self.current_scenario, 
+                is_file=True,
+                model_check_enabled=self.model_check_enabled,
+                model_check_config=self.model_check_config
+            )
         else:
             return {"success": False, "message": "No scenario to restart"}
     
@@ -499,7 +736,53 @@ class ScenarioManager:
         with self.output_lock:
             output_lines = list(self.output_buffer)[-lines:]
             return "\n".join(output_lines)
-    
+
+    def is_model_check_complete(self):
+        """Check if model checking is complete or failed"""
+        if not self.waiting_for_model_check or not self.current_model_check_run_id:
+            return True  # No model checking in progress
+            
+        try:
+            print(f"Checking completion status for run {self.current_model_check_run_id}")
+            with app.test_client() as client:
+                response = client.get(f'/api/model_check/result/{self.current_model_check_run_id}')
+                
+                if response.status_code == 200:
+                    result = response.get_json()
+                    status = result.get('status', 'unknown')
+                    print(f"Model check status: {status}")
+                    
+                    if status in ['completed', 'failed', 'cancelled', 'error']:
+                        with self.model_check_lock:
+                            self.waiting_for_model_check = False
+                        print(f"Model checking completed with status: {status}")
+                        
+                        # If failed, log the error
+                        if status in ['failed', 'error']:
+                            error_msg = result.get('error_message', 'Unknown error')
+                            print(f"Model checking failed: {error_msg}")
+                        
+                        return True
+                    else:
+                        return False  # Still running
+                elif response.status_code == 404:
+                    print(f"Run {self.current_model_check_run_id} not found")
+                    with self.model_check_lock:
+                        self.waiting_for_model_check = False
+                    return True
+                else:
+                    print(f"Error checking status: HTTP {response.status_code}")
+                    return False
+                    
+        except Exception as e:
+            print(f"Error checking model check status: {e}")
+            import traceback
+            traceback.print_exc()
+            # On error, assume complete to avoid hanging
+            with self.model_check_lock:
+                self.waiting_for_model_check = False
+            return True
+
     def get_status(self):
         if self.current_process:
             if self.current_process.poll() is None:
@@ -519,13 +802,19 @@ class ScenarioManager:
             "loop_delay": self.loop_delay,
             "default_runtime": self.default_runtime,
             "runtime": runtime,
-            "pid": self.current_process.pid if self.current_process else None
+            "pid": self.current_process.pid if self.current_process else None,
+            "model_check_enabled": self.model_check_enabled,
+            "model_check_config": self.model_check_config,
+            "waiting_for_model_check": self.waiting_for_model_check,
+            "current_model_check_run_id": self.current_model_check_run_id  # Add this line
         }
     
-    def set_loop_mode(self, enabled, delay=0, runtime=60):
+    def set_loop_mode(self, enabled, delay=0, runtime=60, model_check_enabled=True, model_check_config="config/default.yaml"):
         self.loop_mode = enabled
         self.loop_delay = delay
         self.default_runtime = runtime
+        self.model_check_enabled = model_check_enabled
+        self.model_check_config = model_check_config
         
         if enabled:
             self.loop_active = True
@@ -550,30 +839,83 @@ class ScenarioManager:
     def _loop_monitor(self):
         while self.loop_active:
             if self.loop_mode and self.current_scenario:
+                # Check if scenario is running
                 if self.current_process and self.current_process.poll() is None:
+                    # Check if runtime has been exceeded
                     if self.scenario_start_time and (time.time() - self.scenario_start_time) >= self.default_runtime:
                         print(f"Loop: Runtime ({self.default_runtime}s) reached, halting...")
                         self.halt_all()
+                        
+                        # Wait for model checking to complete if it's running
+                        if self.waiting_for_model_check:
+                            print("Loop: Waiting for model checking to complete...")
+                            max_wait_time = 300  # 5 minutes max wait
+                            wait_start = time.time()
+                            
+                            while self.waiting_for_model_check and (time.time() - wait_start) < max_wait_time:
+                                if self.is_model_check_complete():
+                                    print("Loop: Model checking completed")
+                                    break
+                                time.sleep(2)
+                            
+                            if self.waiting_for_model_check:
+                                print("Loop: Model checking timeout, proceeding anyway")
+                                with self.model_check_lock:
+                                    self.waiting_for_model_check = False
+                        
                         time.sleep(2)
                         
                         if self.loop_mode and self.current_scenario:
                             print(f"Loop: Waiting {self.loop_delay}s before restart...")
                             time.sleep(self.loop_delay)
                             print(f"Loop: Starting scenario: {self.current_scenario}")
-                            self.start_scenario(self.current_scenario)
+                            self.start_model_check_then_scenario(
+                                self.current_scenario,
+                                is_file=True,
+                                model_check_enabled=self.model_check_enabled,
+                                model_check_config=self.model_check_config
+                            )
                             
                 elif self.current_process and self.current_process.poll() is not None:
-                    print(f"Loop: Process ended, restarting after {self.loop_delay}s...")
+                    print(f"Loop: Process ended, waiting for model check and restarting after {self.loop_delay}s...")
+                    
+                    # Wait for model checking to complete
+                    if self.waiting_for_model_check:
+                        print("Loop: Waiting for model checking to complete after scenario end...")
+                        max_wait_time = 300
+                        wait_start = time.time()
+                        
+                        while self.waiting_for_model_check and (time.time() - wait_start) < max_wait_time:
+                            if self.is_model_check_complete():
+                                print("Loop: Model checking completed after scenario end")
+                                break
+                            time.sleep(2)
+                        
+                        if self.waiting_for_model_check:
+                            print("Loop: Model checking timeout after scenario end")
+                            with self.model_check_lock:
+                                self.waiting_for_model_check = False
+                    
                     self.halt_all()
                     time.sleep(2)
                     
                     if self.loop_mode and self.current_scenario:
                         time.sleep(self.loop_delay)
-                        self.start_scenario(self.current_scenario)
+                        self.start_model_check_then_scenario(
+                            self.current_scenario,
+                            is_file=True,
+                            model_check_enabled=self.model_check_enabled,
+                            model_check_config=self.model_check_config
+                        )
                         
                 elif not self.current_process:
                     print(f"Loop: No process running, starting scenario: {self.current_scenario}")
-                    self.start_scenario(self.current_scenario)
+                    self.start_model_check_then_scenario(
+                        self.current_scenario,
+                        is_file=True,
+                        model_check_enabled=self.model_check_enabled,
+                        model_check_config=self.model_check_config
+                    )
             
             time.sleep(1)
 
@@ -584,6 +926,9 @@ bag_manager = None
 def index():
     return render_template('index.html', host=request.host)
 
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    return send_from_directory('static', filename)
 
 @app.route('/api_reference.md')
 def serve_api_reference():
@@ -608,13 +953,27 @@ def api_status():
 @app.route('/api/scenario/start', methods=['POST'])
 def start_scenario():
     data = request.json
-    scenario_input = data.get('scenario')
+    scenario_input = data.get('scenario', "simulation_test.launch.py")
     is_file = data.get('is_file', True)
-    
+    model_check_enabled = data.get('model_check_enabled', False)
+    if isinstance(model_check_enabled, str):
+        model_check_enabled = model_check_enabled.lower() == 'true'
+    model_check_config = data.get('model_check_config', 'config/default.yaml')
     if not scenario_input:
         return jsonify({"success": False, "message": "No scenario provided"}), 400
     
-    result = scenario_manager.start_scenario(scenario_input, is_file)
+    # Use the new method that starts model checking first
+
+    if model_check_enabled == True:
+        result = scenario_manager.start_model_check_then_scenario(
+            scenario_input, 
+            is_file, 
+            model_check_enabled, 
+            model_check_config
+        )
+    else:
+        result = scenario_manager.start_scenario(scenario_input, is_file)
+    
     return jsonify(result)
 
 @app.route('/api/scenario/stop', methods=['POST'])
@@ -671,8 +1030,10 @@ def set_loop_mode():
     enabled = data.get('enabled', False)
     delay = data.get('delay', 0)
     runtime = data.get('runtime', 60)
+    model_check_enabled = data.get('model_check_enabled', True)
+    model_check_config = data.get('model_check_config', 'config/default.yaml')
     
-    scenario_manager.set_loop_mode(enabled, delay, runtime)
+    scenario_manager.set_loop_mode(enabled, delay, runtime, model_check_enabled, model_check_config)
     return jsonify({"success": True, "message": f"Loop mode {'enabled' if enabled else 'disabled'}"})
 
 @app.route('/api/bag/start', methods=['POST'])
@@ -877,26 +1238,65 @@ def get_topic_info(topic_name):
 def start_scenario_model_checked():
     """
     Start a scenario with model checking and return results when complete.
-    This is a blocking endpoint that waits for both scenario and model checking to finish.
     
-    Parameters:
-    - scenario: Launch file name (default: "simulation_test.launch.py")
-    - duration: Runtime in seconds (default: 5)
+    This endpoint provides a synchronous interface for running a scenario with model checking.
+    It starts the model checker, runs the scenario for the specified duration, waits for
+    model checking to complete, and returns both scenario and model checking results.
+    
+    Args:
+        None (uses JSON payload from request)
+    
+    Request JSON Parameters:
+        scenario (str, optional): Name of the launch file to run. 
+            Default: "simulation_test.launch.py"
+        duration (int|float, optional): How long to run the scenario in seconds.
+            Must be a positive number. Default: 5
     
     Returns:
-    - success: Whether the operation completed successfully
-    - scenario: The scenario that was run
-    - duration: The duration used
-    - scenario_result: Result from starting the scenario
-    - model_check_result: Results from model checking (if available)
-    - model_check_available: Whether model checking was available
-    - error: Error message if something went wrong
+        flask.Response: JSON response with the following structure:
+        
+        Success response (200):
+        {
+            "success": true,
+            "scenario": str,           # Name of scenario that was run
+            "duration": float,         # Duration the scenario ran for
+            "scenario_result": dict,   # Result from starting the scenario
+            "model_check_result": dict,# Model checking results (if available)
+            "model_check_available": bool  # Whether model checking was available
+        }
+        
+        Error response (400 or 200 with success=false):
+        {
+            "success": false,
+            "error": str,              # Error message describing what went wrong
+            "scenario": str,           # Name of scenario attempted
+            "duration": float          # Requested duration
+        }
+    
+    Raises:
+        None (all exceptions are caught and returned as error responses)
+    
+    Notes:
+        - This is a blocking endpoint that waits for both scenario and model checking to complete
+        - The endpoint will halt all running scenarios before starting the new one
+        - Model checking runs alongside the scenario and may take additional time after scenario ends
+        - If model checking is not available, the scenario will still run without it
+        - Any infinity or NaN values in model check results are sanitized to null for valid JSON
+    
+    Example:
+        >>> import requests
+        >>> response = requests.post(
+        ...     'http://localhost:8888/api/scenario/start/model_checked',
+        ...     json={'scenario': 'test.launch.py', 'duration': 10}
+        ... )
+        >>> result = response.json()
+        >>> if result['success']:
+        ...     print(f"Model check passed: {result['model_check_result']['results']['SUMMARY']['overall_result']}")
     """
     data = request.json or {}
     scenario = data.get('scenario', 'simulation_test.launch.py')
     duration = data.get('duration', 5)
     
-    # Validate inputs
     if not isinstance(duration, (int, float)) or duration <= 0:
         return jsonify({
             "success": False,
@@ -906,24 +1306,28 @@ def start_scenario_model_checked():
         }), 400
     
     try:
-        # Clean up any existing processes
+        # Stop any existing scenarios first
         scenario_manager.halt_all()
         time.sleep(2)
         
-        # Start the scenario
-        scenario_result = scenario_manager.start_scenario(scenario, is_file=True)
-        if not scenario_result["success"]:
-            return jsonify({
-                "success": False,
-                "error": f"Failed to start scenario: {scenario_result['message']}",
-                "scenario": scenario,
-                "duration": duration,
-                "scenario_result": scenario_result
-            })
+        # Reset model check state
+        with scenario_manager.model_check_lock if hasattr(scenario_manager, 'model_check_lock') else threading.Lock():
+            scenario_manager.waiting_for_model_check = False
+            scenario_manager.current_model_check_run_id = None
         
-        # Check if model checking is available
         if model_check_blueprint is None:
             # Just run scenario for the duration without model checking
+            print("Model checker not available, running scenario only")
+            scenario_result = scenario_manager.start_scenario(scenario, is_file=True)
+            if not scenario_result["success"]:
+                return jsonify({
+                    "success": False,
+                    "error": f"Failed to start scenario: {scenario_result['message']}",
+                    "scenario": scenario,
+                    "duration": duration,
+                    "scenario_result": scenario_result
+                })
+            
             time.sleep(duration)
             scenario_manager.halt_all()
             return jsonify({
@@ -935,108 +1339,176 @@ def start_scenario_model_checked():
                 "message": "Scenario completed without model checking (model checker not available)"
             })
         
-        # Start model checking using internal test client
-        with app.test_client() as client:
-            model_check_data = {
-                'config_file': 'config/default.yaml',
-                'duration': duration,
-                'vehicle_id': 0
-            }
-            
-            try:
-                response = client.post('/api/model_check/online', json=model_check_data)
-                model_check_start_result = response.get_json()
-                
-                if response.status_code != 200 or 'run_id' not in model_check_start_result:
-                    # Model checking failed to start, but scenario is running
-                    time.sleep(duration)
-                    scenario_manager.halt_all()
-                    return jsonify({
-                        "success": False,
-                        "error": f"Failed to start model checking: {model_check_start_result}",
-                        "scenario": scenario,
-                        "duration": duration,
-                        "scenario_result": scenario_result,
-                        "model_check_available": True
-                    })
-                
-                run_id = model_check_start_result['run_id']
-                
-            except Exception as e:
-                # Model checking failed to start
-                time.sleep(duration)
-                scenario_manager.halt_all()
-                return jsonify({
-                    "success": False,
-                    "error": f"Exception starting model checking: {str(e)}",
-                    "scenario": scenario,
-                    "duration": duration,
-                    "scenario_result": scenario_result,
-                    "model_check_available": True
-                })
-            
-            # Wait for model checking to complete (blocking)
-            max_wait_time = duration + 60  # Add buffer time for model checking overhead
-            start_time = time.time()
-            
-            while time.time() - start_time < max_wait_time:
-                try:
-                    status_response = client.get(f'/api/model_check/result/{run_id}')
-                    
-                    if status_response.status_code == 200:
-                        status_data = status_response.get_json()
-                        
-                        if status_data['status'] == 'completed':
-                            # Success - both scenario and model checking completed
-                            scenario_manager.halt_all()
-                            return jsonify({
-                                "success": True,
-                                "scenario": scenario,
-                                "duration": duration,
-                                "scenario_result": scenario_result,
-                                "model_check_result": status_data,
-                                "model_check_available": True
-                            })
-                        
-                        elif status_data['status'] in ['failed', 'cancelled', 'error']:
-                            # Model checking failed
-                            scenario_manager.halt_all()
-                            return jsonify({
-                                "success": False,
-                                "error": f"Model checking failed with status: {status_data['status']}",
-                                "scenario": scenario,
-                                "duration": duration,
-                                "scenario_result": scenario_result,
-                                "model_check_result": status_data,
-                                "model_check_available": True
-                            })
-                        
-                        # Still running (pending, running), continue waiting
-                        time.sleep(1)
-                        
-                    elif status_response.status_code == 404:
-                        # Run ID not found
-                        break
-                    else:
-                        # Other HTTP error
-                        time.sleep(1)
-                        
-                except Exception as e:
-                    print(f"Error checking model check status: {e}")
-                    time.sleep(1)
-            
+        # Set the model check configuration for the duration
+        scenario_manager.default_runtime = duration
+        scenario_manager.model_check_enabled = True
+        scenario_manager.model_check_config = 'config/default.yaml'
+        
+        print(f"Starting model checking and scenario for {duration} seconds...")
+        
+        # Use the synchronized method
+        result = scenario_manager.start_model_check_then_scenario(
+            scenario, 
+            is_file=True,
+            model_check_enabled=True,
+            model_check_config='config/default.yaml'
+        )
+
+        
+        if not result["success"]:
+            return jsonify({
+                "success": False,
+                "error": f"Failed to start scenario with model checking: {result['message']}",
+                "scenario": scenario,
+                "duration": duration,
+                "scenario_result": result
+            })
+        
+        print(f"Scenario started, waiting {duration} seconds...")
+        time.sleep(duration)
+        
+        # Get the run ID before waiting
+        print(f"Scenario start result: {result}")
+        current_run_id = result['model_check_result']['run_id']
+        print(f"Current model check run ID: {current_run_id}")
+        
+        if current_run_id is None:
+            print("Warning: No model check run ID found")
             scenario_manager.halt_all()
             return jsonify({
                 "success": False,
-                "error": "Model checking timed out or failed to complete within expected time",
+                "error": "Model checking was enabled but no run ID was created",
                 "scenario": scenario,
                 "duration": duration,
-                "scenario_result": scenario_result,
+                "scenario_result": result,
                 "model_check_available": True,
-                "timeout_seconds": max_wait_time
+                "debug_info": {
+                    "waiting_for_model_check": getattr(scenario_manager, 'waiting_for_model_check', None),
+                    "model_check_enabled": getattr(scenario_manager, 'model_check_enabled', None)
+                }
             })
         
+        # Wait for model checking to complete with better monitoring
+        print(f"Waiting for model checking to complete (run ID: {current_run_id})...")
+        max_wait_time = duration + 60  # Give model checking extra time
+        wait_start = time.time()
+        last_status = None
+        
+        while time.time() - wait_start < max_wait_time:
+            try:
+                # Check model check status directly
+                with app.test_client() as client:
+                    status_response = client.get(f'/api/model_check/result/{current_run_id}')
+                    
+                    if status_response.status_code == 200:
+                        status_data = status_response.get_json()
+                        current_status = status_data.get('status', 'unknown')
+                        
+                        if current_status != last_status:
+                            print(f"Model check status: {current_status}")
+                            last_status = current_status
+                        
+                        if current_status in ['completed', 'failed', 'cancelled', 'error']:
+                            print(f"Model checking finished with status: {current_status}")
+                            break
+                    elif status_response.status_code == 404:
+                        print(f"Model check run {current_run_id} not found")
+                        break
+                    else:
+                        print(f"Error checking status: HTTP {status_response.status_code}")
+                
+            except Exception as e:
+                print(f"Error checking model check status: {e}")
+            
+            time.sleep(2)
+        
+        # Get final results with detailed error checking
+        model_check_result = None
+        try:
+            print(f"Fetching final results for run ID: {current_run_id}")
+            with app.test_client() as client:
+                response = client.get(f'/api/model_check/result/{current_run_id}')
+                print(f"Result fetch response code: {response.status_code}")
+                
+                if response.status_code == 200:
+                    model_check_result = response.get_json()
+                    print(f"Got model check results with status: {model_check_result.get('status')}")
+                    
+                    # Check if results contain actual analysis data
+                    if model_check_result and 'results' in model_check_result:
+                        if model_check_result['results']:
+                            model_check_result['results'] = sanitize_infinity(model_check_result['results'])
+                            print("Model check results contain analysis data")
+                        else:
+                            print("Warning: Model check results are empty")
+                    else:
+                        print("Warning: Model check results missing 'results' field")
+                        
+                elif response.status_code == 404:
+                    print(f"Model check run {current_run_id} not found")
+                else:
+                    print(f"Failed to get model check results: HTTP {response.status_code}")
+                    response_text = response.get_data(as_text=True)
+                    print(f"Response body: {response_text}")
+                    
+        except Exception as e:
+            print(f"Exception getting final model check results: {e}")
+            import traceback
+            traceback.print_exc()
+        
+        # Halt everything
+        scenario_manager.halt_all()
+        
+        # Provide detailed response based on what we got
+        if not model_check_result:
+            # Check if we can get any debug info from the model checker
+            debug_info = {}
+            try:
+                with app.test_client() as client:
+                    debug_response = client.get('/api/model_check/status')
+                    if debug_response.status_code == 200:
+                        debug_info = debug_response.get_json()
+            except:
+                pass
+                
+            return jsonify({
+                "success": False,
+                "error": "Model checking did not produce results",
+                "scenario": scenario,
+                "duration": duration,
+                "scenario_result": result,
+                "model_check_available": True,
+                "model_check_run_id": current_run_id,
+                "debug_info": debug_info,
+                "waited_time": time.time() - wait_start
+            })
+        
+        # Check if we got meaningful results
+        if not model_check_result.get('results'):
+            return jsonify({
+                "success": False,
+                "error": "Model checking completed but produced no analysis results",
+                "scenario": scenario,
+                "duration": duration,
+                "scenario_result": result,
+                "model_check_available": True,
+                "model_check_result": model_check_result
+            })
+        
+        return jsonify({
+            "success": True,
+            "scenario": scenario,
+            "duration": duration,
+            "scenario_result": result,
+            "model_check_result": model_check_result,
+            "model_check_available": True
+        })
+        
     except Exception as e:
+        print(f"Unexpected error in start_scenario_model_checked: {e}")
+        import traceback
+        traceback.print_exc()
+        
         try:
             scenario_manager.halt_all()
         except:
@@ -1049,53 +1521,98 @@ def start_scenario_model_checked():
             "duration": duration
         })
 
+@app.route('/api/model_check/debug', methods=['GET'])
+def debug_model_check():
+    """Debug endpoint to check model checker status"""
+    debug_info = {
+        "model_check_blueprint_available": model_check_blueprint is not None,
+        "model_check_api_importable": False,
+        "api_instance_available": False,
+        "worker_available": False,
+        "cache_available": False
+    }
+    
+    try:
+        from adore_model_checker.model_checker_api import _get_api
+        debug_info["model_check_api_importable"] = True
+        
+        api_instance = _get_api()
+        debug_info["api_instance_available"] = True
+        debug_info["api_instance_type"] = str(type(api_instance))
+        
+        if hasattr(api_instance, 'worker'):
+            debug_info["worker_available"] = True
+            debug_info["worker_running"] = getattr(api_instance.worker, 'running', None)
+            debug_info["worker_type"] = str(type(api_instance.worker))
+        
+        if hasattr(api_instance, 'cache'):
+            debug_info["cache_available"] = True
+            debug_info["cache_type"] = str(type(api_instance.cache))
+            try:
+                runs = api_instance.cache.get_all_runs()
+                debug_info["total_runs"] = len(runs)
+                debug_info["running_runs"] = len([r for r in runs.values() if r.status.value == 'running'])
+            except Exception as e:
+                debug_info["cache_error"] = str(e)
+        
+    except Exception as e:
+        debug_info["import_error"] = str(e)
+    
+    return jsonify(debug_info)
+
 def main():
     global LOG_DIRECTORY, bag_manager, model_check_blueprint
     
     parser = argparse.ArgumentParser(description='ADORe API Server')
     parser.add_argument('--log-directory', type=str, help='Directory for logs and bag recordings')
+    parser.add_argument('--port', type=str, help='TCP listining port. DEFAULT: 8888')
     
     args = parser.parse_args()
     
     LOG_DIRECTORY = args.log_directory or os.environ.get('LOG_DIRECTORY')
+    PORT = args.port or 8888
     
     if LOG_DIRECTORY:
         os.makedirs(LOG_DIRECTORY, exist_ok=True)
         bag_manager = BagRecordingManager(LOG_DIRECTORY)
         print(f"✓ Bag recording enabled with log directory: {LOG_DIRECTORY}")
     else:
-        print("⚠ Warning: No log directory specified. Bag recording will be disabled.")
+        print("⚠  Warning: No log directory specified. Bag recording will be disabled.")
     
-    if model_check_blueprint is None:
-        try:
-            model_check_blueprint = get_model_check_blueprint()
-            app.register_blueprint(model_check_blueprint)
-            print("✓ Model checker API blueprint registered successfully")
-        except Exception as e:
-            print(f"✗ Failed to register model checker blueprint: {e}")
-            print("✗ Model checking functionality will not be available")
-    else:
-        try:
-            blueprint = get_model_check_blueprint()
-            app.register_blueprint(blueprint)
-            print("✓ Model checker API blueprint registered successfully")
-        except Exception as e:
-            print(f"✗ Failed to register model checker blueprint: {e}")
-
+    # Register model checker blueprint
     try:
+        from adore_model_checker.model_checker_api import get_model_check_blueprint
+        model_check_blueprint = get_model_check_blueprint()
+        app.register_blueprint(model_check_blueprint)
+        print("✓ Model checker API blueprint registered successfully")
+        
+        # Test the API is working
+        with app.test_client() as client:
+            response = client.get('/api/model_check/status')
+            if response.status_code == 200:
+                print("✓ Model checker API is responding")
+            else:
+                print(f"⚠ Model checker API status check failed: {response.status_code}")
+                
+    except Exception as e:
+        print(f"✗ Failed to register model checker blueprint: {e}")
+        print("✗ Model checking functionality will not be available")
+        import traceback
+        traceback.print_exc()
+
+    # Register ros2tools blueprint
+    try:
+        from ros2tools.ros2api import get_ros2tools_blueprint
         ros2tools_blueprint = get_ros2tools_blueprint()
         app.register_blueprint(ros2tools_blueprint)
         print("✓ ROS2 API blueprint registered successfully")
     except Exception as e:
         print(f"✗ Failed to register ros2tools blueprint: {e}")
         print("✗ ros2tools functionality will not be available")
- 
 
-
-
-    print(f"\n🚀 Starting ADORe API server on http://0.0.0.0:8888")
-    print(f"📊 API status available at: http://localhost:8888/api/status")
-    app.run(debug=True, host='0.0.0.0', port=8888)
+    print(f"\n🚀 Starting ADORe API server on http://0.0.0.0:{PORT}")
+    print(f"📊 API status available at: http://localhost:{PORT}/api/status")
+    app.run(debug=True, host='0.0.0.0', port=PORT)
 
 if __name__ == '__main__':
     main()

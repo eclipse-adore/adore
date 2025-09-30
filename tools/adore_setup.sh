@@ -1,4 +1,17 @@
 #!/usr/bin/env bash
+# ********************************************************************************
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License 2.0 which is available at
+# https://www.eclipse.org/legal/epl-2.0
+#
+# SPDX-License-Identifier: EPL-2.0
+# ********************************************************************************
+
 
 #!/bin/bash
 #
@@ -18,9 +31,9 @@
 #    bash adore_setup.sh
 #
 # 2. Directly from a remote URL:
-#    bash <(curl -sSL https://raw.githubusercontent.com/DLR-TS/adore_tools/master/tools/adore_setup.sh)
+#    bash <(curl -sSL https://raw.githubusercontent.com/eclipse-adore/adore/develop/tools/adore_setup.sh)
 #    or headless/non-interactive
-#    bash <(curl -sSL https://raw.githubusercontent.com/DLR-TS/adore_tools/master/tools/adore_setup.sh) --headless
+#    bash <(curl -sSL https://raw.githubusercontent.com/eclipse-adore/adore/develop/tools/adore_setup.sh) --headless
 
 #set -euo pipefail
 #set -euo
@@ -39,7 +52,7 @@ REQUIRED_FREESPACE_GB="20"
 EXTERNAL_RESOURCES=("https://pypi.org" "http://archive.canonical.com" "https://registry.hub.docker.com")
 
 #ADORE_ORGANIZATION="eclipse"
-ADORE_ORGANIZATION="DLR-TS"
+ADORE_ORGANIZATION="eclipse-adore"
 ADORE_SUPPORT_EMAIL_ADDRESS=opensource-ts@dlr.de
 ADORE_REPO="https://github.com/${ADORE_ORGANIZATION}/adore.git"
 #ADORE_REPO="git@github.com:${ADORE_ORGANIZATION}/adore.git"
@@ -237,7 +250,7 @@ install_dependencies(){
 }
 
 install_docker(){
-    bash <(curl -sSL https://raw.githubusercontent.com/DLR-TS/adore_tools/master/tools/install_docker.sh)
+    bash <(curl -sSL https://raw.githubusercontent.com/eclipse-adore/adore/develop/tools/install_docker.sh)
 }
 
 clone_adore(){

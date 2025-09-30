@@ -10,11 +10,13 @@ SCRIPT_DIRECTORY="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 SUBMODULES_PATH="$(realpath "${SCRIPT_DIRECTORY}/..")"
 
-EXCLUDES="documentation external/ros-bridge"
+EXCLUDES="documentation external/ros-bridge tools/lichtblick/lichtblick"
 
 DOCS_DIR="${SCRIPT_DIRECTORY}/technical_reference_manual"
 MODULE_TEMPLATE_MD_FILE="${SCRIPT_DIRECTORY}/modules.md"
-MODULE_DOCS_DIR="${DOCS_DIR}/modules"
+MODULE_DOCS_DIR="${DOCS_DIR}/generated/modules"
+
+mkdir -p "${MODULE_DOCS_DIR}"
 
 rm -rf "${MODULE_DOCS_DIR}"
 
@@ -74,4 +76,4 @@ for module_readme_file in $module_readme_files; do
     module_md+=$(printf "\n\n%s\n\n" "${module_readme_markdown_link}")
 done
 
-echo -n "${module_md}" > "${DOCS_DIR}/modules.md" 
+echo -n "${module_md}" > "${MODULE_DOCS_DIR}/modules.md" 

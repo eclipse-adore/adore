@@ -1,6 +1,6 @@
 ARG PROJECT
 
-FROM debian:stable-slim AS libopendrive_requirements_base
+FROM debian:bookworm-slim AS libopendrive_requirements_base
 
 ARG PROJECT
 ARG REQUIREMENTS_FILE="requirements.libOpenDRIVE.system"
@@ -47,5 +47,9 @@ RUN cd /tmp/libOpenDRIVE/libOpenDRIVE/build && \
     rm -rf install && \
     ln -s devel install && \
     mv CMakeCache.txt CMakeCache.txt.build
+
+FROM alpine:3.22 AS libopendrive_release
+COPY --from=libopendrive_requirements_base /tmp/libOpenDRIVE/libOpenDRIVE/build /tmp/libOpenDRIVE/libOpenDRIVE/build
+
 
 

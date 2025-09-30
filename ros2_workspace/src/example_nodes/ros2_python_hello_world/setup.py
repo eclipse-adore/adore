@@ -1,10 +1,21 @@
+# ********************************************************************************
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License 2.0 which is available at
+# https://www.eclipse.org/legal/epl-2.0
+#
+# SPDX-License-Identifier: EPL-2.0
+# ********************************************************************************
+
 from setuptools import setup, find_packages
 import os
 
-# Dynamically determine package name from directory  
 package_name = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
 
-# Dynamically read requirements from requirements.pip3
 requirements = []
 if os.path.exists('requirements.pip3'):
     with open('requirements.pip3', 'r') as f:
@@ -15,6 +26,10 @@ setup(
     version='0.0.0',
     packages=find_packages(where='src'),
     package_dir={'': 'src'},
+    data_files=[
+        ('share/ament_index/resource_index/packages', [os.path.join('resource', package_name)]),
+        (f'share/{package_name}', ['package.xml']),
+    ],
     install_requires=requirements,
     python_requires='>=3.6',
     zip_safe=True,
@@ -28,4 +43,8 @@ setup(
             f'{package_name}_adore = {package_name}.adore_hello_world_node:main',
         ],
     },
+    extras_require={
+        'test': ['pytest']
+    },
 )
+

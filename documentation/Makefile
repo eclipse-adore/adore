@@ -40,8 +40,7 @@ build_sphinx_docs: ## Build sphinx documentation
 	cd sphinx && make html
 
 .PHONY: build_gh-pages_docnado
-build_gh-pages_docnado: stop build_doxygen_docs build_docnado_docs
-	rm -rf docs
+build_gh-pages_docnado: stop clean build_doxygen_docs build_docnado_docs
 	mkdir -p docs
 	cp -r landing_page/* docs/
 	cp -r docnado/html docs/docnado
@@ -55,14 +54,13 @@ build_gh-pages: stop build_doxygen_docs build_mkdocs
 	cp -r mkdocs/site docs/mkdocs
 	cp -r doxygen/generated_doxygen_documentation/html docs/generated_doxygen_documentation
 
-.PHONY: populate_module_docs 
-populate_module_docs: stop update_submodules
-	bash populate_module_readme_docs.sh
-
 .PHONY: build_mkdocs
-build_mkdocs: stop populate_module_docs ## Build mkdocs 
+build_mkdocs: stop update_submodules ## Build mkdocs 
 	rm mkdocs/docs -rf
 	rm mkdocs/site -rf
+	bash populate_module_readme_docs.sh
+	bash populate_ros_node_summary_docs.sh
+	bash copy_module_documents.sh
 	cp -r technical_reference_manual mkdocs/docs
 	cd mkdocs && docker build -f Dockerfile.mkdocs -t mkdocs:latest .
 	docker run --user ${UID}:${GID} -v ${ROOT_DIR}/mkdocs:/tmp/docs mkdocs:latest
@@ -104,8 +102,7 @@ clean: stop
 	rm -rf mkdocs/docs || true
 	rm mkdocs/site -rf
 	rm doxygen/generated_doxygen_documentation/* -rf
-	rm -rf technical_reference_manual/modules/
-	rm -rf technical_reference_manual/modules.md
+	rm -rf technical_reference_manual/generated/
 
 .PHONY: spellcheck
 spellcheck: clean ## Start an interactive spell checking session with the tool aspell

@@ -7,12 +7,12 @@ For manual setup or a deeper look into getting ADORe set up please review the
 
 To setup and configure ADORe for a first run you can run the following setup script:
 ```bash
-bash <(curl -sSL https://raw.githubusercontent.com/DLR-TS/adore/master/tools/adore_setup.sh)
+bash <(curl -sSL https://raw.githubusercontent.com/eclipse-adore/adore/develop/tools/adore_setup.sh)
 ```
 
 > **ℹ️INFO:**
 > The ADORe setup script can run in non-interactive/unattended mode with:
-`bash <(curl -sSL https://raw.githubusercontent.com/DLR-TS/adore/tools/adore_setup.sh) --headless`
+`bash <(curl -sSL https://raw.githubusercontent.com/eclipse-adore/adore/develop/tools/adore_setup.sh) --headless`
 
 This script will do the following:
  
@@ -26,7 +26,4 @@ This script will do the following:
 
 > **⚠️  WARNING:**
 > As a general rule you should never run shell scripts from untrusted sources. 
-
-
-
 

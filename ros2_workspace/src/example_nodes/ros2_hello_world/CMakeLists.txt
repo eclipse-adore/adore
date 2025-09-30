@@ -16,13 +16,22 @@ target_include_directories(${PROJECT} PRIVATE
 )
 
 
+# Auto-link all ADORe user libraries
 add_all_target_include_directories(${PROJECT})
 add_all_target_link_libraries(${PROJECT})
 
-ament_add_gtest(hello_world_test test/hello_world_test.cpp)
-if(TARGET hello_world_test)
-    ament_target_dependencies(hello_world_test rclcpp std_msgs)
+file(GLOB_RECURSE TEST_SOURCES test/*.cpp)
+if(TEST_SOURCES)
+    ament_add_gtest(${PROJECT}_test ${TEST_SOURCES})
+    if(TARGET ${PROJECT}_test)
+        ament_target_dependencies(${PROJECT}_test rclcpp std_msgs)
+    endif()
 endif()
+
+#ament_add_gtest(${PROJECT}_test test/${PROJECT}_test.cpp)
+#if(TARGET ${PROJECT}_test)
+#    ament_target_dependencies(${PROJECT}_test rclcpp std_msgs)
+#endif()
 
 
 install(TARGETS

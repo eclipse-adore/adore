@@ -16,7 +16,7 @@
 
 The ADORe CLI is a docker run-time context that provides a complete set of tools
 for execution and development within adore. For more information on this tool
-please visit https://github.com/DLR-TS/adore_cli
+please visit https://github.com/eclipse-adore/adore_cli
 
 The ADORe CLI context provides the following features: 
 * Execution environment for all ADORe related program, nodes, binaries 
@@ -24,6 +24,7 @@ The ADORe CLI context provides the following features:
 * Pre-installed system tools such as net-tools (ping), traceroute, nmap, gdb, ZSH etc 
 * Pre-installed system dependencies for all ADORe ROS nodes and programs
 * Linked filesystem via Docker Volumes to the ADORe repository
+* REST API for interaction with ADORe and ROS
 * some basic development and debugging tools
 
 ### ADORe CLI Usage

@@ -1,5 +1,6 @@
 SHELL:=/bin/bash
-
+MAKEFLAGS += --no-print-directory
+.NOTPARALLEL:
 ROOT_DIR:=$(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
 
 # This will automatically check if submodules have been updated when the 
@@ -13,28 +14,24 @@ endif
 $(shell git config core.hooksPath .githooks >&2 || true)
 
 include ${MAKE_GADGETS_DIR}/make_gadgets.mk
-#include tools/make_gadgets/docker/docker-tools.mk
 
 .EXPORT_ALL_VARIABLES:
 SOURCE_DIRECTORY:=${ROOT_DIR}
-ADORE_CLI_WORKING_DIRECTORY:=${ROOT_DIR}
-ADORE_DIRECTORY:=${ROOT_DIR}
 SUBMODULES_PATH:=${ROOT_DIR}/tools
 VENDOR_PATH:=${ROOT_DIR}/vendor
 ROS_NODE_PATH:=${ROOT_DIR}/ros2_workspace/src
 ADORE_LIBRARY_PATH:=${ROOT_DIR}/libraries
-#BRANCH:=$(shell make get_sanitized_branch_name)
-BRANCH:=$(shell bash ${MAKE_GADGETS_DIR}/tools/branch_name.sh)
-ADORE_CLI_BRANCH:=$(shell bash ${MAKE_GADGETS_DIR}/tools/branch_name.sh)
-ADORE_CLI_IMAGE:=$(shell cd tools/adore_cli && make image_adore_cli)_${BRANCH}
-ADORE_CLI_CONTAINER_NAME:=$(subst :,_,${ADORE_CLI_IMAGE})
 
+# Branch information
+BRANCH:=$(shell bash ${MAKE_GADGETS_DIR}/tools/branch_name.sh)
+
+# Include adore_cli functionality
 include ${SUBMODULES_PATH}/adore_cli/ci_teststand/ci_teststand.mk
 include utils.mk
 include tools/adore_cli/adore_cli.mk
 
 .PHONY: build
-build: clean stop_adore_cli build_vendor_libraries build_adore_cli_core build_adore_cli build_user_libraries build_ros_nodes ## Build and setup adore cli
+build: docker_host_context_check clean stop_adore_cli build_vendor_libraries build_adore_cli build_libraries build_ros_nodes clean_tag_history ## Build and setup adore cli
 
 .PHONY: build_all
 build_all: clean build build_services
@@ -44,43 +41,65 @@ build_services: ## Build ADORe supporting services such as Foxglove Studio aka L
 	cd tools/lichtblick && make build
 
 .PHONY: start_services
-start_services: ## Start ADORe supporting services  
+start_services: docker_host_context_check ## Start ADORe supporting services  
 	cd tools/lichtblick && make start
 
 .PHONY: stop_services
-stop_services: ## Stop ADORe supporting services 
+stop_services: docker_host_context_check ## Stop ADORe supporting services 
 	cd tools/lichtblick && make stop
 
 .PHONY: build_vendor_libraries
-build_vendor_libraries: ## Builds vendor libraries located in: ${VENDOR_PATH}
+build_vendor_libraries: docker_host_context_check ## Builds vendor libraries located in: ${VENDOR_PATH}
 	cd "${VENDOR_PATH}" && make build
 
-.PHONY: build_user_libraries
-build_user_libraries: ## Builds user libraries located in: ${ADORE_LIBRARY_PATH}
-	make run cmd="cd libraries && make build"
+.PHONY: build_libraries
+build_libraries: ## Builds ADORe user libraries located in: ${ADORE_LIBRARY_PATH}
+	if [ -f /.dockerenv ]; then \
+		cd libraries && make build; \
+	else \
+		make run cmd="cd libraries && make build"; \
+	fi
 
 .PHONY: build_documentation
-build_documentation: ## Builds ADORe Documentation in: ./documentation
+build_documentation: docker_host_context_check ## Builds ADORe Documentation in: ./documentation
 	cd documentation && make build
 
+.PHONY: build_nodes
+build_nodes: build_ros_nodes ## Builds ROS2 nodes located in: ${ROS_NODE_PATH}
 .PHONY: build_ros_nodes
 build_ros_nodes: ## Builds ROS2 nodes located in: ${ROS_NODE_PATH}
-	make run cmd="cd ros2_workspace && make build"
+	if [ -f /.dockerenv ]; then \
+		cd ros2_workspace && make build; \
+	else \
+		make run cmd="cd ros2_workspace && make build"; \
+	fi
+
+.PHONY: check_adore_binaries
+check_adore_binaries: ## Checks for ADORe binaries
+	bash tools/check_adore_binaries.sh
 
 .PHONY: clean
-clean: clean_adore_cli ## Clean ADORe  build artifacts 
+clean: docker_host_context_check clean_adore_cli ## Clean ADORe build artifacts 
 	cd vendor && make clean
 	cd libraries && make clean
 	cd ros2_workspace && make clean
 	rm -rf build
 
-.PHONY:lint_nodes
+.PHONY: lint_nodes
 lint_nodes:
 	@if [ -f /.dockerenv ]; then \
         clang-format -Werror -i -output-replacements-xml --checks=* -dry-run $(shell find ros2_workspace/src -type f \( -name "*.cpp" -or -name "*.hpp" -or -name "*.h" \)); \
     else \
         make run cmd="clang-format -Werror -i --checks=* -output-replacements-xml -dry-run $(shell find ros2_workspace/src -type f \( -name "*.cpp" -or -name "*.hpp" -or -name "*.h" \))"; \
     fi
+
+.PHONY: due_diligence_scan
+due_diligence_scan: ## Scan repo for eclipse due diligence, checks if source files have the proper doc header.
+	python3 tools/eclipse_due_diligence_scanner.py --ignore tools/.eclipse_due_diligance_ignore 
+
+.PHONY: due_diligence_fix
+due_diligence_fix: ## Fix due diligence issues
+	python3 tools/eclipse_due_diligence_scanner.py --ignore tools/.eclipse_due_diligance_ignore --fix
 
 .PHONY: benchmark
 benchmark: ## Run the ROS Topic benchmark script 
@@ -91,7 +110,6 @@ benchmark: ## Run the ROS Topic benchmark script
 	fi
 
 .PHONY: test
-test: ci_test
-
-
+test: ci_test ## Run ADORe Unit Tests
+	cd tools/adore_cli && make test
 

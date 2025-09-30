@@ -24,14 +24,15 @@ ROS2_WORKSPACE := $(shell \
 )
 
 ROS2_PACKAGE := $(shell grep -oP '<name>\K[^<]*' $(SCRIPT_DIRECTORY)/package.xml | tr -d '[:space:]')
-DEPENDENCIES := $(shell grep -oP '<depend>\K[^<]*' $(SCRIPT_DIRECTORY)/package.xml | tr '\n' ' ' | tr -s ' ' | sed 's/ $$//')
+DEPENDENCIES := $(shell grep -oP '<(?:depend|build_depend)>\K[^<]*' $(SCRIPT_DIRECTORY)/package.xml | tr '\n' ' ' | tr -s ' ' | sed 's/ $$//')
+
 
 
 .PHONY: build
 build: build_dependencies ##         Build ROS2 Node. Same as running `colcon build --packages-select <package name>`
 	@echo "Building: ${ROS2_PACKAGE}"
 	@echo "  Using ROS 2 workspace: ${ROS2_WORKSPACE}"
-	cd $(ROS2_WORKSPACE) && colcon build --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo --packages-select ${ROS2_PACKAGE} --event-handlers console_direct+
+	cd $(ROS2_WORKSPACE) && colcon build --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo --packages-select ${ROS2_PACKAGE}
 
 .PHONY: build_dependencies
 build_dependencies: ## Build all node dependencies
@@ -55,7 +56,7 @@ test: build ##         Execute unit tests
 run: ##         Run the node
 	@echo "Running ROS 2 node: ${ROS2_PACKAGE}..."
 	@echo "  Using ROS 2 workspace: ${ROS2_WORKSPACE}"
-	source $(ROS2_WORKSPACE)/install/setup.bash && \
+	@source $(ROS2_WORKSPACE)/install/setup.bash && \
     if [ -z "$$(ros2 pkg list | grep $(ROS2_PACKAGE))" ]; then \
         echo "ERROR: ROS2 Package: '$(ROS2_PACKAGE)' not found. Did you build it?" >&2; \
         exit 1; \

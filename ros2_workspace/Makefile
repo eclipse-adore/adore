@@ -28,6 +28,8 @@ build: ## Build all ROS2 packages
 	@echo "Detected RAM: $(RAM_KB) kB ($(RAM_GB) GB)"
 	@echo "Executor mode: $(EXECUTOR_ARG)"
 	source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build $(EXECUTOR_ARG)
+	@echo "✅ ROS nodes build complete"
+	touch build/build.success
 
 .PHONY: build_release
 build_release: ## Build all ROS2 packages in Release mode
@@ -76,6 +78,10 @@ launch: ## Launch a ROS2 scenario
 	else \
 		echo "No file selected."; \
 	fi
+
+.PHONY: package
+package:
+	bash tools/ros2_debian_packager.sh
 
 .PHONY: integration_tests
 integration_tests: ## Run pytest inside adore_scenarios

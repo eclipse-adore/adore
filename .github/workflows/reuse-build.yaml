@@ -84,54 +84,52 @@ jobs:
         run: |
           echo "Building vendor..."
           make build_vendor_libraries 
-          make save || true
+          #make save || true
 
       - name: Build ADORe CLI
         shell: bash
         run: |
-          echo "Building ADORe CLI core..."
-          make load || true
-          make build_adore_cli_core
           echo "Building ADORe CLI..."
           make build_adore_cli
-          make save || true
+          #make save || true
 
       - name: Test ROS2 installation
         shell: bash
         run: |
           echo "Testing the ROS 2 installation in the ADORe CLI..."
-          make load || true
+          #make load || true
           make test_ros2_installation
-          make save || true
+          #make save || true
 
       - name: Build user libraries
         shell: bash
         run: |
-          make load || true
+          #make load || true
           echo "Building user libraries..."
-          make build_user_libraries
-          make save || true
+          make build_libraries
+          #make save || true
 
       - name: Build ROS nodes
         shell: bash
         run: |
-          make load || true
-          echo "Building nodes..."
-          make build_ros_nodes
-          make save || true
+          #make load || true
+          echo "Building ROS nodes..."
+          make build_nodes
+          #make save || true
 
       - name: Build Services
         shell: bash
         run: |
-          make load || true
+          #make load || true
           echo "Building services..."
           make build_services
-          make save || true
+          #make save || true
 
       - name: CI Test
         shell: bash
         run: |
           df -h
+          make save || true
           make ci_test
       
       - name: Documentation Lint
@@ -139,14 +137,25 @@ jobs:
         run: |
           cd documentation
           make lint
+      
+      - name: Create logs archive
+        shell: bash
+        run: |
+          if [ -d ".log" ]; then
+            tar -czf logs_${{ runner.arch }}.tar.gz .log/
+            echo "Archive created: logs_${{ runner.arch }}.tar.gz"
+          else
+            echo "Warning: .log directory not found for archiving"
+            touch logs_${{ runner.arch }}.tar.gz
+          fi
 
-      - name: Upload Logs
+      - name: Upload Archive
         uses: actions/upload-artifact@v4
-        with:
-          name: logs
-          path: .log
         if: always()
-
+        with:
+          name: logs_${{ runner.arch }}
+          path: logs_${{ runner.arch }}.tar.gz
+      
       - name: Create build archive
         shell: bash
         run: |
@@ -281,7 +290,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push image
+      - name: Push docker images
         shell: bash
         run: |
           docker image push ghcr.io/${{ github.repository_owner }}/adore:${BUILD_BRANCH}-${{ inputs.image_platform }}
+          make push_core_image
