@@ -80,7 +80,7 @@ check_adore_binaries: ## Checks for ADORe binaries
 	bash tools/check_adore_binaries.sh
 
 .PHONY: clean
-clean: docker_host_context_check clean_adore_cli ## Clean ADORe build artifacts 
+clean: docker_host_context_check stop clean_adore_cli ## Clean ADORe build artifacts 
 	cd vendor && make clean
 	cd libraries && make clean
 	cd ros2_workspace && make clean
