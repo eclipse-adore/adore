@@ -1,20 +1,4 @@
 SHELL:=/bin/bash
-
-.DEFAULT_GOAL := all
-
-ROOT_DIR:=$(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
-
-MAKEFLAGS += --no-print-directory
-
-.EXPORT_ALL_VARIABLES:
-
-USER := $(shell whoami)
-UID := $(shell id -u)
-GID := $(shell id -g)
-
-
-
-SHELL:=/bin/bash
 MAKEFLAGS += --no-print-directory
 .NOTPARALLEL:
 ROOT_DIR:=$(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
@@ -32,15 +16,13 @@ $(shell git config core.hooksPath .githooks >&2 || true)
 include ${MAKE_GADGETS_DIR}/make_gadgets.mk
 
 .EXPORT_ALL_VARIABLES:
-DOCKER_BUILDKIT?=1
-DOCKER_CONFIG?=
 SOURCE_DIRECTORY:=${ROOT_DIR}
 SUBMODULES_PATH:=${ROOT_DIR}/tools
 VENDOR_PATH:=${ROOT_DIR}/vendor
 ROS_NODE_PATH:=${ROOT_DIR}/ros2_workspace/src
 ADORE_LIBRARY_PATH:=${ROOT_DIR}/libraries
-
-
+DOCKER_BUILDKIT?=1
+DOCKER_CONFIG?=
 
 # Branch information
 BRANCH:=$(shell bash ${MAKE_GADGETS_DIR}/tools/branch_name.sh)
