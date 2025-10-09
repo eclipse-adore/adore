@@ -21,6 +21,8 @@ All are included under the licenses listed below. Paths indicate where the conte
 | Sphinx             | BSD 2-Clause "Simplified"        | `documentation/`                         | https://www.sphinx-doc.org/                |
 | Tracecompass       | EPL2                             | `vendor/ros2_observer/trace_compass`     | https://github.com/eclipse-tracecompass/org.eclipse.tracecompass |
 | lttng-scope        | Eclipse Public License - v 1.0   | `vendor/ros2_observer/ltten_scope`       |  https://github.com/lttng/lttng-scope |
+| lichtblick-suit    | Mozilla Public License, v. 2.0   | `tools/lichtblick`       |  https://github.com/lichtblick-suite/lichtblick |
+
 
 ---
 
