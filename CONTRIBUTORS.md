@@ -15,4 +15,5 @@ This project exists thanks to these people and more (alphabetically):
 - Prof. Dr. Reza Dariani
 - Sanath Konthala
 - Thomas Lobig
+- Jan Niklas Böger
 - and more

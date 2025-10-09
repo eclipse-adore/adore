@@ -16,7 +16,7 @@ export ADORE_API_BASE="http://localhost:5000"
 curl -X POST "${ADORE_API_BASE}/api/scenario/start" \
   -H "Content-Type: application/json" \
   -d '{
-    "scenario": "scenarios/simulation_test.launch.py",
+    "scenario": "adore_scenarios/simulation_scenarios/simulation_test.launch.py",
     "is_file": true
   }'
 ```
