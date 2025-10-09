@@ -21,7 +21,7 @@ cd tools/adore_api
 python adore_api.py
 
 # Check status
-curl http://localhost:5000/api/status
+curl http://localhost:8888/api/status
 ```
 
 ## Documentation
@@ -44,5 +44,5 @@ Access the ADORe Mission Control interface at `http://localhost:5000` for a comp
 ## Base URL
 
 ```
-http://localhost:5000/api
+http://localhost:8888/api
 ```
