@@ -21,6 +21,8 @@ SUBMODULES_PATH:=${ROOT_DIR}/tools
 VENDOR_PATH:=${ROOT_DIR}/vendor
 ROS_NODE_PATH:=${ROOT_DIR}/ros2_workspace/src
 ADORE_LIBRARY_PATH:=${ROOT_DIR}/libraries
+DOCKER_BUILDKIT?=1
+DOCKER_CONFIG?=
 
 # Branch information
 BRANCH:=$(shell bash ${MAKE_GADGETS_DIR}/tools/branch_name.sh)
@@ -31,7 +33,8 @@ include utils.mk
 include tools/adore_cli/adore_cli.mk
 
 .PHONY: build
-build: docker_host_context_check clean stop_adore_cli build_vendor_libraries build_adore_cli build_libraries build_ros_nodes clean_tag_history ## Build and setup adore cli
+build: docker_host_context_check clean stop_adore_cli build_vendor_libraries build_adore_cli build_libraries build_ros_nodes ## Build and setup adore cli
+	make clean_tag_history
 
 .PHONY: build_all
 build_all: clean build build_services
@@ -79,7 +82,8 @@ check_adore_binaries: ## Checks for ADORe binaries
 	bash tools/check_adore_binaries.sh
 
 .PHONY: clean
-clean: docker_host_context_check clean_adore_cli ## Clean ADORe build artifacts 
+clean: docker_host_context_check stop clean_adore_cli clean_tag_history ## Clean ADORe build artifacts 
+
 	cd vendor && make clean
 	cd libraries && make clean
 	cd ros2_workspace && make clean
