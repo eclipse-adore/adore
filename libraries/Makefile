@@ -44,6 +44,17 @@ build_debug: check_resources ## Build ADORe libraries in Debug mode
 	@echo "✅ Libraries debug build complete"
 	@touch build/build_debug.success
 
+.PHONY: test
+test: ## Run unit tests
+	@if [ -f build/bin/unit_test_runner ]; then \
+		echo "Running unit tests..."; \
+		./build/bin/unit_test_runner; \
+	else \
+		echo "ERROR: unit_test_runner binary not found"; \
+		echo "Please build the libraries first by running: make build"; \
+		exit 1; \
+	fi
+
 .PHONY: clean
 clean:
 	rm -rf ${ROOT_DIR}/build

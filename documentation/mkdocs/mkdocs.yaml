@@ -43,7 +43,7 @@ nav:
     - Testing: 
         - System Testing: system_and_development/system_tests.md 
         - ROS Unit Testing: system_and_development/ros_unit_testing.md
-        - C++ Library Testing: system_and_development/ros_unit_testing.md
+        - C++ Library Testing: system_and_development/library_testing.md
     - Submodules: generated/modules/modules.md
     - Troubleshooting: problems_and_solutions.md
     - Licensing: licensing.md
