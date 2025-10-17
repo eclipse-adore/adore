@@ -14,10 +14,13 @@
 ********************************************************************************
 -->
 # Anonymous Cloning
-In order to make development more friendly nearly all git submodules are 
-configured to use git over ssh via the .gitmodules. The downside of this is that
-GitHub requires account keys to be configured to in order to clone the repository.
-If you attempt to clone without configuring your account keys you will receive 
+
+In order to make development more friendly nearly all git submodules are
+configured to use git over ssh via the `.gitmodules`. The downside of this is that
+GitHub requires account keys to be configured in order to clone the repository.
+
+
+If you attempt to clone without configuring your account keys you will receive
 the following error:
 
 ```bash
@@ -34,9 +37,9 @@ Please make sure you have the correct access rights
 and the repository exists.
 ```
 
-## Anonymous Cloning Over HTTPS
+## Anonymous Cloning Over HTTPS **GLOBAL**
 
-You can configure git to exclusively use https. This can be done with the 
+You can configure git to exclusively use HTTPS. This can be done with the
 following commands:
 
 ```bash
@@ -44,13 +47,55 @@ git config --global url."https://github.com/".insteadOf git@github.com:
 git config --global url."https://".insteadOf git://
 ```
 
-Next, you can clone the repository as normal except use https:
+Next, you can clone the repository as normal except use HTTPS:
+
 ```bash
 git clone --recurse-submodules -j$(nproc) https://github.com/eclipse-adore/adore.git
 ```
 
 To undo these global configuration changes you can run:
+
 ```bash
 git config --global --unset url."git@github.com:".insteadof
 git config --global --unset url."git://".insteadof
 ```
+
+## Anonymous Cloning Without Global Configuration
+
+If you prefer not to modify your global git settings, you can configure HTTPS
+rewrites **only for this repository** after cloning:
+
+```bash
+git clone https://github.com/eclipse-adore/adore.git
+cd adore
+git config url."https://github.com/".insteadOf git@github.com:
+git config url."https://".insteadOf git://
+git submodule update --init --recursive
+```
+
+This will update the repository’s local `.git/config` file, allowing submodules
+to be fetched over HTTPS without requiring SSH keys or affecting other projects.
+
+You can verify the settings with:
+
+```bash
+git config --local --list | grep insteadOf
+```
+
+To remove the local configuration later, run:
+
+```bash
+git config --unset url."git@github.com:".insteadof
+git config --unset url."git://".insteadof
+```
+
+# Tips
+Building ADORe **will** fail until all submodules have been properly initialized. 
+If cloning or repository initialization fails refer to the
+[troubleshooting](../problems_and_solutions.md) guide before proceeding.
+
+> **⚠️ WARNING:**
+> Do not proceed with building ADORe until `git submodule update --init --receive`
+> finishes without error. 
+
+

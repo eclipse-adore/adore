@@ -116,13 +116,25 @@ cd ros2_workspace && make build_single_core
 
 
 ## Problem: Build exits with undefined targets
-Build fails with missing or undefined targets:
+Build fails with missing or undefined targets or directories:
 ```
 cd ros2_observer && make clean
 make[2]: * No rule to make target 'clean'.  Stop.
 make[1]: * [Makefile:42: clean] Error 2
 make: *** [Makefile:72: clean] Error 2
 ```
+or
+```
+docker cp $(docker create --rm helix:latest):/helix/ "./build"
+Successfully copied 15MB to /home/ts-labs0019/Projects/adore/vendor/helix/build
+mkdir -p build
+cp mathematics_toolbox/eigen/build build/eigen -r
+cp: cannot stat 'mathematics_toolbox/eigen/build': No such file or directory
+make[1]: * [Makefile:19: build] Error 1
+make: * [Makefile:56: build_vendor_libraries] Error 2
+➜  adore git:(develop)
+```
+
 The ADORe repositories uses git submodules, if they fail to clone or update 
 this will cause other activities to fail.
 

@@ -10,7 +10,7 @@ see the [ADORe Lichtblick-Suite README 🔗](../generated/visualization/lichtbli
 ```bash
 make cli
 cd adore_scenarios/simulation_scenarios
-ros2 launch simulation_test.py
+ros2 launch simulation_test.launch.py
 ```
 
 3. Open lichtblick (in another shell):

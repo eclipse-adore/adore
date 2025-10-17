@@ -48,6 +48,13 @@ make build
 > **ℹ️INFO:** On first run of the ADORe CLI the entire system will be built. 
 > Initial build can take 10-15 minutes depending on system and network.
 
+> **⚠️ WARNING:**
+> Building ADORe **will** fail until all submodules have been properly initialized. 
+> If cloning or repository initialization fails refer to the
+> [troubleshooting](../problems_and_solutions.md) guide before proceeding.
+> Do not proceed with building ADORe until `git submodule update --init --receive`
+> finishes without error. 
+
 ## Running ADORe
 After cloning and satisfying all system prerequisites and building ADORe
 you can start the ADORe CLI interactive shell docker context.

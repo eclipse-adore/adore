@@ -40,6 +40,10 @@ nav:
     - ADORe CLI: 
         - ADORe CLI: generated/adore_cli/README.md
         - Multi-arch Build Support: system_and_development/multiarch_support.md
+    - Testing: 
+        - System Testing: system_and_development/system_tests.md 
+        - ROS Unit Testing: system_and_development/ros_unit_testing.md
+        - C++ Library Testing: system_and_development/library_testing.md
     - Submodules: generated/modules/modules.md
     - Troubleshooting: problems_and_solutions.md
     - Licensing: licensing.md
