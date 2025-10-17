@@ -31,14 +31,18 @@ def create_visualization_nodes(whitelist, asset_folder, ns="ego_vehicle", use_ce
     return [
         Node(
             package='foxglove_bridge',
-            namespace='global',
             executable='foxglove_bridge',
             name='foxglove_bridge',
             output='screen',
+            emulate_tty=True,
             parameters=[
                 {'port': port},
-                {'send_buffer_limit': send_buffer_limit}
+                {'send_buffer_limit': send_buffer_limit},
+                {'use_compression': False}  # Try disabling compression
             ],
+            arguments=['--ros-args', '--log-level', 'info'],
+            respawn=True,
+            respawn_delay=2.0
         ),
         Node(
             package='visualizer',

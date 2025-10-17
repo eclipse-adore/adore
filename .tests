@@ -537,6 +537,6 @@ wait_for_api_ready() {
 #    unset ROS_BENCHMARK_MAX_JITTER
 #    unset ROS_BENCHMARK_MAX_STD
 #    
-    exit $benchmark_exit_code
-}
+#    exit $benchmark_exit_code
+#}
 
