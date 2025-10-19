@@ -136,7 +136,6 @@ macro(generate_library_targets SOURCE_DIRECTORY)
                         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
                         )
 
-                    # FIX: Use correct path for requirements.cmake
                     set(requirements_file "${directory}/requirements.cmake")
                     if(EXISTS "${requirements_file}")
                         message("    Including requirements: ${requirements_file}")
@@ -151,12 +150,10 @@ macro(generate_library_targets SOURCE_DIRECTORY)
                         OUTPUT_NAME "${library_name}"
                         )
 
-                    # FIX: Check if include directory exists before copying
                     if(EXISTS "${directory}/include")
                         file(COPY "${directory}/include" DESTINATION "${CMAKE_BINARY_DIR}/lib/${library_name}")
                     endif()
 
-                    # FIX: Check if InstallTargets.cmake exists
                     if(EXISTS "${CMAKE_SOURCE_DIR}/cmake/InstallTargets.cmake")
                         include(${CMAKE_SOURCE_DIR}/cmake/InstallTargets.cmake)
                     endif()
@@ -183,7 +180,6 @@ macro(generate_library_targets SOURCE_DIRECTORY)
 endmacro()
 
 macro(add_all_target_include_directories NEW_TARGET)
-    # FIX: Get the target type to handle interface libraries correctly
     get_target_property(NEW_TARGET_TYPE ${NEW_TARGET} TYPE)
     
     get_property(targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
@@ -202,7 +198,6 @@ macro(add_all_target_include_directories NEW_TARGET)
         if(NEW_TARGET_TYPE STREQUAL "STATIC_LIBRARY")
             continue()
         endif()
-        # FIX: Skip include directories for interface libraries
         if(NEW_TARGET_TYPE STREQUAL "INTERFACE_LIBRARY")
             continue()
         endif()

@@ -149,7 +149,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push core image
-        #if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+        if: github.event_name == 'pull_request' && github.base_ref == 'develop'
         shell: bash
         run: |
           make push_core_image
