@@ -113,22 +113,6 @@ benchmark: ## Run the ROS Topic benchmark script
 		make run cmd="bash tools/ros_topic_benchmark.sh"; \
 	fi
 
-.PHONY: push_image
-push_image:
-	@echo "=== Pushing core image to registry ==="
-	GITHUB_REPO=$$(echo "${GITHUB_REPOSITORY}" | tr '[:upper:]' '[:lower:]'); \
-	REGISTRY_PREFIX="ghcr.io/$${GITHUB_REPO}/"; \
-	echo "Registry prefix: $${REGISTRY_PREFIX}"; \
-	if docker image inspect "${ADORE_CLI_CORE_IMAGE}" >/dev/null 2>&1; then \
-	    echo "Tagging and pushing core environment: ${ADORE_CLI_CORE_IMAGE}"; \
-	    docker tag "${ADORE_CLI_CORE_IMAGE}" "$${REGISTRY_PREFIX}${ADORE_CLI_CORE_IMAGE}"; \
-	    docker push "$${REGISTRY_PREFIX}${ADORE_CLI_CORE_IMAGE}"; \
-	    echo "✓ Pushed core environment"; \
-	else \
-	    echo "✗ Core environment image not found locally"; \
-	fi
-
-
 .PHONY: test
 test: ci_test ## Run ADORe Unit Tests
 	cd tools/adore_cli && make test
