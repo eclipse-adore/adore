@@ -14,35 +14,41 @@
 from launch_ros.actions import Node
 import os
 
-def create_visualization_nodes(whitelist, asset_folder, ns="ego_vehicle", use_center_ego=True, port=8765, send_buffer_limit=500000000):
+def create_visualization_nodes(whitelist, asset_folder, ns="ego_vehicle", use_center_ego=True, port=9090, send_buffer_limit=500000000):
     """
-    Returns a list of nodes for visualization (foxglove bridge and visualizer).
+    Returns a list of nodes for visualization (rosbridge, rosapi and visualizer).
 
     Parameters:
         whitelist (list[str]): List of topic namespace prefixes to visualize.
         asset_folder (str): Path to folder containing map image assets.
         use_center_ego (bool): Whether the ego vehicle should be used as map center.
-        port (int): Port for Foxglove Bridge.
-        send_buffer_limit (int): Buffer limit for Foxglove Bridge.
+        port (int): Port for Rosbridge (default 9090).
+        send_buffer_limit (int): Buffer limit for Rosbridge.
 
     Returns:
         list[Node]: Launchable ROS 2 Node actions.
     """
     return [
         Node(
-            package='foxglove_bridge',
-            executable='foxglove_bridge',
-            name='foxglove_bridge',
+            package='rosapi',
+            executable='rosapi_node',
+            name='rosapi',
+            output='screen'
+        ),
+        Node(
+            package='rosbridge_server',
+            executable='rosbridge_websocket',
+            name='rosbridge_websocket',
             output='screen',
-            emulate_tty=True,
             parameters=[
                 {'port': port},
-                {'send_buffer_limit': send_buffer_limit},
-                {'use_compression': False}  # Try disabling compression
-            ],
-            arguments=['--ros-args', '--log-level', 'info'],
-            respawn=True,
-            respawn_delay=2.0
+                {'address': '0.0.0.0'},
+                {'use_compression': False},
+                {'fragment_timeout': 600},
+                {'delay_between_messages': 0},
+                {'max_message_size': 10000000},
+                {'unregister_timeout': 10.0}
+            ]
         ),
         Node(
             package='visualizer',

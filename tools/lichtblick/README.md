@@ -50,11 +50,12 @@ cd adore_scenarios/simulation_scenarios
 ros2 launch simulation_test.py
 ```
 
+
 3. Open lichtblick (in another shell):
 ```bash
-chromium http://localhost:8080/\?ds\=rosbridge-websocket\&ds.url\=ws://localhost:9090\&layout\=Default.json
+chromium  http://localhost:8080//?ds=rosbridge-websocket&ds.url=ws://localhost:9090&ds\=rosbridge-websocket\&layout\=Default.json
 ```
 or with a link:
-[http://localhost:8080/?ds=rosbridge-websocket&ds.url=ws://localhost:9090&layout=Default.json](http://localhost:8080/?ds=rosbridge-websocket&ds.url=ws://localhost:9090&layout=Default.json)
+[http://localhost:8080//?ds=rosbridge-websocket&ds.url=ws://localhost:9090&ds\=rosbridge-websocket\&layout\=Default.json](http://localhost:8080//?ds=rosbridge-websocket&ds.url=ws://localhost:9090&ds\=rosbridge-websocket\&layout\=Default.json)
 
 
