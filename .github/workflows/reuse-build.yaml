@@ -149,7 +149,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push core image
-        if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+        if: (github.event_name == 'pull_request' && github.base_ref == 'develop') || (github.event_name == 'push' && github.ref == 'refs/heads/develop')
         shell: bash
         run: |
           make push_core_image
@@ -302,7 +302,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push docker images
+      - name: Push release docker images
         shell: bash
         run: |
           docker image push ghcr.io/${{ github.repository_owner }}/adore:${BUILD_BRANCH}-${{ inputs.image_platform }}
