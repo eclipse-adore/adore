@@ -36,6 +36,7 @@ check_cross_compile_deps:
 
 .PHONY: build
 build: check_cross_compile_deps
+	mkdir -p build
 	@if [ "$(CROSS_COMPILE)" = "true" ]; then \
         echo "Cross-compiling ${PROJECT}:${TAG} for $(ARCH)..."; \
         docker buildx build \
