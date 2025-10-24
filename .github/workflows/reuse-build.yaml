@@ -1,4 +1,4 @@
-name: ADORe Reusable Workflow
+name: ADORe reusable Workflow
 
 on:
   workflow_call:
@@ -136,6 +136,12 @@ jobs:
           df -h
           make save || true
           make ci_test
+
+      - name: Package ADORe ROS2 Messages
+        shell: bash
+        run: |
+          cd ros2_workspace
+          make package_adore_ros2_msgs
       
       - name: Get clean branch name
         shell: bash
@@ -191,6 +197,14 @@ jobs:
           path: |
             adore_${{ inputs.archive_name }}.txz
 
+      - name: Upload Debian package
+        uses: actions/upload-artifact@v4
+        with:
+          name: debian-package-${{ inputs.archive_name }}
+          if-no-files-found: error
+          path: |
+            build/debian_packages/adore_ros2_msgs/*adore_ros2_msgs*.deb
+
   release:
     name: Release
     runs-on: ubuntu-latest
@@ -215,6 +229,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-${{ inputs.archive_name }}
+
+      - name: Download Debian package
+        uses: actions/download-artifact@v4
+        with:
+          name: debian-package-${{ inputs.archive_name }}
 
       - name: Unpack build archive
         shell: bash
@@ -254,6 +273,7 @@ jobs:
           tag: latest
           files: |
             adore_*_latest_${{ inputs.archive_name }}.txz
+            *adore_ros2_msgs*.deb
 
   image:
     name: Image

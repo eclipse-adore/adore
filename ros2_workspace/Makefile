@@ -83,6 +83,10 @@ launch: ## Launch a ROS2 scenario
 package:
 	bash tools/ros2_debian_packager.sh
 
+.PHONY: package_adore_ros2_msgs
+package_adore_ros2_msgs:
+	bash tools/ros2_debian_packager.sh "adore_ros2_msgs"
+
 .PHONY: integration_tests
 integration_tests: ## Run pytest inside adore_scenarios
 	@base_dir="../adore_scenarios"; \
