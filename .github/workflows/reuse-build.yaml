@@ -130,6 +130,15 @@ jobs:
           make build_services
           #make save || true
 
+      - name: Push Services
+        shell: bash
+        run: |
+          #make load || true
+          echo "Pushing services to github repo container registry..."
+          cd tools/lichtblick
+          make push_lichtblick
+          #make save || true
+
       - name: CI Test
         shell: bash
         run: |
@@ -202,7 +211,7 @@ jobs:
           name: debian-package-${{ inputs.archive_name }}
           if-no-files-found: error
           path: |
-            build/debian_packages/adore_ros2_msgs/*adore_ros2_msgs*.deb
+            ros2_workspace/build/debian_packages/adore_ros2_msgs/*adore_ros2_msgs*.deb
 
   release:
     name: Release
