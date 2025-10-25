@@ -140,7 +140,6 @@ jobs:
       - name: Package ADORe ROS2 Messages
         shell: bash
         run: |
-          cd ros2_workspace
           make package_adore_ros2_msgs
       
       - name: Get clean branch name

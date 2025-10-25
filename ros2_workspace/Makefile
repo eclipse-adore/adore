@@ -86,6 +86,8 @@ package:
 .PHONY: package_adore_ros2_msgs
 package_adore_ros2_msgs:
 	bash tools/ros2_debian_packager.sh "adore_ros2_msgs"
+	@echo "✅ adore_ros2_msgs packaging complete"
+	touch build/adore_ros2_msgs.package.success
 
 .PHONY: integration_tests
 integration_tests: ## Run pytest inside adore_scenarios

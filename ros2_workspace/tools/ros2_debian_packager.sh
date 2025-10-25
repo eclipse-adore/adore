@@ -285,14 +285,14 @@ generate_debian_package() {
     shopt -u nullglob
     
     [[ ${#deb_files[@]} -eq 0 ]] && exiterr "No .deb package found"
-    
+ 
     echo "Generated packages for $package_name:"
     for file in "$package_build_dir"/*; do
         [[ -f "$file" ]] && echo "  $(basename "$file")"
     done
     
     rm -rf debian
-    [[ -f "LICENSE" ]] && [[ ! -s "LICENSE" ]] && rm -f "LICENSE"
+    [[ -f "LICENSE" ]] && [[ ! -s "LICENSE" ]] && rm -f "LICENSE" || true
 }
 
 setup_local_rosdep
