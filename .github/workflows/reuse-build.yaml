@@ -95,6 +95,7 @@ jobs:
         shell: bash
         run: |
           echo "Building ADORe CLI..."
+          make try_pull_base_images || true
           make build_adore_cli
           #make save || true
 
