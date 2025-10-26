@@ -1,6 +1,6 @@
 [submodule "tools/adore_cli"]
 	path = tools/adore_cli
-	url = git@github.com:dlr-ts/adore_cli.git
+	url = git@github.com:eclipse-adore/adore_cli.git
 [submodule "tools/ci_teststand"]
 	path = tools/ci_teststand
 	url = git@github.com:dlr-ts/ci_teststand.git
