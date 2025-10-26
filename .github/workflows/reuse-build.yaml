@@ -151,6 +151,14 @@ jobs:
         run: |
           make package_adore_ros2_msgs
       
+      - name: Upload Debian package
+        uses: actions/upload-artifact@v4
+        with:
+          name: debian-package-${{ inputs.archive_name }}
+          if-no-files-found: error
+          path: |
+            ros2_workspace/build/debian_packages/adore_ros2_msgs/*.deb
+
       - name: Get clean branch name
         shell: bash
         run: echo "BUILD_BRANCH=$(echo ${{ github.ref_name }} | tr -d '[:space:]' | tr -s -c "[:alnum:][:blank:]\.\_\-" _ | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
@@ -205,13 +213,6 @@ jobs:
           path: |
             adore_${{ inputs.archive_name }}.txz
 
-      - name: Upload Debian package
-        uses: actions/upload-artifact@v4
-        with:
-          name: debian-package-${{ inputs.archive_name }}
-          if-no-files-found: error
-          path: |
-            ros2_workspace/build/debian_packages/adore_ros2_msgs/*adore_ros2_msgs*.deb
 
   release:
     name: Release
