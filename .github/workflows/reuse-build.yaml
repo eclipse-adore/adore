@@ -1,4 +1,4 @@
-name: ADORe Reusable Workflow
+name: ADORe reusable Workflow
 
 on:
   workflow_call:
@@ -78,6 +78,12 @@ jobs:
           sudo apt update -y
           sudo apt install -y make curl jq
 
+      - name: Documentation Lint
+        shell: bash
+        run: |
+          cd documentation
+          make lint
+
       - name: Build vendor libraries
         shell: bash
         run: |
@@ -89,6 +95,7 @@ jobs:
         shell: bash
         run: |
           echo "Building ADORe CLI..."
+          make try_pull_base_images || true
           make build_adore_cli
           #make save || true
 
@@ -124,18 +131,34 @@ jobs:
           make build_services
           #make save || true
 
+      - name: Push Services
+        shell: bash
+        run: |
+          #make load || true
+          echo "Pushing services to github repo container registry..."
+          cd tools/lichtblick
+          make push_lichtblick
+          #make save || true
+
       - name: CI Test
         shell: bash
         run: |
           df -h
           make save || true
           make ci_test
-      
-      - name: Documentation Lint
+
+      - name: Package ADORe ROS2 Messages
         shell: bash
         run: |
-          cd documentation
-          make lint
+          make package_adore_ros2_msgs
+      
+      - name: Upload Debian package
+        uses: actions/upload-artifact@v4
+        with:
+          name: debian-package-${{ inputs.archive_name }}
+          if-no-files-found: error
+          path: |
+            ros2_workspace/build/debian_packages/adore_ros2_msgs/*.deb
 
       - name: Get clean branch name
         shell: bash
@@ -149,7 +172,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Push core image
-        if: github.event_name == 'pull_request' && github.base_ref == 'develop'
+        if: (github.event_name == 'pull_request' && github.base_ref == 'develop') || (github.event_name == 'push' && github.ref == 'refs/heads/develop')
         shell: bash
         run: |
           make push_core_image
@@ -191,6 +214,7 @@ jobs:
           path: |
             adore_${{ inputs.archive_name }}.txz
 
+
   release:
     name: Release
     runs-on: ubuntu-latest
@@ -215,6 +239,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-${{ inputs.archive_name }}
+
+      - name: Download Debian package
+        uses: actions/download-artifact@v4
+        with:
+          name: debian-package-${{ inputs.archive_name }}
 
       - name: Unpack build archive
         shell: bash
@@ -254,6 +283,7 @@ jobs:
           tag: latest
           files: |
             adore_*_latest_${{ inputs.archive_name }}.txz
+            *adore_ros2_msgs*.deb
 
   image:
     name: Image
@@ -302,9 +332,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push docker images
+      - name: Push release docker images
         shell: bash
         run: |
           docker image push ghcr.io/${{ github.repository_owner }}/adore:${BUILD_BRANCH}-${{ inputs.image_platform }}
           cd clean_repo
-          make push_image

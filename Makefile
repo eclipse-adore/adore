@@ -113,6 +113,14 @@ benchmark: ## Run the ROS Topic benchmark script
 		make run cmd="bash tools/ros_topic_benchmark.sh"; \
 	fi
 
+.PHONY: package_adore_ros2_msgs
+package_adore_ros2_msgs: ## Build & package adore_ros2_msgs 
+	if [ -f /.dockerenv ]; then \
+		cd ros2_workspace && make package_adore_ros2_msgs; \
+	else \
+		make run cmd="cd ros2_workspace && make package_adore_ros2_msgs"; \
+	fi
+
 .PHONY: test
 test: ci_test ## Run ADORe Unit Tests
 	cd tools/adore_cli && make test

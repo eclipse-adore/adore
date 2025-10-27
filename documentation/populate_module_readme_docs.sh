@@ -67,7 +67,7 @@ for module_readme_file in $module_readme_files; do
         module_md+=$(printf "\n\n### Module: **%s**\n\n" "${module}")
         module_md+=$(printf "\n\n**git remote**: ${remote}\n\n")
         module_md+=$(printf "\n\n**url**: [%s 🔗](%s)\n\n" "${url}" "${url}")
-        module_md+=$(printf "\n\n#### %s README Links\n\n" "${module}")
+        #module_md+=$(printf "\n\n#### %s README Links\n\n" "${module}")
     fi
     echo "    module_readme_relative_path: ${module_readme_relative_path}"
     echo "    module_readme_absolute_path: ${module_readme_absolute_path}"
