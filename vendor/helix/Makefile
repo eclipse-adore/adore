@@ -7,8 +7,7 @@ ARCH?=$(shell uname -m)
 DOCKER_PLATFORM?=linux/$(ARCH)
 CROSS_COMPILE?=$(shell if [ "$(shell uname -m)" != "$(ARCH)" ]; then echo "true"; else echo "false"; fi)
 
-
-URL:=https://github.com/helix-editor/helix/releases/download/25.01.1/helix_25.1.1-1_amd64.deb
+URL:=https://github.com/helix-editor/helix/releases/download/25.07.1/helix_25.7.1-1_amd64.deb
 
 .PHONY: build
 build:
