@@ -1,127 +1,123 @@
-SHELL:=/bin/bash
-MAKEFLAGS += --no-print-directory
-.NOTPARALLEL:
-ROOT_DIR:=$(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
+SHELL := /bin/zsh
+.DEFAULT_GOAL := build
 
-# This will automatically check if submodules have been updated when the 
-# Makefile is invoked for the first time. 
-MAKE_GADGETS_DIR := tools/adore_cli/make_gadgets
-MAKE_GADGETS_HAS_FILES := $(shell [ -d $(MAKE_GADGETS_DIR) ] && [ -n "$$(find $(MAKE_GADGETS_DIR) -mindepth 1 -maxdepth 1 -not -name '.git' 2>/dev/null)" ] && echo "yes")
-ifeq ($(MAKE_GADGETS_HAS_FILES),)
-    $(shell git submodule update --init --recursive >&2 || true)
-endif
+.PHONY: build clean cli gui edit_roads lichtblick build_image save load
 
-$(shell git config core.hooksPath .githooks >&2 || true)
+WORKSPACE_ROOT := $(PWD)
+ROS_DISTRO := jazzy
 
-include ${MAKE_GADGETS_DIR}/make_gadgets.mk
+# Image + Container
+DOCKER_IMAGE_BASE := adore_cli
+DOCKER_CONTAINER_NAME := adore_cli
 
-.EXPORT_ALL_VARIABLES:
-SOURCE_DIRECTORY:=${ROOT_DIR}
-SUBMODULES_PATH:=${ROOT_DIR}/tools
-VENDOR_PATH:=${ROOT_DIR}/vendor
-ROS_NODE_PATH:=${ROOT_DIR}/ros2_workspace/src
-ADORE_LIBRARY_PATH:=${ROOT_DIR}/libraries
-DOCKER_BUILDKIT?=1
-DOCKER_CONFIG?=
+# Git + Arch Info
+GIT_HASH := $(shell git rev-parse --short HEAD)
+ARCH := $(shell uname -m)
+IMAGE_TAG := $(GIT_HASH)-$(ARCH)
 
-# Branch information
-BRANCH:=$(shell bash ${MAKE_GADGETS_DIR}/tools/branch_name.sh)
+DOCKER_IMAGE_TAGGED := $(DOCKER_IMAGE_BASE):$(IMAGE_TAG)
+DOCKER_IMAGE_LATEST := $(DOCKER_IMAGE_BASE):latest
 
-# Include adore_cli functionality
-include ${SUBMODULES_PATH}/adore_cli/ci_teststand/ci_teststand.mk
-include utils.mk
-include tools/adore_cli/adore_cli.mk
+# Optional: central ccache dir
+LOCAL_CCACHE_DIR := $(WORKSPACE_ROOT)/.ccache
 
-.PHONY: build
-build: docker_host_context_check clean stop_adore_cli build_vendor_libraries build_adore_cli build_libraries build_ros_nodes ## Build and setup adore cli
-	make clean_tag_history
+DOCKERFILE_MINIMAL := $(WORKSPACE_ROOT)/.docker/minimal/Dockerfile
 
-.PHONY: build_all
-build_all: clean build build_services
+build_image:
+	docker build \
+		-f $(DOCKERFILE_MINIMAL) \
+		--build-arg USER_UID=$(shell id -u) \
+		--build-arg USER_GID=$(shell id -g) \
+		--build-arg USERNAME=$(USER) \
+		-t $(DOCKER_IMAGE_LATEST) \
+		-t $(DOCKER_IMAGE_TAGGED) \
+		$(WORKSPACE_ROOT)
 
-.PHONY: build_services
-build_services: ## Build ADORe supporting services such as Foxglove Studio aka Lichtblick Suite 
-	cd tools/lichtblick && make build
+build: build_image
+	docker run --rm -it --name $(DOCKER_CONTAINER_NAME) \
+		-v "$(WORKSPACE_ROOT):/home/$(USER)/adore" \
+		-w "/home/$(USER)/adore/colcon_workspace" \
+		-e ROS_DISTRO=$(ROS_DISTRO) \
+		$(DOCKER_IMAGE_LATEST) 
 
-.PHONY: start_services
-start_services: docker_host_context_check ## Start ADORe supporting services  
-	cd tools/lichtblick && make start
+# --- Clean local artifacts and image ---
+clean_cli:
+	@echo "--- Removing Docker images $(DOCKER_IMAGE_LATEST) and $(DOCKER_IMAGE_TAGGED) if they exist ---"
+	-docker rmi $(DOCKER_IMAGE_LATEST) || true
+	-docker rmi $(DOCKER_IMAGE_TAGGED) || true
 
-.PHONY: stop_services
-stop_services: docker_host_context_check ## Stop ADORe supporting services 
-	cd tools/lichtblick && make stop
+clean: clean_cli
+	@echo "--- Cleaning local colcon build artifacts ---"
+	rm -rf $(WORKSPACE_ROOT)/build $(WORKSPACE_ROOT)/install $(WORKSPACE_ROOT)/log
 
-.PHONY: build_vendor_libraries
-build_vendor_libraries: docker_host_context_check ## Builds vendor libraries located in: ${VENDOR_PATH}
-	cd "${VENDOR_PATH}" && make build
+# --- Run interactive shell; re-use container if running ---
+cli:
+	@echo "--- Ensuring Docker image $(DOCKER_IMAGE_LATEST) is built ---"
+	docker image inspect $(DOCKER_IMAGE_LATEST) >/dev/null 2>&1 || $(MAKE) build_image
+	@set -e; \
+	NAME="$(DOCKER_CONTAINER_NAME)"; \
+	IMAGE="$(DOCKER_IMAGE_LATEST)"; \
+	if [ -n "$$(docker ps -q -f name=^$${NAME}$$)" ]; then \
+		echo "→ Container '$${NAME}' is running; opening a new shell"; \
+		exec docker exec -it \
+			--env TERM="$$TERM" --env COLORTERM="$$COLORTERM" \
+			"$${NAME}" /usr/bin/zsh -l; \
+	fi; \
+	if [ -n "$$(docker ps -aq -f status=exited -f name=^$${NAME}$$)" ]; then \
+		echo "→ Container '$${NAME}' exists but is stopped; starting…"; \
+		docker start "$${NAME}" >/dev/null; \
+		exec docker exec -it \
+			--env TERM="$$TERM" --env COLORTERM="$$COLORTERM" \
+			"$${NAME}" /usr/bin/zsh -l; \
+	fi; \
+	echo "--- Allowing local Docker container to access X server ---"; \
+	xhost +SI:localuser:$(USER); \
+	echo "→ No container named '$${NAME}'; creating a new one"; \
+	set -x; \
+	docker run -it \
+		--name "$${NAME}" \
+		-p 8765:8765 \
+		-e DISPLAY="$(DISPLAY)" \
+		-e QT_X11_NO_MITSHM=1 \
+		-v /tmp/.X11-unix:/tmp/.X11-unix \
+		-v "$(WORKSPACE_ROOT):/home/$(USER)/adore" \
+		--device /dev/dri \
+		"$$IMAGE" /usr/bin/zsh -l; \
+	RET=$$?; set +x; \
+	echo "--- Revoking X server access ---"; \
+	xhost -SI:localuser:$(USER) || true; \
+	exit $$RET
 
-.PHONY: build_libraries
-build_libraries: ## Builds ADORe user libraries located in: ${ADORE_LIBRARY_PATH}
-	if [ -f /.dockerenv ]; then \
-		cd libraries && make build; \
-	else \
-		make run cmd="cd libraries && make build"; \
-	fi
+# Optional: stop the container and revoke X (use when you want to fully shut it down)
+.PHONY: stop_cli
+stop_cli:
+	@set -e; \
+	if [ -n "$$(docker ps -q -f name=^$(DOCKER_CONTAINER_NAME)$$)" ]; then \
+		echo "→ Stopping container '$(DOCKER_CONTAINER_NAME)'"; \
+		docker stop "$(DOCKER_CONTAINER_NAME)" >/dev/null; \
+	fi; \
+	echo "--- Revoking X server access ---"; \
+	xhost -SI:localuser:$(USER) || true
 
-.PHONY: build_documentation
-build_documentation: docker_host_context_check ## Builds ADORe Documentation in: ./documentation
-	cd documentation && make build
+	
 
-.PHONY: build_nodes
-build_nodes: build_ros_nodes ## Builds ROS2 nodes located in: ${ROS_NODE_PATH}
-.PHONY: build_ros_nodes
-build_ros_nodes: ## Builds ROS2 nodes located in: ${ROS_NODE_PATH}
-	if [ -f /.dockerenv ]; then \
-		cd ros2_workspace && make build; \
-	else \
-		make run cmd="cd ros2_workspace && make build"; \
-	fi
+# --- GUI app ---
+gui:
+	python3 tools/adore_gui.py
 
-.PHONY: check_adore_binaries
-check_adore_binaries: ## Checks for ADORe binaries
-	bash tools/check_adore_binaries.sh
+# --- Other tools ---
+edit_roads:
+	python3 tools/edit_roads.py
 
-.PHONY: clean
-clean: docker_host_context_check stop clean_adore_cli clean_tag_history ## Clean ADORe build artifacts 
+lichtblick:
+	./tools/run_lichtblick.sh
 
-	cd vendor && make clean
-	cd libraries && make clean
-	cd ros2_workspace && make clean
-	rm -rf build
+# --- Save/Load Docker Images ---
+save:
+	mkdir -p $(WORKSPACE_ROOT)/build
+	docker save $(DOCKER_IMAGE_TAGGED) > $(WORKSPACE_ROOT)/build/$(DOCKER_IMAGE_BASE)_$(IMAGE_TAG).tar
+	@echo "Docker image saved to build/$(DOCKER_IMAGE_BASE)_$(IMAGE_TAG).tar"
 
-.PHONY: lint_nodes
-lint_nodes:
-	@if [ -f /.dockerenv ]; then \
-        clang-format -Werror -i -output-replacements-xml --checks=* -dry-run $(shell find ros2_workspace/src -type f \( -name "*.cpp" -or -name "*.hpp" -or -name "*.h" \)); \
-    else \
-        make run cmd="clang-format -Werror -i --checks=* -output-replacements-xml -dry-run $(shell find ros2_workspace/src -type f \( -name "*.cpp" -or -name "*.hpp" -or -name "*.h" \))"; \
-    fi
-
-.PHONY: due_diligence_scan
-due_diligence_scan: ## Scan repo for eclipse due diligence, checks if source files have the proper doc header.
-	python3 tools/eclipse_due_diligence_scanner.py --ignore tools/.eclipse_due_diligance_ignore 
-
-.PHONY: due_diligence_fix
-due_diligence_fix: ## Fix due diligence issues
-	python3 tools/eclipse_due_diligence_scanner.py --ignore tools/.eclipse_due_diligance_ignore --fix
-
-.PHONY: benchmark
-benchmark: ## Run the ROS Topic benchmark script 
-	if [ -f /.dockerenv ]; then \
-		bash tools/ros_topic_benchmark.sh; \
-	else \
-		make run cmd="bash tools/ros_topic_benchmark.sh"; \
-	fi
-
-.PHONY: package_adore_ros2_msgs
-package_adore_ros2_msgs: ## Build & package adore_ros2_msgs 
-	if [ -f /.dockerenv ]; then \
-		cd ros2_workspace && make package_adore_ros2_msgs; \
-	else \
-		make run cmd="cd ros2_workspace && make package_adore_ros2_msgs"; \
-	fi
-
-.PHONY: test
-test: ci_test ## Run ADORe Unit Tests
-	cd tools/adore_cli && make test
-
+load:
+	docker load < $(WORKSPACE_ROOT)/build/$(DOCKER_IMAGE_BASE)_$(IMAGE_TAG).tar
+	@echo "Docker image loaded from build/$(DOCKER_IMAGE_BASE)_$(IMAGE_TAG).tar"
