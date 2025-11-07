@@ -4,9 +4,9 @@
 documentation/**
 documentation/
 libraries/build/**
-ros2_workspace/build/**
-ros2_workspace/install/**
-ros2_workspace/install/**
+colcon_workspace/build/**
+colcon_workspace/install/**
+colcon_workspace/install/**
 vendor/**
 make_gadgets/**
 

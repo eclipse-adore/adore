@@ -9,12 +9,12 @@ libraries/cmake/ignore/ignore.log
 .log
 
 **.vscode
-ros2_workspace/src/build
-ros2_workspace/src/install
-ros2_workspace/src/log
-ros2_workspace/build
-ros2_workspace/install
-ros2_workspace/log
+colcon_workspace/src/build
+colcon_workspace/src/install
+colcon_workspace/src/log
+colcon_workspace/build
+colcon_workspace/install
+colcon_workspace/log
 **__pycache__**
 *.pyc
 
