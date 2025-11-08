@@ -1,76 +1,130 @@
 site_name: ADORe Documentation
 repo_url: https://github.com/eclipse-adore/adore
+
 nav:
-  - About ADORe: README.md
+  - About ADORe: about_adore.md           # symlink to README.md
   - Quick Start: quick_start.md
+
   - Getting Started:
-    - Getting Started: getting_started/getting_started.md
-    - System Requirements: getting_started/system_requirements.md
-    - Anonymous Cloning: system_and_development/anonymous_cloning.md
-    - Prerequisites: getting_started/prerequisites.md
-    - Installing Docker: getting_started/installing_docker.md
-    - Running Your First Scenario In ADORe: getting_started/running_your_first_scenario.md
+      - Getting Started: getting_started/getting_started.md
+      - System Requirements: getting_started/system_requirements.md
+      - Prerequisites: getting_started/prerequisites.md
+      - Installing Docker: getting_started/installing_docker.md
+      - Running Your First Scenario in ADORe: getting_started/running_your_first_scenario.md
+
+  - System and Development:
+      - System and Development Overview: system_and_development/system_and_development.md
+      - ADORe CLI: system_and_development/adore_cli.md
+      - Creating a New Node: system_and_development/creating_a_new_node.md
+      - Scenario Generation: system_and_development/scenario_generation.md
+      - ROS Unit Testing: system_and_development/ros_unit_testing.md
+      - C++ Library Testing: system_and_development/library_testing.md
+      - System Tests: system_and_development/system_tests.md
+      - Multi-arch Build Support: system_and_development/multiarch_support.md
+      - Documentation System: system_and_development/documentation_generation_system.md
+      - Doxygen Documentation: system_and_development/doxygen_documentation.md
+      - Documentation Overview: system_and_development/documentation.md
+
   - Technical Reference Manual:
-    - Table of Contents: technical_reference_manual.md
-    - Documentation: system_and_development/documentation.md
-    - Configuring ADORe: generated/configuring_adore/configuring_adore.md
-    - ADORe ROS Nodes: generated/ROS_NODES_SUMMARY.md
-    - ADORe ROS Messages: generated/adore_ros2_msgs/README.md
-    - ADORe ROS Topics:   generated/adore_ros2_msgs/topics.md
-    - ADORe User Libraries:
-      - ADORe User Libraries: generated/libraries/README.md 
-      - Creating A New Library: generated/libraries/library_creation_guide.md 
-      - ADORe CMake Target/Library Auto-Generation: generated/libraries/cmake_library_auto_generation.md 
-    - ADORe REST API:
-      - About The ADORe REST API: generated/api/adore_api/README.md
-      - ADORe Mission Control Web Interface: generated/api/adore_api/adore_mission_control.md
-      - ADORE API Reference: generated/api/adore_api/api_reference.md
-      - ADORE API Examples: generated/api/adore_api/api_reference_curl_examples.md
-    - Creating A New Node: system_and_development/creating_a_new_node.md
-    - Running A Scenario In ADORe: getting_started/running_your_first_scenario.md
-    - Scenario Visualization: generated/visualization/lichtblick/README.md
-    - Scenario Model Checking: 
-        - Scenario Model Checking Quick Start: generated/adore_model_checker/model_checking_quick_start.md 
-        - Scenario Model Checking API Quick Start: generated/adore_model_checker/model_checking_api_quick_start.md 
-        - Scenario Model Checking README: generated/adore_model_checker/README.md 
-        - Scenario Model Checking With The ADORe Mission Control: system_and_development/model_checking_with_the_adore_mission_control.md
-    - ADORe And CARLa: generated/carla_bridge/README.md
-    - ADORe And SUMO:  generated/sumo_bridge/README.md
-    - Creating A New Scenario: system_and_development/scenario_generation.md
-    - ADORe CLI: 
-        - ADORe CLI: generated/adore_cli/README.md
-        - Multi-arch Build Support: system_and_development/multiarch_support.md
-    - Testing: 
-        - System Testing: system_and_development/system_tests.md 
-        - ROS Unit Testing: system_and_development/ros_unit_testing.md
-        - C++ Library Testing: system_and_development/library_testing.md
-    - Submodules: generated/modules/modules.md
-    - Troubleshooting: problems_and_solutions.md
-    - Licensing: licensing.md
-    - Third-Party: generated/THIRD-PARTY.md
-    - Notices: generated/NOTICE.md
-    - Publicaitons: publications.md
-    - Contributing: generated/CONTRIBUTING.md
-    - Code of Conduct: generated/CODE_OF_CONDUCT.md
-    - Style Guide: styleguide.md
+      - Table of Contents: technical_reference_manual.md
+
+      - Configuring ADORe: technical_reference_manual/generated/configuring_adore/configuring_adore.md
+
+      - ADORe ROS Nodes:
+          - Nodes Summary: technical_reference_manual/generated/ROS_NODES_SUMMARY.md
+
+      - ADORe ROS Messages:
+          - Message Overview: technical_reference_manual/generated/adore_ros2_msgs/README.md
+
+      - ADORe REST API:
+          - About the ADORe REST API: technical_reference_manual/generated/api/adore_api/README.md
+          - ADORe Mission Control Web Interface: technical_reference_manual/generated/api/adore_api/adore_mission_control.md
+          - API Reference: technical_reference_manual/generated/api/adore_api/api_reference.md
+          - API Examples (curl): technical_reference_manual/generated/api/adore_api/api_reference_curl_examples.md
+
+      - ADORe Modules:
+          - Modules Overview: technical_reference_manual/generated/modules/modules.md
+
+      - Integrations:
+          - ADORe and CARLA: technical_reference_manual/generated/carla_bridge/README.md
+          - ADORe and SUMO: technical_reference_manual/generated/sumo_bridge/README.md
+
+      - Troubleshooting: problems_and_solutions.md
+      - Publications: publications.md
+
+      - Licensing:
+          - Licensing Overview: licensing.md
+          - License Check: licensing/license_check.md
+          - License Header Template (Markdown): licensing/license_header_template.md
+          - License Header Template (C Header): licensing/license_header_template.h
+          - License Header Template (Text): licensing/license_header_template.txt
+          - License Header Template (XML): licensing/license_header_template.xml
+          - Software License: software_license.md
+
+      - Style Guide: styleguide.md
+
+      - Meta Information:
+          - Third-Party Notices: technical_reference_manual/generated/THIRD-PARTY.md
+          - Notices: technical_reference_manual/generated/NOTICE.md
+          - Contributing: technical_reference_manual/generated/CONTRIBUTING.md
+          - Code of Conduct: technical_reference_manual/generated/CODE_OF_CONDUCT.md
+
   - Contact: contact.md
 
 extra:
   github_issues: "https://github.com/eclipse-adore/adore/issues"
 
 theme:
-  name: material 
+  name: material
+  logo: img/adore_logo_white.png
+  favicon: img/DLR_Logo.svg
+
+  # Light/dark toggle with subtle colours (tweak as you like)
   palette:
-    scheme: slate 
-  logo: ../img/logo.png
-  favicon: ../img/favicon.ico
+    - scheme: default
+      primary: blue grey
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue grey
+      accent: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
   features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.top
+    - navigation.sections
+    - navigation.tabs
+    - toc.integrate
     - content.code.copy
-  footer:
-    links:
-      - title: "Help"
-        url: "https://github.com/eclipse-adore/adore/issues"
+    - content.tabs.link
+
+# Nice markdown extras powered by pymdown-extensions
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+
+  - pymdownx.highlight:
+      anchor_linenums: true
+      linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
 
 plugins:
   - search
-  # - pdf-export

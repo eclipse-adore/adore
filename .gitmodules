@@ -1,13 +1,5 @@
-[submodule ".docker/cli/adore_cli"]
-	path = .docker/cli/adore_cli
-	url = git@github.com:eclipse-adore/adore_cli.git
-[submodule ".docker/cli/ci_teststand"]
-	path = .docker/cli/ci_teststand
-	url = git@github.com:dlr-ts/ci_teststand.git
-	ignore = untracked
-	shallow = true
-[submodule "vendor/websocketpp"]
-	path = vendor/websocketpp
+[submodule "tools/websocketpp"]
+	path = tools/websocketpp
 	url = https://github.com/zaphoyd/websocketpp.git
 	ignore = untracked
 	shallow = true
@@ -21,7 +13,7 @@
 	path = colcon_workspace/src/nodes/mission_control
 	url = git@github.com:eclipse-adore/adore_mission_control.git
 [submodule "colcon_workspace/src/nodes/adore_visualizer"]
-	path = colcon_workspace/src/visualizer
+	path = colcon_workspace/src/nodes/visualizer
 	url = git@github.com:eclipse-adore/adore_visualizer.git
 [submodule "colcon_workspace/src/nodes/adore_decision_maker"]
 	path = colcon_workspace/src/nodes/decision_maker
@@ -81,8 +73,17 @@
 	path = colcon_workspace/src/nodes/decision_maker_infrastructure
 	url = git@github.com:eclipse-adore/adore_decision_maker_infrastructure.git
 [submodule "colcon_workspace/src/nodes/adore_simulated_remote_operator"]
-	path = colcon_workspace/src/snodes/imulated_remote_operator
+	path = colcon_workspace/src/nodes/simulated_remote_operator
 	url = git@github.com:eclipse-adore/adore_simulated_remote_operator.git
-[submodule "tools/adore_model_checker"]
-	path = tools/adore_model_checker
+[submodule "testing/adore_model_checker"]
+	path = testing/adore_model_checker
 	url = git@github.com:DLR-TS/adore_model_checker.git
+[submodule "colcon_workspace/src/vendor/osqp_eigen"]
+	path = colcon_workspace/src/vendor/osqp_eigen
+	url = https://github.com/robotology/osqp-eigen.git
+[submodule "colcon_workspace/src/vendor/multi_agent_solver"]
+	path = colcon_workspace/src/vendor/multi_agent_solver
+	url = git@github.com:markomiz/multi_agent_solver.git
+[submodule "colcon_workspace/src/vendor/osqp"]
+	path = colcon_workspace/src/vendor/osqp
+	url = https://github.com/osqp/osqp.git

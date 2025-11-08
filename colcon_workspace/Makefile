@@ -2,7 +2,7 @@ SHELL := /bin/zsh
 .DEFAULT_GOAL := help
 
 ROOT_DIR := $(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
-ROS_DISTRO := $(shell echo "$ROS_DISTRO")
+ROS_DISTRO := $(shell echo "$(ROS_DISTRO)")
 NPROC := $(shell nproc)
 
 # === Helper Macros ===

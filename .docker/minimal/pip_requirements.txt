@@ -1,4 +1,0 @@
-pytest
-PySide6
-raylib
-pyray
