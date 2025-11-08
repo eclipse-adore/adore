@@ -37,8 +37,8 @@ build_mkdocs: update_submodules ## Build mkdocs
 	mkdir -p mkdocs/docs
 	rm -rf mkdocs/docs/generated
 	rm -rf mkdocs/site
-	python3 mkdocs/gen_docs.py
 	cp -r technical_reference_manual mkdocs/docs/technical_reference_manual
+	python3 mkdocs/gen_docs.py
 	cd mkdocs && mkdocs build
 
 # ----------------------------------------------------------------------

@@ -16,9 +16,7 @@ All are included under the licenses listed below. Paths indicate where the conte
 | ros2_observer      | Apache License 2.0               | `vendor/ros2_observer`                   | https://github.com/DLR-TS/ros2_observer |
 | ROS 2              | Apache License 2.0               | System dependency                        | https://docs.ros.org/ |
 | MkDocs             | BSD 2-Clause "Simplified"        | `documentation/`                         | https://www.mkdocs.org/                    |
-| Doxygen            | GNU General Public License v2    | `documentation/`                         | https://www.doxygen.nl/                    |
 | spline.h           | GNU General Public License v2    | `libraries/lib/adore_math/include/spline.h` | https://kluge.in-chemnitz.de/opensource/spline/spline.h                    |
-| Sphinx             | BSD 2-Clause "Simplified"        | `documentation/`                         | https://www.sphinx-doc.org/                |
 | Tracecompass       | EPL2                             | `vendor/ros2_observer/trace_compass`     | https://github.com/eclipse-tracecompass/org.eclipse.tracecompass |
 | lttng-scope        | Eclipse Public License - v 1.0   | `vendor/ros2_observer/ltten_scope`       |  https://github.com/lttng/lttng-scope |
 | lichtblick-suit    | Mozilla Public License, v. 2.0   | `tools/lichtblick`       |  https://github.com/lichtblick-suite/lichtblick |

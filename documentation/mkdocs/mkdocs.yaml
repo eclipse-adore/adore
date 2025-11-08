@@ -2,74 +2,90 @@ site_name: ADORe Documentation
 repo_url: https://github.com/eclipse-adore/adore
 
 nav:
-  - About ADORe: about_adore.md           # symlink to README.md
-  - Quick Start: quick_start.md
+  - Overview:
+      - What is ADORe?: technical_reference_manual/about_adore.md
+      - Quick start: technical_reference_manual/quick_start.md
+      - Publications: technical_reference_manual/publications.md
+      - Contact: technical_reference_manual/contact.md
 
-  - Getting Started:
-      - Getting Started: getting_started/getting_started.md
-      - System Requirements: getting_started/system_requirements.md
-      - Prerequisites: getting_started/prerequisites.md
-      - Installing Docker: getting_started/installing_docker.md
-      - Running Your First Scenario in ADORe: getting_started/running_your_first_scenario.md
+  - Getting started:
+      - Getting started guide: technical_reference_manual/getting_started/getting_started.md
+      - System requirements: technical_reference_manual/getting_started/system_requirements.md
+      - Prerequisites: technical_reference_manual/getting_started/prerequisites.md
+      - Installing Docker: technical_reference_manual/getting_started/installing_docker.md
+      - Run your first scenario: technical_reference_manual/getting_started/running_your_first_scenario.md
 
-  - System and Development:
-      - System and Development Overview: system_and_development/system_and_development.md
-      - ADORe CLI: system_and_development/adore_cli.md
-      - Creating a New Node: system_and_development/creating_a_new_node.md
-      - Scenario Generation: system_and_development/scenario_generation.md
-      - ROS Unit Testing: system_and_development/ros_unit_testing.md
-      - C++ Library Testing: system_and_development/library_testing.md
-      - System Tests: system_and_development/system_tests.md
-      - Multi-arch Build Support: system_and_development/multiarch_support.md
-      - Documentation System: system_and_development/documentation_generation_system.md
-      - Doxygen Documentation: system_and_development/doxygen_documentation.md
-      - Documentation Overview: system_and_development/documentation.md
+  - Using ADORe:
+      - ADORe CLI: technical_reference_manual/system_and_development/adore_cli.md
+      - Scenario generation: technical_reference_manual/system_and_development/scenario_generation.md
+      - Model checking with ADORe Mission Control: technical_reference_manual/system_and_development/model_checking_with_the_adore_mission_control.md
+      - Problems and solutions: technical_reference_manual/problems_and_solutions.md
 
-  - Technical Reference Manual:
-      - Table of Contents: technical_reference_manual.md
+  - Development guide:
+      - Development overview: technical_reference_manual/system_and_development/system_and_development.md
+      - Anonymous cloning: technical_reference_manual/system_and_development/anonymous_cloning.md
+      - Creating a new node: technical_reference_manual/system_and_development/creating_a_new_node.md
+      - ROS unit testing: technical_reference_manual/system_and_development/ros_unit_testing.md
+      - C++ library testing: technical_reference_manual/system_and_development/library_testing.md
+      - System tests: technical_reference_manual/system_and_development/system_tests.md
+      - Multi-arch support: technical_reference_manual/system_and_development/multiarch_support.md
+      - Documentation system: technical_reference_manual/system_and_development/documentation_generation_system.md
+      - Doxygen documentation: technical_reference_manual/system_and_development/doxygen_documentation.md
+      - Documentation overview: technical_reference_manual/system_and_development/documentation.md
+      - Docs style guide: technical_reference_manual/styleguide.md
 
-      - Configuring ADORe: technical_reference_manual/generated/configuring_adore/configuring_adore.md
+  - Code reference:
+      - Overview: generated/README.md
 
-      - ADORe ROS Nodes:
-          - Nodes Summary: technical_reference_manual/generated/ROS_NODES_SUMMARY.md
+      - Scenarios:
+          - ADORe scenarios: generated/adore_scenarios/README.md
 
-      - ADORe ROS Messages:
-          - Message Overview: technical_reference_manual/generated/adore_ros2_msgs/README.md
+      - Libraries:
+          - adore_controllers: generated/colcon_workspace/src/libraries/adore_controllers/README.md
+          - adore_dynamics: generated/colcon_workspace/src/libraries/adore_dynamics/README.md
+          - adore_map: generated/colcon_workspace/src/libraries/adore_map/README.md
+          - adore_math: generated/colcon_workspace/src/libraries/adore_math/README.md
+          - adore_planning: generated/colcon_workspace/src/libraries/adore_planning/README.md
 
-      - ADORe REST API:
-          - About the ADORe REST API: technical_reference_manual/generated/api/adore_api/README.md
-          - ADORe Mission Control Web Interface: technical_reference_manual/generated/api/adore_api/adore_mission_control.md
-          - API Reference: technical_reference_manual/generated/api/adore_api/api_reference.md
-          - API Examples (curl): technical_reference_manual/generated/api/adore_api/api_reference_curl_examples.md
+      - Nodes:
+          - decision_maker: generated/colcon_workspace/src/nodes/decision_maker/README.md
+          - decision_maker_infrastructure: generated/colcon_workspace/src/nodes/decision_maker_infrastructure/README.md
+          - mission_control: generated/colcon_workspace/src/nodes/mission_control/README.md
+          - simulated_remote_operator: generated/colcon_workspace/src/nodes/simulated_remote_operator/README.md
+          - simulated_vehicle: generated/colcon_workspace/src/nodes/simulated_vehicle/README.md
+          - trajectory_tracker: generated/colcon_workspace/src/nodes/trajectory_tracker/README.md
+          - visualizer: generated/colcon_workspace/src/nodes/visualizer/README.md
 
-      - ADORe Modules:
-          - Modules Overview: technical_reference_manual/generated/modules/modules.md
+      - Interfaces:
+          - CARLA bridge: generated/colcon_workspace/src/interfaces/carla_bridge/README.md
+          - SUMO bridge: generated/colcon_workspace/src/interfaces/sumo_bridge/README.md
 
-      - Integrations:
-          - ADORe and CARLA: technical_reference_manual/generated/carla_bridge/README.md
-          - ADORe and SUMO: technical_reference_manual/generated/sumo_bridge/README.md
+      - Conversions:
+          - adore_dynamics_conversions: generated/colcon_workspace/src/conversions/adore_dynamics_conversions/README.md
+          - adore_map_conversions: generated/colcon_workspace/src/conversions/adore_map_conversions/README.md
+          - adore_math_conversions: generated/colcon_workspace/src/conversions/adore_math_conversions/README.md
 
-      - Troubleshooting: problems_and_solutions.md
-      - Publications: publications.md
+      - ROS 2 messages:
+          - adore_ros2_msgs: generated/colcon_workspace/src/ros2_messages/adore_ros2_msgs/README.md
 
-      - Licensing:
-          - Licensing Overview: licensing.md
-          - License Check: licensing/license_check.md
-          - License Header Template (Markdown): licensing/license_header_template.md
-          - License Header Template (C Header): licensing/license_header_template.h
-          - License Header Template (Text): licensing/license_header_template.txt
-          - License Header Template (XML): licensing/license_header_template.xml
-          - Software License: software_license.md
+      - Tools:
+          - ADORe API tools: generated/tools/adore_api/README.md
+          - ROS 2 observer: generated/tools/ros2_observer/README.md
 
-      - Style Guide: styleguide.md
+      - Testing:
+          - ADORe model checker: generated/testing/adore_model_checker/README.md
 
-      - Meta Information:
-          - Third-Party Notices: technical_reference_manual/generated/THIRD-PARTY.md
-          - Notices: technical_reference_manual/generated/NOTICE.md
-          - Contributing: technical_reference_manual/generated/CONTRIBUTING.md
-          - Code of Conduct: technical_reference_manual/generated/CODE_OF_CONDUCT.md
+  - Licensing & legal:
+      - Licensing overview: technical_reference_manual/licensing.md
+      - Software license: technical_reference_manual/software_license.md
+      - License check: technical_reference_manual/licensing/license_check.md
+      - License header templates:
+          - Template (Markdown): technical_reference_manual/licensing/license_header_template.md
+          - Template (C header): technical_reference_manual/licensing/license_header_template.h
+          - Template (Text): technical_reference_manual/licensing/license_header_template.txt
+          - Template (XML): technical_reference_manual/licensing/license_header_template.xml
 
-  - Contact: contact.md
+
 
 extra:
   github_issues: "https://github.com/eclipse-adore/adore/issues"

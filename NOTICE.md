@@ -60,16 +60,5 @@ This project makes use of the following third-party documentation tools:
 - **Website:** https://www.mkdocs.org/  
 - **License:** BSD 2-Clause "Simplified" License  
 - Copyright (c) 2014-2024, MkDocs Project contributors
-
-### Doxygen
-- **Website:** https://www.doxygen.nl/  
-- **License:** GNU General Public License v2.0  
-- Copyright (c) 1997-2024, Dimitri van Heesch
-
-### Sphinx
-- **Website:** https://www.sphinx-doc.org/  
-- **License:** BSD 2-Clause "Simplified" License  
-- Copyright (c) 2007-2024, Georg Brandl and the Sphinx team
-
  
 

@@ -8,7 +8,7 @@ DOCS_DIR = MKDOCS_DIR / "docs"
 GENERATED_DIR = DOCS_DIR / "generated"
 
 # Repo root = documentation/.. (one level up)
-REPO_ROOT = MKDOCS_DIR.parent
+REPO_ROOT = MKDOCS_DIR.parent.parent
 
 # Where to scan for README.md docs
 SEARCH_ROOTS = [
