@@ -1,8 +1,8 @@
-[submodule "tools/adore_cli"]
-	path = tools/adore_cli
+[submodule ".docker/cli/adore_cli"]
+	path = .docker/cli/adore_cli
 	url = git@github.com:eclipse-adore/adore_cli.git
-[submodule "tools/ci_teststand"]
-	path = tools/ci_teststand
+[submodule ".docker/cli/ci_teststand"]
+	path = .docker/cli/ci_teststand
 	url = git@github.com:dlr-ts/ci_teststand.git
 	ignore = untracked
 	shallow = true
@@ -11,78 +11,62 @@
 	url = https://github.com/zaphoyd/websocketpp.git
 	ignore = untracked
 	shallow = true
-[submodule "vendor/json"]
-	path = vendor/json
-	url = https://github.com/nlohmann/json.git
-	ignore = untracked
-	shallow = true
-[submodule "tools/lichtblick/lichtblick"]
-	path = tools/lichtblick/lichtblick
-	url = https://github.com/Lichtblick-Suite/lichtblick.git
-	ignore = untracked
-	shallow = true
-[submodule "vendor/OptiNLC"]
-	path = vendor/OptiNLC
-	url = git@github.com:DLR-TS/OptiNLC.git
-[submodule "vendor/mathematics_toolbox"]
-	path = vendor/mathematics_toolbox
-	url = git@github.com:DLR-TS/mathematics_toolbox.git
 [submodule "colcon_workspace/src/ros2_messages/adore_ros2_msgs"]
 	path = colcon_workspace/src/ros2_messages/adore_ros2_msgs
 	url = git@github.com:eclipse-adore/adore_ros2_msgs.git
-[submodule "colcon_workspace/src/adore_simulated_vehicle"]
-	path = colcon_workspace/src/simulated_vehicle
+[submodule "colcon_workspace/src/nodes/adore_simulated_vehicle"]
+	path = colcon_workspace/src/nodes/simulated_vehicle
 	url = git@github.com:eclipse-adore/adore_simulated_vehicle.git
 [submodule "mission_control"]
-	path = colcon_workspace/src/mission_control
+	path = colcon_workspace/src/nodes/mission_control
 	url = git@github.com:eclipse-adore/adore_mission_control.git
-[submodule "colcon_workspace/src/adore_visualizer"]
+[submodule "colcon_workspace/src/nodes/adore_visualizer"]
 	path = colcon_workspace/src/visualizer
 	url = git@github.com:eclipse-adore/adore_visualizer.git
-[submodule "colcon_workspace/src/adore_decision_maker"]
-	path = colcon_workspace/src/decision_maker
+[submodule "colcon_workspace/src/nodes/adore_decision_maker"]
+	path = colcon_workspace/src/nodes/decision_maker
 	url = git@github.com:eclipse-adore/adore_decision_maker.git
-[submodule "colcon_workspace/src/adore_trajectory_tracker"]
-	path = colcon_workspace/src/trajectory_tracker
+[submodule "colcon_workspace/src/nodes/adore_trajectory_tracker"]
+	path = colcon_workspace/src/nodes/trajectory_tracker
 	url = git@github.com:eclipse-adore/adore_trajectory_tracker.git
 [submodule "adore_scenarios/adore_simulation_scenarios"]
 	path = adore_scenarios/simulation_scenarios
 	url = git@github.com:eclipse-adore/adore_simulation_scenarios.git
-[submodule "vendor/libOpenDRIVE/libOpenDRIVE"]
-	path = vendor/libOpenDRIVE/libOpenDRIVE
+[submodule "colcon_workspace/src/vendor/libOpenDRIVE"]
+	path = colcon_workspace/src/vendor/libOpenDRIVE
 	url = git@github.com:markomiz/libOpenDRIVE.git
-[submodule "vendor/sumo/sumo"]
-	path = vendor/sumo/sumo
+[submodule "colcon_workspace/src/vendor/sumo/sumo"]
+	path = colcon_workspace/src/vendor/sumo/sumo
 	url = git@github.com:eclipse/sumo.git
-[submodule "colcon_workspace/src/sumo_bridge"]
+[submodule "colcon_workspace/src/interfaces/sumo_bridge"]
 	path = colcon_workspace/src/interfaces/sumo_bridge
 	url = git@github.com:eclipse-adore/sumo_if_ros.git
-[submodule "colcon_workspace/src/carla_bridge"]
+[submodule "colcon_workspace/src/interfaces/carla_bridge"]
 	path = colcon_workspace/src/interfaces/carla_bridge
 	url = git@github.com:eclipse-adore/adore_if_carla.git
 [submodule "colcon_workspace/src/ros2_messages/ros-carla-msgs"]
 	path = colcon_workspace/src/ros2_messages/ros-carla-msgs
 	url = git@github.com:carla-simulator/ros-carla-msgs.git
-[submodule "vendor/ros2_observer"]
-	path = vendor/ros2_observer
+[submodule "tools/ros2_observer"]
+	path = tools/ros2_observer
 	url = git@github.com:DLR-TS/ros2_observer.git
-[submodule "adore_scenarios/simulation_scenarios"]
-	path = adore_scenarios/simulation_scenarios
+[submodule "colcon_workspace/adore_scenarios/simulation_scenarios"]
+	path = colcon_workspace/adore_scenarios/simulation_scenarios
 	url = git@github.com:eclipse-adore/adore_simulation_scenarios.git
-[submodule "libraries/lib/adore_planning"]
-	path = libraries/lib/adore_planning
+[submodule "colcon_workspace/src/libraries/adore_planning"]
+	path = colcon_workspace/src/libraries/adore_planning
 	url = git@github.com:eclipse-adore/adore_planning.git
-[submodule "libraries/lib/adore_controllers"]
-	path = libraries/lib/adore_controllers
+[submodule "colcon_workspace/src/libraries/adore_controllers"]
+	path = colcon_workspace/src/libraries/adore_controllers
 	url = git@github.com:eclipse-adore/adore_controllers.git
-[submodule "libraries/lib/adore_map"]
-	path = libraries/lib/adore_map
+[submodule "colcon_workspace/src/libraries/adore_map"]
+	path = colcon_workspace/src/libraries/adore_map
 	url = git@github.com:eclipse-adore/adore_map.git
-[submodule "libraries/lib/adore_math"]
-	path = libraries/lib/adore_math
+[submodule "colcon_workspace/src/libraries/adore_math"]
+	path = colcon_workspace/src/libraries/adore_math
 	url = git@github.com:eclipse-adore/adore_math.git
-[submodule "libraries/lib/adore_dynamics"]
-	path = libraries/lib/adore_dynamics
+[submodule "colcon_workspace/src/libraries/adore_dynamics"]
+	path = colcon_workspace/src/libraries/adore_dynamics
 	url = git@github.com:eclipse-adore/adore_dynamics.git
 [submodule "colcon_workspace/src/conversions/adore_dynamics_conversions"]
 	path = colcon_workspace/src/conversions/adore_dynamics_conversions
@@ -93,15 +77,12 @@
 [submodule "colcon_workspace/src/conversions/adore_math_conversions"]
 	path = colcon_workspace/src/conversions/adore_math_conversions
 	url = git@github.com:eclipse-adore/adore_math_conversions.git
-[submodule "colcon_workspace/src/adore_decision_maker_infrastructure"]
-	path = colcon_workspace/src/decision_maker_infrastructure
+[submodule "colcon_workspace/src/nodes/adore_decision_maker_infrastructure"]
+	path = colcon_workspace/src/nodes/decision_maker_infrastructure
 	url = git@github.com:eclipse-adore/adore_decision_maker_infrastructure.git
-[submodule "colcon_workspace/src/adore_simulated_infrastructure"]
-	path = colcon_workspace/src/simulated_infrastructure
-	url = git@github.com:eclipse-adore/adore_simulated_infrastructure.git
-[submodule "colcon_workspace/src/adore_simulated_remote_operator"]
-	path = colcon_workspace/src/simulated_remote_operator
+[submodule "colcon_workspace/src/nodes/adore_simulated_remote_operator"]
+	path = colcon_workspace/src/snodes/imulated_remote_operator
 	url = git@github.com:eclipse-adore/adore_simulated_remote_operator.git
 [submodule "tools/adore_model_checker"]
-	path = vendor/adore_model_checker
+	path = tools/adore_model_checker
 	url = git@github.com:DLR-TS/adore_model_checker.git
