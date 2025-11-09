@@ -22,10 +22,6 @@ all: clean build
 .PHONY: build
 build: build_gh-pages ## Build ADORe documentation 
 
-.PHONY: update_submodules
-update_submodules:
-	git submodule update --init
-
 .PHONY: build_gh-pages
 build_gh-pages: build_mkdocs
 	rm -rf docs
@@ -33,7 +29,7 @@ build_gh-pages: build_mkdocs
 	cp -r mkdocs/site docs/mkdocs
 
 .PHONY: build_mkdocs
-build_mkdocs: update_submodules ## Build mkdocs 
+build_mkdocs: ## Build mkdocs 
 	mkdir -p mkdocs/docs
 	rm -rf mkdocs/docs/generated
 	rm -rf mkdocs/site

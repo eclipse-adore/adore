@@ -11,12 +11,12 @@ import re
 import getpass
 
 # ==== CONFIGURATION ====
-DOCKER_CONTAINER_NAME = "adore_cli"
+DOCKER_CONTAINER_NAME = "adore_dev"
 USER = getpass.getuser()
 
 CONTAINER_ADORE_PATH = f"/home/{USER}/adore"
-CONTAINER_WS_PATH = f"{CONTAINER_ADORE_PATH}/colcon_workspace"
-CONTAINER_SCENARIO_DIR = f"{CONTAINER_WS_PATH}/adore_scenarios"
+CONTAINER_WS_PATH = f"{CONTAINER_ADORE_PATH}/.colcon_workspace"
+CONTAINER_SCENARIO_DIR = f"{CONTAINER_WS_PATH}/src/adore_scenarios"
 CONTAINER_MAKEFILE = f"{CONTAINER_WS_PATH}/Makefile"
 
 LAUNCH_EXT = ".py"
@@ -25,7 +25,7 @@ launch_process = None
 
 ROS_SETUP_CMD = (
     "source /opt/ros/jazzy/setup.zsh && "
-    "source ~/adore/colcon_workspace/install/setup.zsh"
+    "source ~/adore/.colcon_workspace/install/setup.zsh"
 )
 
 # ==== FUNCTIONS ====

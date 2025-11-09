@@ -2,6 +2,7 @@ site_name: ADORe Documentation
 repo_url: https://github.com/eclipse-adore/adore
 
 nav:
+  - Home: index.md
   - Overview:
       - What is ADORe?: technical_reference_manual/about_adore.md
       - Quick start: technical_reference_manual/quick_start.md
@@ -41,32 +42,32 @@ nav:
           - ADORe scenarios: generated/adore_scenarios/README.md
 
       - Libraries:
-          - adore_controllers: generated/colcon_workspace/src/libraries/adore_controllers/README.md
-          - adore_dynamics: generated/colcon_workspace/src/libraries/adore_dynamics/README.md
-          - adore_map: generated/colcon_workspace/src/libraries/adore_map/README.md
-          - adore_math: generated/colcon_workspace/src/libraries/adore_math/README.md
-          - adore_planning: generated/colcon_workspace/src/libraries/adore_planning/README.md
+          - adore_controllers: generated/libraries/adore_controllers/README.md
+          - adore_dynamics: generated/libraries/adore_dynamics/README.md
+          - adore_map: generated/libraries/adore_map/README.md
+          - adore_math: generated/libraries/adore_math/README.md
+          - adore_planning: generated/libraries/adore_planning/README.md
 
       - Nodes:
-          - decision_maker: generated/colcon_workspace/src/nodes/decision_maker/README.md
-          - decision_maker_infrastructure: generated/colcon_workspace/src/nodes/decision_maker_infrastructure/README.md
-          - mission_control: generated/colcon_workspace/src/nodes/mission_control/README.md
-          - simulated_remote_operator: generated/colcon_workspace/src/nodes/simulated_remote_operator/README.md
-          - simulated_vehicle: generated/colcon_workspace/src/nodes/simulated_vehicle/README.md
-          - trajectory_tracker: generated/colcon_workspace/src/nodes/trajectory_tracker/README.md
-          - visualizer: generated/colcon_workspace/src/nodes/visualizer/README.md
+          - decision_maker: generated/nodes/decision_maker/README.md
+          - decision_maker_infrastructure: generated/nodes/decision_maker_infrastructure/README.md
+          - mission_control: generated/nodes/mission_control/README.md
+          - simulated_remote_operator: generated/nodes/simulated_remote_operator/README.md
+          - simulated_vehicle: generated/nodes/simulated_vehicle/README.md
+          - trajectory_tracker: generated/nodes/trajectory_tracker/README.md
+          - visualizer: generated/nodes/visualizer/README.md
 
       - Interfaces:
-          - CARLA bridge: generated/colcon_workspace/src/interfaces/carla_bridge/README.md
-          - SUMO bridge: generated/colcon_workspace/src/interfaces/sumo_bridge/README.md
+          - CARLA bridge: generated/interfaces/carla_bridge/README.md
+          - SUMO bridge: generated/interfaces/sumo_bridge/README.md
 
       - Conversions:
-          - adore_dynamics_conversions: generated/colcon_workspace/src/conversions/adore_dynamics_conversions/README.md
-          - adore_map_conversions: generated/colcon_workspace/src/conversions/adore_map_conversions/README.md
-          - adore_math_conversions: generated/colcon_workspace/src/conversions/adore_math_conversions/README.md
+          - adore_dynamics_conversions: generated/conversions/adore_dynamics_conversions/README.md
+          - adore_map_conversions: generated/conversions/adore_map_conversions/README.md
+          - adore_math_conversions: generated/conversions/adore_math_conversions/README.md
 
       - ROS 2 messages:
-          - adore_ros2_msgs: generated/colcon_workspace/src/ros2_messages/adore_ros2_msgs/README.md
+          - adore_ros2_msgs: generated/ros2_messages/adore_ros2_msgs/README.md
 
       - Tools:
           - ADORe API tools: generated/tools/adore_api/README.md
@@ -144,3 +145,4 @@ markdown_extensions:
 
 plugins:
   - search
+  - redirects

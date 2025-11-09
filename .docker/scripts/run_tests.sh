@@ -13,7 +13,7 @@ echo "--- Running tests inside CI Docker container ---"
 
 docker run --rm \
   -v "${WORKSPACE_ROOT}:/workspace" \
-  -w "/workspace/colcon_workspace" \
+  -w "/workspace/.colcon_workspace" \
   -e ROS_DISTRO="${ROS_DISTRO}" \
   "${DOCKER_CI_IMAGE_LATEST}" \
   bash -lc '

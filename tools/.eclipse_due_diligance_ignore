@@ -4,9 +4,9 @@
 documentation/**
 documentation/
 libraries/build/**
-colcon_workspace/build/**
-colcon_workspace/install/**
-colcon_workspace/install/**
+.colcon_workspace/build/**
+.colcon_workspace/install/**
+.colcon_workspace/install/**
 vendor/**
 make_gadgets/**
 

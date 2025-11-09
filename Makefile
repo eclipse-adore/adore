@@ -7,10 +7,26 @@ SHELL := /bin/zsh
 	cli stop_cli \
 	save load \
 	gui edit_roads lichtblick \
-	test docs ci
+	test docs ci \
+	setup_colcon_src
 
 WORKSPACE_ROOT := $(PWD)
 ROS_DISTRO := jazzy
+
+SETUP_COLCON_SCRIPT := .docker/scripts/setup_colcon_src.sh
+
+# ----------------------------------------------------------------------
+# Symlink setup for colcon workspace
+# ----------------------------------------------------------------------
+
+setup_colcon_src:
+	@if [ -x "$(SETUP_COLCON_SCRIPT)" ]; then \
+		echo "--- Ensuring colcon_workspace/src symlinks are set up ---"; \
+		"$(SETUP_COLCON_SCRIPT)"; \
+	else \
+		echo "ERROR: $(SETUP_COLCON_SCRIPT) not found or not executable" >&2; \
+		exit 1; \
+	fi
 
 # ----------------------------------------------------------------------
 # Docker-backed targets (dev image)
@@ -20,9 +36,8 @@ build_image:
 	@WORKSPACE_ROOT="$(WORKSPACE_ROOT)" ROS_DISTRO="$(ROS_DISTRO)" \
 		.docker/scripts/build_image.sh
 
-# One-shot dev container (same behaviour as your original `build` target:
-# ensures image exists, then runs a container in colcon_workspace)
-build:
+# Ensure symlinks exist before running the build inside Docker
+build: setup_colcon_src
 	@WORKSPACE_ROOT="$(WORKSPACE_ROOT)" ROS_DISTRO="$(ROS_DISTRO)" \
 		.docker/scripts/run_build.sh
 
@@ -34,7 +49,8 @@ clean: clean_cli
 	@echo "--- Cleaning local colcon build artifacts ---"
 	rm -rf "$(WORKSPACE_ROOT)/build" "$(WORKSPACE_ROOT)/install" "$(WORKSPACE_ROOT)/log"
 
-cli:
+# Ensure symlinks also exist when dropping into the dev container
+cli: setup_colcon_src
 	@WORKSPACE_ROOT="$(WORKSPACE_ROOT)" ROS_DISTRO="$(ROS_DISTRO)" \
 		.docker/scripts/cli.sh
 
@@ -67,11 +83,13 @@ lichtblick:
 # CI helpers (use the CI image under the hood)
 # ----------------------------------------------------------------------
 
-test:
+# Tests expect a valid colcon workspace layout
+test: setup_colcon_src
 	@WORKSPACE_ROOT="$(WORKSPACE_ROOT)" ROS_DISTRO="$(ROS_DISTRO)" \
 		.docker/scripts/run_tests.sh
 
-docs:
+# Docs pipeline may also rely on the workspace layout
+docs: setup_colcon_src
 	@WORKSPACE_ROOT="$(WORKSPACE_ROOT)" ROS_DISTRO="$(ROS_DISTRO)" \
 		.docker/scripts/run_docs.sh
 

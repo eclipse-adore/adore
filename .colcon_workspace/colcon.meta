@@ -1,0 +1,7 @@
+{
+  "names": {
+    "osqp-eigen": {
+      "dependencies": ["osqp"]
+    }
+  }
+}

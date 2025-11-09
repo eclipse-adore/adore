@@ -1,74 +1,145 @@
 # Documentation Generation
-ADORe provides tools to generate all of the documentation detailed in the 
-[documentation](documentaiton.md) readme.
 
-## Usage: Documentation Generation
-1. cd to the adore documentation directory:
-    ```bash
-    cd adore/documentation
-    ```
-2. Call the build target:
-    ```bash
-    make build
-    ```
+ADORe provides tools to generate all of the documentation described in the main [Documentation](documentation.md) page.
 
-## Usage: Serving local copy
-You can build and serve the documentation locally by running the provide `make
-serve` target. Navigate to the documentation directory and run the following:
+The documentation system produces a static site that combines:
+
+* the landing/overview pages,
+* the technical reference manual,
+* the generated code reference under `generated/` (libraries, nodes, interfaces, vendor packages, tools, …).
+
+The final site is written to `documentation/docs/` and is suitable for publishing via GitHub Pages.
+
+## Building the documentation
+
+You can build the docs either from the repository root (CI-style, via Docker) or directly inside the `documentation/` directory.
+
+### Option A: from the repository root (recommended)
+
+From the repo root:
+
+```bash
+make docs
+```
+
+This will:
+
+1. build the CI Docker image (if needed),
+2. run the documentation build inside that container,
+3. produce the static site in:
+
+   ```text
+   documentation/docs/
+   ```
+
+This is the same pipeline used by CI, so it’s the best way to ensure reproducible builds.
+
+### Option B: from the `documentation/` directory
+
+If you have the tooling installed locally (MkDocs, Python, etc.), you can build without Docker:
+
+```bash
+cd adore/documentation
+make build
+```
+
+This will:
+
+* run the MkDocs generation step (including `mkdocs/gen_docs.py`, which populates `mkdocs/docs/generated/**` from the colcon workspace and related modules),
+* copy the technical reference manual into `mkdocs/docs/technical_reference_manual`,
+* run `mkdocs build` to produce `mkdocs/site`,
+* assemble the final site into `docs/` (landing page + MkDocs output).
+
+After this, `docs/` is equivalent to what `make docs` produces via Docker.
+
+## Serving a local copy
+
+To build and serve the documentation locally:
+
 ```bash
 cd adore/documentation
 make serve
 ```
 
-Once built the documents will be available at
-[http://localhost 🔗](http://localhost) 
+This will:
 
-> **ℹ️INFO:**
-> This will build and serve the documentation locally using a docker nginx image
+1. run `make build` to refresh `docs/`,
+2. start a simple HTTP server serving `docs/` on port `8000`.
 
-## Usage: Spell Checking
-The documentation system uses aspell to "lint" the markdown files
-To do an interactive spell checking session use the provided make target:
+Then open:
+
+[http://localhost:8000](http://localhost:8000)
+
+in your browser to view the documentation.
+
+If you just want to serve an already-built copy without rebuilding:
+
+```bash
+cd adore/documentation/docs
+python3 -m http.server 8000
 ```
+
+## Spell checking
+
+The documentation system uses **aspell** to lint the Markdown files.
+
+Interactive spell-check session:
+
+```bash
+cd adore/documentation
 make spellcheck
 ```
-To non-interactively lint/spellcheck all markdown documents run:
-```
+
+Non-interactive lint/spellcheck of all Markdown documents:
+
+```bash
+cd adore/documentation
 make lint
 ```
 
-The spell checker (aspell) and lint targets use a custom dictionary: `.aspell.en.pws`
+Both targets use:
 
-Words can be added to the dictionary to provide exceptions by directly editing this file
-or by running an interactive spell checking session as explained previously.
+* a small Docker image containing aspell,
+* a custom dictionary file: `.aspell.en.pws`.
 
+You can add words to the dictionary either by editing `.aspell.en.pws` directly or by accepting them during an interactive spell-check session.
 
-## Usage: Publication (to gh-pages)
-Steps to publish documentation to gh-pages:
+## Publishing to GitHub Pages (gh-pages)
 
-1. Fork the ADORe repo to your personal GitHub 
+To publish the documentation to GitHub Pages:
 
-2. Clone the repo locally
+1. Fork the ADORe repository to your personal GitHub account or organisation.
 
-3. Modify the `publish.env` file to specify an originating branch 
-> **ℹ️INFO:**
-> You do not need to check out the branch you wish the documentation originate from.
-> The source branch of the gh-pages/documentation is defined in `publish.env`
+2. Clone the fork locally.
 
-4. Run the publication Make target:
-```
-make publish
-```
+3. In `adore/documentation`, edit the `publish.env` file to specify:
 
-This will push a branch called `gh-pages` containing only a `docs` folder
-to the `origin` remote
+   * the branch to build documentation from,
+   * the target remote for the `gh-pages` branch.
 
-5. Configure GitHub to use the branch as a "GitHub Pages"
-You have to enable `gh-pages` on the `docs` directory in order for the publication
-to be active. Visit `https://github.com/<username/orginization>/adore/settings/pages` to
-configure gh-pages.
+   You do **not** need to check out the source branch you are publishing from; the branch is defined in `publish.env`.
 
-6. Optionally, create a pull/merge request to make this documentation active on the 
-primary ADORe repo. Make sure to lint the markdown with `make lint` before 
-submitting a pull/merge request.
+4. Run the publish target:
 
+   ```bash
+   cd adore/documentation
+   make publish
+   ```
+
+   This pushes a branch called `gh-pages` containing only a `docs/` folder to the configured remote.
+
+5. In GitHub, configure Pages to use that branch:
+
+   * Go to `https://github.com/<username-or-organization>/adore/settings/pages`,
+   * Select the `gh-pages` branch,
+   * Set the folder to `docs/`.
+
+6. Optionally, create a pull/merge request against the main ADORe repo to make this documentation active there.
+   Before submitting, run:
+
+   ```bash
+   cd adore/documentation
+   make lint
+   ```
+
+   to ensure the Markdown passes the spellcheck/lint step.

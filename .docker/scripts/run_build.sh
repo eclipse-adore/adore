@@ -13,6 +13,6 @@ echo "--- Running one-shot dev container for build ---"
 
 docker run --rm -it --name "${DOCKER_CONTAINER_NAME}" \
   -v "${WORKSPACE_ROOT}:/home/${USER_NAME}/adore" \
-  -w "/home/${USER_NAME}/adore/colcon_workspace" \
+  -w "/home/${USER_NAME}/adore/.colcon_workspace" \
   -e ROS_DISTRO="${ROS_DISTRO}" \
   "${DOCKER_DEV_IMAGE_LATEST}"

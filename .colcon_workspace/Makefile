@@ -11,16 +11,10 @@ source /opt/ros/$(ROS_DISTRO)/setup.zsh; \
 [ -f install/local_setup.zsh ] && source install/local_setup.zsh || true
 endef
 
-COLCON_CMD = colcon build \
-	--parallel-workers $(NPROC) \
-	--symlink-install \
-	--continue-on-error \
-	--cmake-args -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release
-
 # === Targets ===
-
+COLCON_CMD = colcon build --parallel-workers $(NPROC)
 .PHONY: build
-build: ## Build all packages in adore_scenarios selectively
+build:
 	$(call source_ros) && \
 	$(COLCON_CMD) --packages-select $(shell colcon list --base-paths src adore_scenarios --names-only)
 
@@ -32,10 +26,9 @@ clean: ## Remove build/install/log artifacts
 clean_build: clean build ## Clean and then build
 
 .PHONY: test
-test: ## Run all tests, excluding vendor packages
+test:
 	$(call source_ros) && \
 	colcon test \
-		--event-handlers console_cohesion+ \
 		--packages-skip $(shell colcon list --base-paths src/vendor --names-only); \
 	colcon test-result --verbose
 
