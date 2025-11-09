@@ -10,6 +10,7 @@ git
 curl
 wget
 ca-certificates
+just
 
 python3-pip
 python3-pytest

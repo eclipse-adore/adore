@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
+# Ensure .colcon_workspace/src mirrors the top-level package layout via symlinks.
+
 set -euo pipefail
 
-# Resolve repo root = two levels up from this script (.docker/scripts)
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-SRC_DIR="${REPO_ROOT}/.colcon_workspace/src"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${SCRIPT_DIR}/common.sh"
 
+SRC_DIR="${WORKSPACE_ROOT}/.colcon_workspace/src"
 mkdir -p "${SRC_DIR}"
 
-# Top-level dirs you moved out of colcon_workspace/src
+# Top-level dirs that contain colcon packages
 CATEGORIES=(
   "adore_scenarios"
   "ros2_conversions"
@@ -20,30 +23,30 @@ CATEGORIES=(
 
 link_category() {
   local category="$1"
-  local target_rel="../../${category}"          # relative from colcon_workspace/src
-  local target_abs="${REPO_ROOT}/${category}"
-  local link_path="${SRC_DIR}/${category}"
 
-  if [ ! -d "${target_abs}" ]; then
-    echo "Warning: ${target_abs} does not exist, skipping" >&2
-    return
+  local target_dir="${WORKSPACE_ROOT}/${category}"
+  if [[ ! -d "${target_dir}" ]]; then
+    echo "WARN: Skipping category '${category}' – directory not found at ${target_dir}" >&2
+    return 0
   fi
 
-  if [ -L "${link_path}" ]; then
-    # Existing symlink: check target
+  local link_path="${SRC_DIR}/${category}"
+  local target_rel="../../${category}"
+
+  if [[ -L "${link_path}" ]]; then
+    # Already a symlink – check if it points to the expected location
     local current
     current="$(readlink "${link_path}")"
-    if [ "${current}" = "${target_rel}" ]; then
-      echo "Symlink already correct: ${link_path} -> ${current}"
-      return
+    if [[ "${current}" == "${target_rel}" ]]; then
+      echo "OK: Symlink for '${category}' already correct."
+      return 0
     else
-      echo "Updating symlink: ${link_path} (was ${current}, now ${target_rel})"
-      ln -sfn "${target_rel}" "${link_path}"
-      return
+      echo "Updating symlink for '${category}': ${current} -> ${target_rel}"
+      rm -f "${link_path}"
     fi
   fi
 
-  if [ -e "${link_path}" ]; then
+  if [[ -e "${link_path}" ]]; then
     echo "ERROR: ${link_path} exists and is not a symlink. Please remove or rename it." >&2
     return 1
   fi
