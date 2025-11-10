@@ -114,16 +114,15 @@ ci: test docs
 # Host colcon builds in .colcon_workspace (no Docker)
 # -------------------------------------------------------------------
 
-# Build adore_scenarios subset
 build:
     cd "$COLCON_WS_ROOT" && {{source_ros}} && \
-    {{colcon_cmd}} --packages-select `colcon list --base-paths src adore_scenarios --names-only`
+    {{colcon_cmd}}
 
 # Run colcon tests locally on host (to distinguish from Docker CI tests)
 test_ws:
     cd "$COLCON_WS_ROOT" && {{source_ros}} && \
     colcon test \
-      --packages-skip `colcon list --base-paths src/vendor --names-only`; \
+      --packages-skip `colcon list --base-paths src/vendor  src/ros2_messages/ros-carla-msgs --names-only`; \
     colcon test-result --verbose
 
 # Forcefully kill any lingering ROS 2 or colcon processes
@@ -138,7 +137,7 @@ force_kill_ros2:
 # Build vendor packages in adore_scenarios selectively
 build_scenarios:
     cd "$COLCON_WS_ROOT" && {{source_ros}} && \
-    {{colcon_cmd}} --packages-select `colcon list --base-paths adore_scenarios --names-only`
+    {{colcon_cmd}} --packages-select `colcon list --base-paths src/adore_scenarios --names-only`
 
 # Build library packages in adore_conversions selectively
 build_conversions:
