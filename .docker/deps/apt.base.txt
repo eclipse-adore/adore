@@ -5,6 +5,7 @@ nlohmann-json3-dev
 
 build-essential
 cmake
+ccache
 
 git
 curl

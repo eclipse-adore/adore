@@ -21,8 +21,9 @@ export ROS_DISTRO := env('ROS_DISTRO', 'jazzy')
 export SETUP_COLCON_SCRIPT := ".docker/scripts/setup_colcon_src.sh"
 
 # Helpers: use shell variables and command substitution, no {{...}} inside
-source_ros := 'source /opt/ros/$ROS_DISTRO/setup.zsh; if [ -f install/local_setup.zsh ]; then source install/local_setup.zsh || true; fi'
-colcon_cmd := 'colcon build --parallel-workers $(nproc)'
+source_ros := 'source /opt/ros/$ROS_DISTRO/setup.sh; if [ -f install/local_setup.sh ]; then source install/local_setup.sh || true; fi'
+colcon_cmd := 'colcon build'
+
 
 # Host uid/gid for docker -u in docs_spellcheck/docs_lint
 uid := `id -u`

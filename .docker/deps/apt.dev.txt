@@ -7,7 +7,6 @@ htop
 tree
 bat
 ripgrep
-ccache
 gdb
 
 ros-jazzy-rqt
