@@ -7,8 +7,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "${SCRIPT_DIR}/common.sh"
 
-require_host "Tests should be launched from the host; inside CI the image is already present."
-
 cd "${WORKSPACE_ROOT}"
 
 IMAGE="${DOCKER_CI_IMAGE_LATEST}"

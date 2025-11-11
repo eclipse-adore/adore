@@ -7,8 +7,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "${SCRIPT_DIR}/common.sh"
 
-require_host "Inside the dev container, you can build docs via: just docs_build"
-
 cd "${WORKSPACE_ROOT}"
 
 IMAGE="${DOCKER_CI_IMAGE_LATEST}"
