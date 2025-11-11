@@ -27,6 +27,6 @@ docker run --rm \
   bash -lc '
     set -e
     echo "--- Running ADORe CI tests via just ---"
-    just test_ws
+    just build && just test_ws
   '
 
