@@ -5,8 +5,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "${SCRIPT_DIR}/common.sh"
 
-require_host "Hint: CI image is built on the host; inside CI the image is already available."
-
 cd "${WORKSPACE_ROOT}"
 
 docker build \
