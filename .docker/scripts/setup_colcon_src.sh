@@ -13,11 +13,11 @@ mkdir -p "${SRC_DIR}"
 # Top-level dirs that contain colcon packages
 CATEGORIES=(
   "adore_scenarios"
-  "ros2_conversions"
-  "interfaces"
-  "libraries"
-  "ros2_nodes"
-  "ros2_messages"
+  "adore_ros2_conversions"
+  "adore_interfaces"
+  "adore_libraries"
+  "adore_ros2_nodes"
+  "adore_ros2_msgs"
   "vendor"
 )
 

@@ -8,7 +8,7 @@ CONTAINER_PORT=8080
 
 # === Resolve directory of this script ===
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-MODELS_DIR="${SCRIPT_DIR}/../ros2_workspace/adore_scenarios/assets/"
+MODELS_DIR="${SCRIPT_DIR}/../adore_scenarios/assets/"
 
 # === Check if script is running inside Docker ===
 is_inside_docker() {
@@ -16,8 +16,8 @@ is_inside_docker() {
 }
 
 if is_inside_docker; then
-    echo "🚫 You are running this script inside a Docker container (e.g., adore_cli)."
-    echo "💡 Please run it from your host terminal, not from inside adore_cli."
+    echo "🚫 You are running this script inside a Docker container."
+    echo "💡 Please run it from your host terminal, not from inside container"
     exit 1
 fi
 

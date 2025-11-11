@@ -8,7 +8,7 @@ find_package(launch_testing_ament_cmake REQUIRED)
 find_package(adore_ros2_msgs REQUIRED)
 # Install Python modules
 install(DIRECTORY
-  simulation_scenarios
+  adore_simulation_scenarios
   scenario_helpers
   DESTINATION share/${PROJECT_NAME}/
 )
@@ -23,7 +23,7 @@ install(
 
 install(
   DIRECTORY
-    simulation_scenarios/
+    adore_simulation_scenarios/
   DESTINATION
     share/${PROJECT_NAME}/
 )

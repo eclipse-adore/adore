@@ -26,3 +26,6 @@ libxtst6
 libxi6
 libgl1
 mesa-utils
+
+python3-flask
+python3-flask-cors

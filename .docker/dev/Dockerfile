@@ -63,4 +63,24 @@ setopt INC_APPEND_HISTORY\n\
     touch "${WORKSPACE}/.zsh_history" && \
     chown -R "${USERNAME}:${USERNAME}" "${WORKSPACE}"
 
+# --- ADORe: auto-source ROS + workspace in interactive zsh shells ---
+RUN set -eux; \
+    ZSHRC="$HOME/.zshrc"; \
+    touch "$ZSHRC"; \
+    { \
+      echo ''; \
+      echo '# --- ADORe ROS environment -----------------------------------------'; \
+      echo '# Source the chosen ROS distro (defaults to jazzy if ROS_DISTRO unset)'; \
+      echo 'if [ -f "/opt/ros/${ROS_DISTRO:-jazzy}/setup.zsh" ]; then'; \
+      echo '  source "/opt/ros/${ROS_DISTRO:-jazzy}/setup.zsh"'; \
+      echo 'fi'; \
+      echo ''; \
+      echo '# Source local colcon workspace overlay if it exists'; \
+      echo 'if [ -f "$HOME/adore/.colcon_workspace/install/local_setup.zsh" ]; then'; \
+      echo '  source "$HOME/adore/.colcon_workspace/install/local_setup.zsh"'; \
+      echo 'elif [ -f "$HOME/adore/.colcon_workspace/install/setup.zsh" ]; then'; \
+      echo '  source "$HOME/adore/.colcon_workspace/install/setup.zsh"'; \
+      echo 'fi'; \
+    } >> "$ZSHRC"
+
 CMD ["/usr/bin/zsh", "-l"]

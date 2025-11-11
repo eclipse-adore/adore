@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ "**" ]
+
+jobs:
+  ci:
+    name: Tests + Docs (CI image) — ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: x86_64
+            runner: ubuntu-24.04        # GitHub-hosted x86_64
+            platform: linux/amd64
+          - name: arm64
+            runner: ubuntu-24.04-arm    # GitHub-hosted xarm64
+            platform: linux/arm64
+
+    runs-on: ${{ matrix.runner }}
+
+    permissions:
+      contents: read
+
+    env:
+      ROS_DISTRO: jazzy
+      # Hint for docker buildx; your build_ci.sh can make use of this if desired
+      DOCKER_DEFAULT_PLATFORM: ${{ matrix.platform }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Show environment
+        run: |
+          echo "Runner:   ${{ matrix.runner }}"
+          echo "Platform: ${{ matrix.platform }}"
+          uname -a
+          docker info
+
+      - name: Build CI Docker image
+        run: .docker/scripts/build_ci.sh
+
+      - name: Run tests + docs inside CI image
+        run: .docker/scripts/run_ci.sh
+
+      - name: Upload colcon logs (${{ matrix.name }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: colcon-logs-${{ matrix.name }}
+          path: .colcon_workspace/log
+          if-no-files-found: ignore
+
+      - name: Upload built docs (${{ matrix.name }})
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-site-${{ matrix.name }}
+          path: documentation/docs
+          if-no-files-found: ignore

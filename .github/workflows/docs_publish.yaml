@@ -1,0 +1,45 @@
+name: Publish Docs
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'documentation/**'
+      - 'Justfile'
+      - '.docker/scripts/**'
+      - '.github/workflows/docs-publish.yml'
+
+jobs:
+  publish-docs:
+    name: Build & publish docs
+    runs-on: ubuntu-24.04
+
+    permissions:
+      contents: write   # needed to push gh-pages
+      pages: write
+      id-token: write
+
+    env:
+      ROS_DISTRO: jazzy
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          # keep default persist-credentials: true so pushes use GITHUB_TOKEN
+
+      - name: Show Docker info
+        run: docker info
+
+      - name: Build CI Docker image
+        run: .docker/scripts/build_ci.sh
+
+      - name: Build docs in CI image
+        run: .docker/scripts/run_docs.sh
+
+      - name: Publish docs to gh-pages
+        run: |
+          set -euo pipefail
+          cd documentation
+          bash publish_gh-pages.sh

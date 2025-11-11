@@ -154,30 +154,52 @@ def run_just_target(target: str) -> None:
 
 def refresh_scenarios():
     scenario_listbox.delete(0, tk.END)
+
+    cmd = [
+        "docker",
+        "exec",
+        DOCKER_CONTAINER_NAME,
+        "bash",
+        "-lc",
+        # -L: follow symlinks; -type f: only real files at the targets
+        f'find -L "{CONTAINER_SCENARIO_DIR}" -type f -name "*{LAUNCH_EXT}" 2>/dev/null',
+    ]
+
     try:
         result = subprocess.run(
-            [
-                "docker",
-                "exec",
-                DOCKER_CONTAINER_NAME,
-                "find",
-                CONTAINER_SCENARIO_DIR,
-                "-name",
-                f"*{LAUNCH_EXT}",
-            ],
+            cmd,
             capture_output=True,
             text=True,
-            check=True,
         )
-        for path in sorted(result.stdout.strip().splitlines()):
-            rel_path = os.path.relpath(path, CONTAINER_SCENARIO_DIR)
-            print(rel_path)
-            if any(part in EXCLUDED_DIRS for part in Path(rel_path).parts):
-                continue
-            if scenario_filter.get().lower() in rel_path.lower():
-                scenario_listbox.insert(tk.END, rel_path)
     except Exception as exc:  # noqa: BLE001
-        messagebox.showerror("Scenario Error", str(exc))
+        messagebox.showerror(
+            "Scenario Error", f"Error running docker exec:\n{exc}")
+        return
+
+    if result.returncode != 0:
+        message = (
+            "Failed to list scenarios.\n\n"
+            f"Command: {' '.join(cmd)}\n\n"
+            f"Exit code: {result.returncode}\n"
+            f"stderr:\n{result.stderr}"
+        )
+        print(message)
+        messagebox.showerror("Scenario Error", message)
+        return
+
+    lines = [l for l in result.stdout.strip().splitlines() if l]
+    if not lines:
+        print(
+            f"[adore_gui] No matching files under {CONTAINER_SCENARIO_DIR} "
+            f"for pattern '*{LAUNCH_EXT}'"
+        )
+
+    for path in sorted(lines):
+        rel_path = os.path.relpath(path, CONTAINER_SCENARIO_DIR)
+        if any(part in EXCLUDED_DIRS for part in Path(rel_path).parts):
+            continue
+        if scenario_filter.get().lower() in rel_path.lower():
+            scenario_listbox.insert(tk.END, rel_path)
 
 
 def launch_selected_scenario(index):

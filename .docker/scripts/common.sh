@@ -48,11 +48,50 @@ DOCKER_CI_IMAGE_TAGGED="${DOCKER_CI_IMAGE_BASE}:${IMAGE_TAG}"
 DOCKER_CI_IMAGE_LATEST="${DOCKER_CI_IMAGE_LATEST:-${DOCKER_CI_IMAGE_BASE}:latest}"
 DOCKER_CI_DOCKERFILE="${DOCKER_CI_DOCKERFILE:-${WORKSPACE_ROOT}/.docker/ci/Dockerfile}"
 
-# Default "current" image (dev) – convenience alias
-DOCKER_IMAGE_BASE="${DOCKER_IMAGE_BASE:-${DOCKER_DEV_IMAGE_BASE}}"
-DOCKER_IMAGE_TAGGED="${DOCKER_IMAGE_TAGGED:-${DOCKER_DEV_IMAGE_TAGGED}}"
-DOCKER_IMAGE_LATEST="${DOCKER_IMAGE_LATEST:-${DOCKER_DEV_IMAGE_LATEST}}"
-
 # Location for saved images
 DOCKER_BUILD_DIR="${DOCKER_BUILD_DIR:-${WORKSPACE_ROOT}/build}"
 DOCKER_TAR_NAME="${DOCKER_TAR_NAME:-${DOCKER_DEV_IMAGE_BASE}_${IMAGE_TAG}.tar}"
+
+
+dev_greeting() {
+  local mode="${1:-shell}"
+
+  # Only use colors if stdout is a TTY
+  if [ -t 1 ]; then
+    local RESET="\033[0m"
+    local BOLD="\033[1m"
+    local DIM="\033[2m"
+    local FG_CYAN="\033[36m"
+    local FG_BLUE="\033[34m"
+    local FG_YELLOW="\033[33m"
+    local FG_MAGENTA="\033[35m"
+  else
+    local RESET="" BOLD="" DIM="" FG_CYAN="" FG_BLUE="" FG_YELLOW="" FG_MAGENTA=""
+  fi
+
+  # Try to get a nice OS description; fall back to uname
+
+  local kernel arch user container workspace
+  kernel="$(uname -r 2>/dev/null || echo "?")"
+  arch="$(uname -m 2>/dev/null || echo "?")"
+  user="${USER_NAME:-$(id -un 2>/dev/null || echo "unknown")}"
+  container="${DOCKER_CONTAINER_NAME:-adore}"
+  workspace="${WORKSPACE_ROOT:-$(pwd)}"
+
+  # Clear screen (if possible)
+  if command -v clear >/dev/null 2>&1; then
+    clear
+  else
+    printf '\033c'
+  fi
+
+  printf "%b" "${FG_CYAN}${BOLD}"
+  printf "Welcome to the ADORe Development Environment\n"
+
+  # Helpful hint
+  printf "%b" "${FG_YELLOW}"
+  printf "  Type %bjust --list%b to see available commands,\n" "${BOLD}" "${FG_YELLOW}"
+  printf "  or %bhelp%b inside the container for more information.\n\n" "${BOLD}" "${FG_YELLOW}"
+  printf "%b" "${RESET}"
+  
+}

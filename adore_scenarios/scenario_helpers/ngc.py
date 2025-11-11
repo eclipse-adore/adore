@@ -1,16 +1,3 @@
-# ********************************************************************************
-# Copyright (c) 2025 Contributors to the Eclipse Foundation
-#
-# See the NOTICE file(s) distributed with this work for additional
-# information regarding copyright ownership.
-#
-# This program and the accompanying materials are made available under the
-# terms of the Eclipse Public License 2.0 which is available at
-# https://www.eclipse.org/legal/epl-2.0
-#
-# SPDX-License-Identifier: EPL-2.0
-# ********************************************************************************
-
 from launch_ros.actions import Node
 import os
 from scenario_helpers.simulation_planner_params import planner_params
@@ -23,13 +10,13 @@ def create_ngc_nodes(
     debug: bool = False,
     optinlc_route_following: bool = True,
     controller: int = 1,
-    custom_start_position: tuple[float, float, float] | None = None,
+    custom_start_pose: tuple[float, float, float] | None = None,
     request_assistance_polygon: list[float] = [0.0,0.0]) -> list[Node]:
 
     launch_file_dir = os.path.dirname(os.path.realpath(__file__))
     vehicle_param = os.path.abspath(os.path.join(launch_file_dir, "../assets/vehicle_params/"))
     model_file = vehicle_param + "/NGC.json"
-    x, y, psi = custom_start_position
+    x, y, psi = custom_start_pose
     goal_x, goal_y = goal_position
 
     nodes = [

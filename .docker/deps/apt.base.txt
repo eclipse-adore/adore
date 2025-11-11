@@ -15,6 +15,9 @@ just
 python3-pip
 python3-pytest
 python3-colcon-common-extensions
+python3-pyproj
+
 
 ros-jazzy-rclcpp-components
 ros-jazzy-cv-bridge
+ros-jazzy-rosbridge-server

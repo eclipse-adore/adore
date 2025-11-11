@@ -19,7 +19,7 @@ CONTAINER_NAME="${DOCKER_CONTAINER_NAME}"
 # --------------------------------------------------------------------
 if ! docker image inspect "${IMAGE}" >/dev/null 2>&1; then
   echo "--- Dev image ${IMAGE} not found; building it ---"
-  "${SCRIPT_DIR}/build_image.sh"
+  "${SCRIPT_DIR}/build_dev.sh"
 fi
 
 # --------------------------------------------------------------------
@@ -27,6 +27,8 @@ fi
 # --------------------------------------------------------------------
 if docker ps --format '{{.Names}}' | grep -qx "${CONTAINER_NAME}"; then
   echo "--- Attaching to running dev container ${CONTAINER_NAME} ---"
+  clear 
+  dev_greeting
   docker exec -it \
     -w "/home/${USER_NAME}/adore/" \
     -e HISTFILE="/home/${USER_NAME}/.zsh_history" \
@@ -52,7 +54,20 @@ if [ ! -f "${HOST_ZSH_HISTORY}" ]; then
 fi
 
 echo "--- Starting dev container ${CONTAINER_NAME} (image: ${IMAGE}) ---"
+clear
+dev_greeting
+
 docker run --rm -it \
   --name "${CONTAINER_NAME}" \
+  --network host \
+  -e DISPLAY \
+  -e QT_X11_NO_MITSHM=1 \
+  -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
   -v "${WORKSPACE_ROOT}:/home/${USER_NAME}/adore" \
-  -v "${HOST_ZSH_HISTORY}:/h
+  -v "${HOST_ZSH_HISTORY}:/home/${USER_NAME}/.zsh_history" \
+  -w "/home/${USER_NAME}/adore/" \
+  -e ROS_DISTRO="${ROS_DISTRO}" \
+  -e HISTFILE="/home/${USER_NAME}/.zsh_history" \
+  -e HISTSIZE=100000 \
+  -e SAVEHIST=100000 \
+  "${IMAGE}"
