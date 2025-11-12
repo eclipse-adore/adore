@@ -22,3 +22,10 @@ python3-pyproj
 ros-jazzy-rclcpp-components
 ros-jazzy-cv-bridge
 ros-jazzy-rosbridge-server
+
+libgeographiclib-dev
+geographiclib-tools
+
+sumo
+sumo-tools
+sumo-doc

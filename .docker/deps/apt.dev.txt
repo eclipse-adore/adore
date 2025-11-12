@@ -14,6 +14,7 @@ ros-jazzy-rqt-common-plugins
 ros-jazzy-foxglove-bridge
 ros-jazzy-ros2trace
 ros-jazzy-tracetools-analysis
+
 babeltrace
 lttng-modules-dkms
 
@@ -28,3 +29,4 @@ mesa-utils
 
 python3-flask
 python3-flask-cors
+
