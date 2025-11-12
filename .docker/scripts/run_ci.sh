@@ -14,7 +14,7 @@ source "${SCRIPT_DIR}/common.sh"
 ARCH="$(uname -m)"
 if [[ "${DOCKER_DEFAULT_PLATFORM:-}" == "linux/arm64" || "${ARCH}" == "aarch64" ]]; then
   COLCON_WS_ROOT="${WORKSPACE_ROOT}/.colcon_workspace"
-  SUMO_BRIDGE_DIR="${COLCON_WS_ROOT}/src/sumo_bridge"
+  SUMO_BRIDGE_DIR="${COLCON_WS_ROOT}/src/adore_interfaces/sumo_bridge"
 
   if [[ -d "${SUMO_BRIDGE_DIR}" ]]; then
     echo "Disabling sumo_bridge on arm64 via COLCON_IGNORE"
