@@ -123,41 +123,41 @@ This section documents the concrete code artefacts: scenarios, libraries, nodes,
 
 Core reusable C++ libraries:
 
-- 📐 **[adore_controllers](generated/libraries/adore_controllers/README.md)**
-- 🚗 **[adore_dynamics](generated/libraries/adore_dynamics/README.md)**
-- 🗺️ **[adore_map](generated/libraries/adore_map/README.md)**
-- 🧮 **[adore_math](generated/libraries/adore_math/README.md)**
-- 🧭 **[adore_planning](generated/libraries/adore_planning/README.md)**
+- 📐 **[adore_controllers](generated/adore_libraries/adore_controllers/README.md)**
+- 🚗 **[adore_dynamics](generated/adore_libraries/adore_dynamics/README.md)**
+- 🗺️ **[adore_map](generated/adore_libraries/adore_map/README.md)**
+- 🧮 **[adore_math](generated/adore_libraries/adore_math/README.md)**
+- 🧭 **[adore_planning](generated/adore_libraries/adore_planning/README.md)**
 
 ### Nodes
 
 ROS 2 nodes that implement system behaviour:
 
-- 🧠 **[decision_maker](generated/nodes/decision_maker/README.md)**
-- 🧩 **[decision_maker_infrastructure](generated/nodes/decision_maker_infrastructure/README.md)**
-- 🎛️ **[mission_control](generated/nodes/mission_control/README.md)**
-- 🕹️ **[simulated_remote_operator](generated/nodes/simulated_remote_operator/README.md)**
-- 🚙 **[simulated_vehicle](generated/nodes/simulated_vehicle/README.md)**
-- 📈 **[trajectory_tracker](generated/nodes/trajectory_tracker/README.md)**
-- 👁️ **[visualizer](generated/nodes/visualizer/README.md)**
+- 🧠 **[decision_maker](generated/adore_ros2_nodes/decision_maker/README.md)**
+- 🧩 **[decision_maker_infrastructure](generated/adore_ros2_nodes/decision_maker_infrastructure/README.md)**
+- 🎛️ **[mission_control](generated/adore_ros2_nodes/mission_control/README.md)**
+- 🕹️ **[simulated_remote_operator](generated/adore_ros2_nodes/simulated_remote_operator/README.md)**
+- 🚙 **[simulated_vehicle](generated/adore_ros2_nodes/simulated_vehicle/README.md)**
+- 📈 **[trajectory_tracker](generated/adore_ros2_nodes/trajectory_tracker/README.md)**
+- 👁️ **[visualizer](generated/adore_ros2_nodes/visualizer/README.md)**
 
 ### Interfaces
 
 Bridges to external simulators and tools:
 
-- 🚘 **[CARLA bridge](generated/interfaces/carla_bridge/README.md)**
-- 🚦 **[SUMO bridge](generated/interfaces/sumo_bridge/README.md)**
+- 🚘 **[CARLA bridge](generated/adore_interfaces/carla_bridge/README.md)**
+- 🚦 **[SUMO bridge](generated/adore_interfaces/sumo_bridge/README.md)**
 
 ### Conversions
 
 Type conversion and helper packages:
 
-- 🔁 **[adore_dynamics_conversions](generated/conversions/adore_dynamics_conversions/README.md)**
-- 🔁 **[adore_map_conversions](generated/conversions/adore_map_conversions/README.md)**
-- 🔁 **[adore_math_conversions](generated/conversions/adore_math_conversions/README.md)**
+- 🔁 **[adore_dynamics_conversions](generated/adore_ros2_conversions/adore_dynamics_conversions/README.md)**
+- 🔁 **[adore_map_conversions](generated/adore_ros2_conversions/adore_map_conversions/README.md)**
+- 🔁 **[adore_math_conversions](generated/adore_ros2_conversions/adore_math_conversions/README.md)**
 
 ### ROS 2 messages
 
 Message definitions used across the system:
 
-- ✉️ **[adore_ros2_msgs](generated/ros2_messages/adore_ros2_msgs/README.md)**
+- ✉️ **[adore_ros2_msgs](generated/adore_ros2_msgs/README.md)**

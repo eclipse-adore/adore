@@ -1,3 +1,16 @@
+# ********************************************************************************
+# Copyright (c) 2025 Contributors to the Eclipse Foundation
+#
+# See the NOTICE file(s) distributed with this work for additional
+# information regarding copyright ownership.
+#
+# This program and the accompanying materials are made available under the
+# terms of the Eclipse Public License 2.0 which is available at
+# https://www.eclipse.org/legal/epl-2.0
+#
+# SPDX-License-Identifier: EPL-2.0
+# ********************************************************************************
+
 import sys
 import math
 import requests
@@ -5,6 +18,7 @@ from PyQt5 import QtWidgets, QtGui, QtCore
 from pyproj import Proj, transform
 import re
 import os
+
 
 class VertexItem(QtWidgets.QGraphicsEllipseItem):
     def __init__(self, x, y, line_data, index, radius=5, *args, **kwargs):
@@ -21,7 +35,8 @@ class VertexItem(QtWidgets.QGraphicsEllipseItem):
 
     def set_selected(self, selected):
         self.selected = selected
-        self.setBrush(QtGui.QBrush(QtCore.Qt.green if selected else QtCore.Qt.blue))
+        self.setBrush(QtGui.QBrush(
+            QtCore.Qt.green if selected else QtCore.Qt.blue))
 
     def mousePressEvent(self, event):
         self.scene().parent().select_vertex(self)
@@ -35,7 +50,8 @@ class VertexItem(QtWidgets.QGraphicsEllipseItem):
     def shape(self):
         path = QtGui.QPainterPath()
         adjusted_radius = self.radius / self.scene().views()[0].current_scale
-        path.addEllipse(-adjusted_radius, -adjusted_radius, 2 * adjusted_radius, 2 * adjusted_radius)
+        path.addEllipse(-adjusted_radius, -adjusted_radius,
+                        2 * adjusted_radius, 2 * adjusted_radius)
         return path
 
     def contains(self, point):
@@ -48,9 +64,11 @@ class VertexItem(QtWidgets.QGraphicsEllipseItem):
         adjusted_radius = self.radius * scale_factor
         pen = QtGui.QPen(QtCore.Qt.black, 1 * scale_factor)
         painter.setPen(pen)
-        rect = QtCore.QRectF(-adjusted_radius, -adjusted_radius, 2 * adjusted_radius, 2 * adjusted_radius)
+        rect = QtCore.QRectF(-adjusted_radius, -adjusted_radius,
+                             2 * adjusted_radius, 2 * adjusted_radius)
         painter.setBrush(self.brush())
         painter.drawEllipse(rect)
+
 
 class LineItem(QtWidgets.QGraphicsLineItem):
     def __init__(self, start_item, end_item, color=QtCore.Qt.red, *args, **kwargs):
@@ -82,11 +100,13 @@ class LineItem(QtWidgets.QGraphicsLineItem):
         self.scene().parent().select_line_by_item(self)
         super().mousePressEvent(event)
 
+
 class GraphicsScene(QtWidgets.QGraphicsScene):
     def update_lines(self):
         for item in self.items():
             if isinstance(item, LineItem):
                 item.update_position()
+
 
 class CanvasView(QtWidgets.QGraphicsView):
     def __init__(self):
@@ -109,6 +129,7 @@ class CanvasView(QtWidgets.QGraphicsView):
         scene_rect.adjust(-padding, -padding, padding, padding)
         self.setSceneRect(scene_rect)
 
+
 class LineEditorApp(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -121,7 +142,8 @@ class LineEditorApp(QtWidgets.QMainWindow):
         self.setGeometry(100, 100, 1200, 800)
 
         if not self.select_files():
-            QtWidgets.QMessageBox.critical(self, "Error", "You must select an .r2sr or .r2sl file.")
+            QtWidgets.QMessageBox.critical(
+                self, "Error", "You must select an .r2sr or .r2sl file.")
             sys.exit(1)
 
         self.setup_ui()
@@ -129,7 +151,8 @@ class LineEditorApp(QtWidgets.QMainWindow):
         self.canvas.update_scene_rect_with_padding()
 
     def select_files(self):
-        dialog = QtWidgets.QFileDialog(self, "Select R2S Reference or Border file")
+        dialog = QtWidgets.QFileDialog(
+            self, "Select R2S Reference or Border file")
         dialog.setNameFilter("R2S files (*.r2sr *.r2sl)")
         if dialog.exec_():
             selected_file = dialog.selectedFiles()[0]
@@ -207,19 +230,24 @@ class LineEditorApp(QtWidgets.QMainWindow):
 
     def add_new_line(self, line_type):
         line_id = self.get_unique_id()
-        line_data = {"id": line_id, "coords": [], "type": line_type, "columns": [str(line_id), ""]}
+        line_data = {"id": line_id, "coords": [],
+                     "type": line_type, "columns": [str(line_id), ""]}
         self.lines[line_type].append(line_data)
-        item = QtWidgets.QListWidgetItem(f"{line_type.capitalize()} - {line_id}")
+        item = QtWidgets.QListWidgetItem(
+            f"{line_type.capitalize()} - {line_id}")
         item.setData(QtCore.Qt.UserRole, line_data)
         self.line_list.addItem(item)
 
     def add_vertex(self, position):
         if self.selected_line:
-            view_center = self.canvas.mapToScene(self.canvas.viewport().rect().center())
+            view_center = self.canvas.mapToScene(
+                self.canvas.viewport().rect().center())
             if position == "start":
-                self.selected_line["coords"].insert(0, (view_center.x(), view_center.y()))
+                self.selected_line["coords"].insert(
+                    0, (view_center.x(), view_center.y()))
             else:
-                self.selected_line["coords"].append((view_center.x(), view_center.y()))
+                self.selected_line["coords"].append(
+                    (view_center.x(), view_center.y()))
             self.update_selected_line()
 
     def delete_selected_vertex(self):
@@ -264,7 +292,8 @@ class LineEditorApp(QtWidgets.QMainWindow):
         self.update_selected_line()
 
     def parse_line_with_full_data(self, line):
-        match = re.match(r'^(\d+),\"(LINESTRING \([^)]+\))\",(.*)$', line.strip())
+        match = re.match(
+            r'^(\d+),\"(LINESTRING \([^)]+\))\",(.*)$', line.strip())
         if not match:
             raise ValueError("Line format not recognized")
         line_id = int(match.group(1))
@@ -272,15 +301,18 @@ class LineEditorApp(QtWidgets.QMainWindow):
         remaining_columns = match.group(3).split(',')
         coord_text = re.search(r'LINESTRING \((.*?)\)', geometry).group(1)
         coord_pairs = coord_text.split(',')
-        coords = [(float(x), float(y)) for x, y in (pair.strip().split() for pair in coord_pairs)]
-        columns = [str(line_id), f'"{geometry}"'] + [col.strip() for col in remaining_columns]
+        coords = [(float(x), float(y))
+                  for x, y in (pair.strip().split() for pair in coord_pairs)]
+        columns = [str(line_id), f'"{geometry}"'] + \
+            [col.strip() for col in remaining_columns]
         return {"id": line_id, "coords": coords, "columns": columns}
 
     def populate_line_list(self):
         self.line_list.clear()
         for line_type, lines in self.lines.items():
             for line in lines:
-                item = QtWidgets.QListWidgetItem(f"{line_type.capitalize()} - {line['id']}")
+                item = QtWidgets.QListWidgetItem(
+                    f"{line_type.capitalize()} - {line['id']}")
                 item.setData(QtCore.Qt.UserRole, line)
                 self.line_list.addItem(item)
 
@@ -299,9 +331,11 @@ class LineEditorApp(QtWidgets.QMainWindow):
         with open(file_path, 'w') as file:
             file.write(self.file_headers[line_type] + "\n")
             for line_data in self.lines[line_type]:
-                coords_text = ','.join(f"{x} {y}" for x, y in line_data["coords"])
+                coords_text = ','.join(
+                    f"{x} {y}" for x, y in line_data["coords"])
                 line_data["columns"][1] = f'"LINESTRING ({coords_text})"'
                 file.write(",".join(line_data["columns"]) + "\n")
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

@@ -1,8 +1,3 @@
-[submodule "tools/websocketpp"]
-	path = tools/websocketpp
-	url = https://github.com/zaphoyd/websocketpp.git
-	ignore = untracked
-	shallow = true
 [submodule "ros2_messages/adore_ros2_msgs"]
 	path = adore_ros2_msgs
 	url = git@github.com:eclipse-adore/adore_ros2_msgs.git

@@ -6,7 +6,7 @@ ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8
 
 # Core APT dependencies (shared by dev & CI)
-COPY .docker/deps/apt.base.txt /tmp/apt.base.txt
+COPY .docker/base/apt.base.txt /tmp/apt.base.txt
 
 RUN apt-get update && \
     xargs -r -a /tmp/apt.base.txt apt-get install -y && \

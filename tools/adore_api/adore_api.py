@@ -998,7 +998,8 @@ def api_status():
 @app.route('/api/scenario/start', methods=['POST'])
 def start_scenario():
     data = request.json
-    scenario_input = data.get('scenario', "simulation_test.launch.py")
+    scenario_input = data.get(
+        'scenario', "adore_simulation_scenarios/simulation_test.launch.py")
     is_file = data.get('is_file', True)
     model_check_enabled = data.get('model_check_enabled', False)
     if isinstance(model_check_enabled, str):
@@ -1321,7 +1322,7 @@ def start_scenario_model_checked():
 
     Request JSON Parameters:
         scenario (str, optional): Name of the launch file to run. 
-            Default: "simulation_test.launch.py"
+            Default: "adore_simulation_scenarios/simulation_test.launch.py"
         duration (int|float, optional): How long to run the scenario in seconds.
             Must be a positive number. Default: 5
 
@@ -1367,7 +1368,8 @@ def start_scenario_model_checked():
         ...     print(f"Model check passed: {result['model_check_result']['results']['SUMMARY']['overall_result']}")
     """
     data = request.json or {}
-    scenario = data.get('scenario', 'simulation_test.launch.py')
+    scenario = data.get(
+        'scenario', 'adore_simulation_scenarios/simulation_test.launch.py')
     duration = data.get('duration', 5)
 
     if not isinstance(duration, (int, float)) or duration <= 0:

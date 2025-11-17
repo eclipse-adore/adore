@@ -2,7 +2,7 @@
 FROM adore_base:latest
 
 # Dev-only APT deps (shell candy, X11, tracing, etc.)
-COPY .docker/deps/apt.dev.txt /tmp/apt.dev.txt
+COPY .docker/dev/apt.dev.txt /tmp/apt.dev.txt
 
 RUN apt-get update && \
     xargs -r -a /tmp/apt.dev.txt apt-get install -y && \

@@ -4,7 +4,7 @@ FROM adore_base:latest
 # -------------------------------------------------------------------
 # CI-specific system dependencies (docs, test tooling, etc.)
 # -------------------------------------------------------------------
-COPY .docker/deps/apt.ci.txt /tmp/apt.ci.txt
+COPY .docker/ci/apt.ci.txt /tmp/apt.ci.txt
 RUN if [ -s /tmp/apt.ci.txt ]; then \
       apt-get update && \
       xargs -r -a /tmp/apt.ci.txt apt-get install -y && \
@@ -16,7 +16,7 @@ RUN if [ -s /tmp/apt.ci.txt ]; then \
 # -------------------------------------------------------------------
 # CI-specific Python dependencies (MkDocs Material, plugins, ...)
 # -------------------------------------------------------------------
-COPY .docker/deps/pip.ci.txt /tmp/pip.ci.txt
+COPY .docker/ci/pip.ci.txt /tmp/pip.ci.txt
 RUN if [ -s /tmp/pip.ci.txt ]; then \
       pip3 install --no-cache-dir --break-system-packages --ignore-installed -r /tmp/pip.ci.txt && \
       rm -f /tmp/pip.ci.txt; \

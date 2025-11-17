@@ -170,6 +170,10 @@ test_ws:
       --packages-skip `colcon list --base-paths src/vendor  src/ros2_messages/ros-carla-msgs --names-only`; \
     colcon test-result --verbose
 
+# Run system tests
+test_system:
+    ./testing/system_tests/run_system_tests.sh
+
 # Kill lingering ROS 2 / colcon processes (host + container aware script)
 force_kill_ros2:
     cd "$WORKSPACE_ROOT" && .docker/scripts/force_kill_ros2.sh
@@ -225,7 +229,8 @@ docs_build: docs_build_mkdocs
     cd "$DOCS_ROOT" && \
     rm -rf docs && \
     mkdir -p docs && \
-    cp -r mkdocs/site docs/mkdocs
+    cp -r mkdocs/site docs/mkdocs &&\
+    cp -r mkdocs/img docs/mkdocs
 
 # Build and serve docs at http://localhost:8000
 docs_serve: docs_build
@@ -263,3 +268,7 @@ docs_lint: docs_clean
     cd "$DOCS_ROOT" && \
     docker build -f Dockerfile.aspell -t aspell . && \
     docker run -u "{{uid}}:{{gid}}" -v "$PWD:/mnt" aspell:latest python3 spellcheck.py
+
+
+due_diligence_scan:
+    cd "$WORKSPACE_ROOT" && python3 ./tools/eclipse_due_diligence_scanner.py --ignore ./tools/.eclipse_due_diligance_ignore

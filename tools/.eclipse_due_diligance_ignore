@@ -3,22 +3,23 @@
 
 documentation/**
 documentation/
-libraries/build/**
-.colcon_workspace/build/**
-.colcon_workspace/install/**
-.colcon_workspace/install/**
+.colcon_workspace/**
 vendor/**
 make_gadgets/**
 
-.obj-x86_64-linux-gnu/**
+tools/*/*
+testing/adore_model_checker/**
 
+
+.obj-x86_64-linux-gnu/**
+tools/websocketapp/**
 tools/ci_teststand/**
 tools/lichtblick/**
 ci_teststand/**
 __init__.py
 libraries/cmake/**
 
-libraries/lib/adore_math/include/adore_math/spline.h
+adore_libraries/adore_math/include/adore_math/spline.h
 
 # Build directories
 build/

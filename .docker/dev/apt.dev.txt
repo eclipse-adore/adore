@@ -30,3 +30,5 @@ mesa-utils
 python3-flask
 python3-flask-cors
 
+jq
+x11-utils
