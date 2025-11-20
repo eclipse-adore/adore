@@ -21,7 +21,7 @@ CONTAINER_PORT=8080
 
 # === Resolve directory of this script ===
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-MODELS_DIR="${SCRIPT_DIR}/../adore_scenarios/assets/"
+MODELS_DIR="${SCRIPT_DIR}"
 
 # === Check if script is running inside Docker ===
 is_inside_docker() {
@@ -45,9 +45,19 @@ echo "🌐 Open http://localhost:${HOST_PORT} in Chrome."
 echo "📦 Mounting 3D models from: $MODELS_DIR"
 echo "🛑 Press Ctrl+C to stop the server."
 
+# Color helpers
+GREEN='\033[1;32m'
+RESET='\033[0m'
+
+echo
+printf "${GREEN}Open this URL in your browser:\n"
+printf "  http://localhost:%s/?ds=rosbridge-websocket&ds.url=ws%%3A%%2F%%2Flocalhost%%3A8765\n${RESET}" "${HOST_PORT}"
+echo
 # === Run Lichtblick container with 3D model mount ===
 docker run --rm \
     -p "${HOST_PORT}:${CONTAINER_PORT}" \
     -v "${MODELS_DIR}:/src/assets" \
     "${LICHTBLICK_IMAGE}"
+
+
 

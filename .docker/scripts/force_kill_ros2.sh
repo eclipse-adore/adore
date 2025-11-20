@@ -40,12 +40,12 @@ if is_in_docker; then
   echo "[container] Cleaning ROS 2 / colcon processes inside this container..."
 
   echo "-> Killing ros2/colcon wrapper processes..."
-  pkill -f "ros2 launch"       || echo "   No 'ros2 launch' processes."
-  pkill -f "ros2 run"          || echo "   No 'ros2 run' processes."
-  pkill -f "python3.*launch"   || echo "   No python launch processes."
-  pkill -f "rclpy"             || echo "   No 'rclpy' processes."
-  pkill -f "ros2 daemon"       || echo "   No ros2 daemon processes."
-  pkill -f "colcon"            || echo "   No colcon processes."
+  pkill -f "ros2 launch"       || true
+  pkill -f "ros2 run"          || true
+  pkill -f "python3.*launch"   || true
+  pkill -f "rclpy"             || true
+  pkill -f "ros2 daemon"       || true
+  pkill -f "colcon"            || true
 
   echo "-> Killing workspace binaries from build tree (container)..."
   # Prefer REPO_ROOT if set; fall back to $HOME/adore

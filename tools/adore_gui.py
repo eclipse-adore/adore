@@ -32,7 +32,7 @@ CONTAINER_ADORE_PATH = f"/home/{USER}/adore"
 CONTAINER_WS_PATH = f"{CONTAINER_ADORE_PATH}/.colcon_workspace"
 CONTAINER_SCENARIO_DIR = f"{CONTAINER_WS_PATH}/src/adore_scenarios"
 
-LAUNCH_EXT = ".py"
+LAUNCH_EXT = ".launch.py"
 EXCLUDED_DIRS = {"integration_tests", "assets", "scenario_helpers"}
 launch_process = None
 
@@ -43,6 +43,11 @@ ROS_SETUP_CMD = (
 )
 
 EXCLUDED_COMMNANDS = {
+    "api_restart",
+    "api_stop",
+    "api_start",
+    "api_status",
+    "due_diligence_scan",
     "default",
     "help",
     "dev",
@@ -213,6 +218,10 @@ def refresh_scenarios():
         if any(part in EXCLUDED_DIRS for part in Path(rel_path).parts):
             continue
         if scenario_filter.get().lower() in rel_path.lower():
+            # neat_path = rel_path[:-len(LAUNCH_EXT)]
+            # # remove "adore" or "scenarios" prefixes if present
+            # neat_path = neat_path.replace(
+            #     "adore_", "").replace("_scenarios", "")
             scenario_listbox.insert(tk.END, rel_path)
 
 

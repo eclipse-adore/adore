@@ -30,7 +30,7 @@ uid := `id -u`
 gid := `id -g`
 
 # Default target
-default: dev
+default: help
 
 # Show all available recipes
 help:
@@ -78,14 +78,6 @@ clean: clean_images clean_ws
 # Clean workspace and rebuild (host colcon)
 clean_build: clean_ws build
 
-# Open an interactive CLI shell in the dev container
-cli: setup_colcon_src
-    cd "$WORKSPACE_ROOT" && .docker/scripts/cli.sh
-
-# Stop the dev container started by cli/dev
-stop_cli:
-    cd "$WORKSPACE_ROOT" && .docker/scripts/stop_cli.sh
-
 # Save dev/CI images to tarball(s)
 save:
     cd "$WORKSPACE_ROOT" && .docker/scripts/save_image.sh
@@ -108,7 +100,7 @@ edit_roads:
 
 # Run the Lichtblick visualization wrapper
 lichtblick:
-    cd "$WORKSPACE_ROOT" && ./tools/run_lichtblick.sh
+    cd "$WORKSPACE_ROOT" && ./tools/lichtblick/run_lichtblick.sh
 
 # -------------------------------------------------------------------
 # CI helpers (use the CI image under the hood)
@@ -123,7 +115,8 @@ docs: setup_colcon_src
     cd "$WORKSPACE_ROOT" && .docker/scripts/run_docs.sh
 
 # Convenience: run tests and docs (full CI) locally
-ci: test docs
+ci: setup_colcon_src
+    cd "$WORKSPACE_ROOT" && .docker/scripts/run_ci.sh
 
 # -------------------------------------------------------------------
 # ADORe API control (via tools/adore_api/adore_api.sh)
