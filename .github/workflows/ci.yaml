@@ -46,9 +46,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .cache/ccache
-          key: ccache-${{ runner.os }}-${{ matrix.name }}-${{ hashFiles('**/CMakeLists.txt', '**/package.xml') }}
+          # One cache per OS + arch + branch
+          key: ccache-${{ runner.os }}-${{ matrix.name }}-${{ github.ref_name }}
           restore-keys: |
             ccache-${{ runner.os }}-${{ matrix.name }}-
+            ccache-${{ runner.os }}-
 
       - name: Build CI Docker image
         run: .docker/scripts/build_ci.sh

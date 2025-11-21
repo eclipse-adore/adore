@@ -75,6 +75,7 @@ docker run --rm \
         --exclude 'vendor/.*' \
         --exclude 'adore_interfaces/.*' \
         --exclude '.*rosidl.*' \
+        --exclude '.*CMakeFiles/.*' \
         --xml-pretty \
         --output .gcovr_reports/coverage.xml
 
@@ -85,6 +86,7 @@ docker run --rm \
         --exclude 'vendor/.*' \
         --exclude 'adore_interfaces/.*' \
         --exclude '.*rosidl.*' \
+        --exclude '.*CMakeFiles/.*' \
         --html-details \
         --output .gcovr_reports/coverage.html
     else
