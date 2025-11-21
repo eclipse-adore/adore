@@ -47,7 +47,7 @@ fi
 CONTAINER_COLCON_WS_ROOT="${CONTAINER_COLCON_WS_ROOT:-.colcon_workspace}"
 
 echo "--- Running CI in Docker image ${DOCKER_CI_IMAGE_LATEST} ---"
-docker run --rm -it \
+docker run --rm \
   -v "${WORKSPACE_ROOT}:/home/${USER_NAME}/adore" \
   -w "/home/${USER_NAME}/adore" \
   -e ROS_DISTRO="${ROS_DISTRO}" \
