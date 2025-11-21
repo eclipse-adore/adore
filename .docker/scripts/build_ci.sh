@@ -33,9 +33,9 @@ fi
 echo "--- Building CI Docker image ${DOCKER_CI_IMAGE_LATEST} (${DOCKER_CI_IMAGE_TAGGED}) ---"
 docker build \
   -f "${DOCKER_CI_DOCKERFILE}" \
-  --build-arg CI_USERNAME="${USER_NAME}" \
-  --build-arg CI_USER_UID="${USER_UID}" \
-  --build-arg CI_USER_GID="${USER_GID}" \
+  --build-arg USER_UID="${USER_UID}" \
+  --build-arg USER_GID="${USER_GID}" \
+  --build-arg USERNAME="${USER_NAME}" \
   -t "${DOCKER_CI_IMAGE_LATEST}" \
   -t "${DOCKER_CI_IMAGE_TAGGED}" \
   .

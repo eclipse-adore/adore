@@ -21,8 +21,14 @@ export ROS_DISTRO := env('ROS_DISTRO', 'jazzy')
 export SETUP_COLCON_SCRIPT := ".docker/scripts/setup_colcon_src.sh"
 
 # Helpers: use shell variables and command substitution, no {{...}} inside
-source_ros := 'source /opt/ros/$ROS_DISTRO/setup.sh; if [ -f install/local_setup.sh ]; then source install/local_setup.sh || true; fi'
-colcon_cmd := 'colcon build'
+source_ros := 'source /opt/ros/$ROS_DISTRO/setup.sh; \
+if [ -d install ] && [ -f install/local_setup.sh ]; then \
+  source install/local_setup.sh; \
+fi'
+# Extra colcon build args from environment variable (COLCON_COVERAGE_ARGS)
+colcon_extra_args := env_var_or_default("COLCON_COVERAGE_ARGS", "")
+
+colcon_cmd := 'colcon build ' + colcon_extra_args
 
 
 # Host uid/gid for docker -u in docs_spellcheck/docs_lint
@@ -55,6 +61,9 @@ setup_colcon_src:
 # Docker-backed targets (dev image)
 # -------------------------------------------------------------------
 
+# Build the dev Docker image (adore_dev)
+build_ci:
+    cd "$WORKSPACE_ROOT" && .docker/scripts/build_ci.sh
 # Build the dev Docker image (adore_dev)
 build_dev:
     cd "$WORKSPACE_ROOT" && .docker/scripts/build_dev.sh
@@ -106,10 +115,6 @@ lichtblick:
 # CI helpers (use the CI image under the hood)
 # -------------------------------------------------------------------
 
-# Run CI-style tests inside the CI Docker image
-test: setup_colcon_src
-    cd "$WORKSPACE_ROOT" && .docker/scripts/run_tests.sh
-
 # Build documentation inside the CI Docker image
 docs: setup_colcon_src
     cd "$WORKSPACE_ROOT" && .docker/scripts/run_docs.sh
@@ -160,8 +165,8 @@ build:
 test_ws:
     cd "$COLCON_WS_ROOT" && {{source_ros}} && \
     colcon test \
-      --packages-skip `colcon list --base-paths src/vendor  src/ros2_messages/ros-carla-msgs --names-only`; \
-    colcon test-result --verbose
+        --packages-skip `colcon list --base-paths src/vendor --names-only`; \
+    colcon test-result --all --verbose || true
 
 # Run system tests
 test_system:

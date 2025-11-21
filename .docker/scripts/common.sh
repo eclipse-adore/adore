@@ -128,7 +128,6 @@ dev_greeting() {
 printf "%b" "${FG_YELLOW}"
 
 printf "  Type %bjust --list%b to see available commands,\n"  "${FG_CYAN}" "${FG_YELLOW}"
-printf "  or %bhelp%b inside the container for more information.\n\n"  "${FG_CYAN}" "${FG_YELLOW}"
 
 printf "%b" "${RESET}"
 

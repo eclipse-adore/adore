@@ -26,26 +26,26 @@ RUN if [ -s /tmp/pip.ci.txt ]; then \
 
 
 # CI user (still UID/GID mapped so volume permissions behave)
-ARG CI_USERNAME=ci
-ARG CI_USER_UID=2001
-ARG CI_USER_GID=2001
+ARG USERNAME=ci
+ARG USER_UID=2001
+ARG USER_GID=2001
 
 RUN set -eux; \
-    existing_user="$(getent passwd "${CI_USER_UID}" | cut -d: -f1 || true)"; \
+    existing_user="$(getent passwd "${USER_UID}" | cut -d: -f1 || true)"; \
     if [ -n "${existing_user}" ]; then \
-        echo "Renaming user ${existing_user} to ${CI_USERNAME}"; \
-        usermod -l "${CI_USERNAME}" "${existing_user}"; \
-        usermod -d "/home/${CI_USERNAME}" -m "${CI_USERNAME}"; \
-        groupmod -n "${CI_USERNAME}" "${existing_user}"; \
+        echo "Renaming user ${existing_user} to ${USERNAME}"; \
+        usermod -l "${USERNAME}" "${existing_user}"; \
+        usermod -d "/home/${USERNAME}" -m "${USERNAME}"; \
+        groupmod -n "${USERNAME}" "${existing_user}"; \
     else \
-        echo "Creating new CI user ${CI_USERNAME}"; \
-        groupadd -g "${CI_USER_GID}" "${CI_USERNAME}"; \
-        useradd -m -s /bin/bash -u "${CI_USER_UID}" -g "${CI_USER_GID}" "${CI_USERNAME}"; \
+        echo "Creating new user ${USERNAME}"; \
+        groupadd -g "${USER_GID}" "${USERNAME}"; \
+        useradd -m -s /usr/bin/zsh -u "${USER_UID}" -g "${USER_GID}" "${USERNAME}"; \
     fi
 
-USER ${CI_USERNAME}
+USER ${USERNAME}
 
-ENV WORKSPACE="/home/${CI_USERNAME}/adore"
+ENV WORKSPACE="/home/${USERNAME}/adore"
 WORKDIR ${WORKSPACE}
 
 ENV CCACHE_DIR="${WORKSPACE}/.cache/ccache" \

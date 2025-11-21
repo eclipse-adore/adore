@@ -150,3 +150,4 @@ tags
 bin/
 documentation/technical_reference_manual/modules/
 documentation/technical_reference_manual/modules.md
+.gcovr_reports/

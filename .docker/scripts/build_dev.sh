@@ -24,12 +24,14 @@ require_host "Hint: to build *inside* the dev container, run colcon directly ins
 
 cd "${WORKSPACE_ROOT}"
 
-echo "--- Building base Docker image ${DOCKER_BASE_IMAGE_LATEST} (${DOCKER_BASE_IMAGE_TAGGED}) ---"
-docker build \
-  -f "${DOCKER_BASE_DOCKERFILE}" \
-  -t "${DOCKER_BASE_IMAGE_LATEST}" \
-  -t "${DOCKER_BASE_IMAGE_TAGGED}" \
-  .
+if ! docker image inspect "${DOCKER_BASE_IMAGE_LATEST}" >/dev/null 2>&1; then
+  echo "--- Building base Docker image ${DOCKER_BASE_IMAGE_LATEST} (${DOCKER_BASE_IMAGE_TAGGED}) ---"
+  docker build \
+    -f "${DOCKER_BASE_DOCKERFILE}" \
+    -t "${DOCKER_BASE_IMAGE_LATEST}" \
+    -t "${DOCKER_BASE_IMAGE_TAGGED}" \
+    .
+fi
 
 echo "--- Building dev Docker image ${DOCKER_DEV_IMAGE_LATEST} (${DOCKER_DEV_IMAGE_TAGGED}) ---"
 docker build \
