@@ -267,6 +267,6 @@ docs_lint: docs_clean
     docker build -f Dockerfile.aspell -t aspell . && \
     docker run -u "{{uid}}:{{gid}}" -v "$PWD:/mnt" aspell:latest python3 spellcheck.py
 
-
+# run scan for eclipse due diligence
 due_diligence_scan:
     cd "$WORKSPACE_ROOT" && python3 ./tools/eclipse_due_diligence_scanner.py --ignore ./tools/.eclipse_due_diligance_ignore

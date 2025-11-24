@@ -8,8 +8,6 @@ vendor/**
 make_gadgets/**
 
 tools/*/*
-testing/adore_model_checker/**
-
 
 .obj-x86_64-linux-gnu/**
 tools/websocketapp/**
