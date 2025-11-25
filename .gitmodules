@@ -64,9 +64,6 @@
 [submodule "nodes/adore_simulated_remote_operator"]
 	path = adore_ros2_nodes/simulated_remote_operator
 	url = git@github.com:eclipse-adore/adore_simulated_remote_operator.git
-[submodule "tools/adore_model_checker"]
-	path = tools/adore_model_checker
-	url = git@github.com:DLR-TS/adore_model_checker.git
 [submodule "vendor/osqp_eigen"]
 	path = vendor/osqp_eigen
 	url = https://github.com/robotology/osqp-eigen.git
@@ -76,3 +73,6 @@
 [submodule "vendor/osqp"]
 	path = vendor/osqp
 	url = https://github.com/osqp/osqp.git
+[submodule "tools/adore_model_checker"]
+	path = tools/adore_model_checker
+	url = git@github.com:DLR-TS/adore_model_checker.git

@@ -64,49 +64,7 @@ docker run --rm \
   -e COLCON_COVERAGE_ARGS="--cmake-args -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=--coverage -DCMAKE_C_FLAGS=--coverage -DCMAKE_POSITION_INDEPENDENT_CODE=ON" \
   "${DOCKER_CI_IMAGE_LATEST}" \
   bash -lc '
-    set -euo pipefail
-    echo "--- Inside CI container ---"
-    echo "ROS_DISTRO=$ROS_DISTRO"
-    echo "COLCON_WS_ROOT=${COLCON_WS_ROOT}"
-    echo "PWD=$(pwd)"   # should be /home/${USER_NAME}/adore
-
-    just build
-    just test_ws
-
-
-    if command -v gcovr >/dev/null 2>&1; then
-      echo "--- Generating coverage reports with gcovr ---"
-      mkdir -p .gcovr_reports
-      # XML
-      gcovr \
-        . \
-        -r . \
-        --exclude 'vendor/.*' \
-        --exclude 'adore_interfaces/.*' \
-        --exclude '.*rosidl.*' \
-        --exclude '.*CMakeFiles/.*' \
-        --exclude '.*.colcon_workspace/.*' \
-        --xml-pretty \
-        --output .gcovr_reports/coverage.xml
-
-      # HTML
-      gcovr \
-        . \
-        -r . \
-        --exclude 'vendor/.*' \
-        --exclude 'adore_interfaces/.*' \
-        --exclude '.*rosidl.*' \
-        --exclude '.*CMakeFiles/.*' \
-        --exclude '.*.colcon_workspace/.*' \
-        --html-details \
-        --output .gcovr_reports/coverage.html
-    else
-      echo "gcovr not found in CI image, skipping coverage generation"
-    fi
-
-    just docs_build
-
-
+  just docs_all
   '
 
 echo "--- CI run finished ---"

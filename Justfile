@@ -170,7 +170,7 @@ test_ws:
 
 # Run system tests
 test_system:
-    ./testing/system_tests/run_system_tests.sh
+    ./tools/system_tests/run_system_tests.sh
 
 # Kill lingering ROS 2 / colcon processes (host + container aware script)
 force_kill_ros2:

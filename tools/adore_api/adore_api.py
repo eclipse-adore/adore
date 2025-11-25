@@ -389,7 +389,15 @@ topic_manager = TopicManager()
 
 
 class ScenarioManager:
-    def __init__(self, base_directory="../../adore_scenarios/"):
+    def __init__(self, base_directory=None):
+        # Make base_directory relative to this file, not to current working dir
+        if base_directory is None:
+            here = os.path.dirname(os.path.abspath(__file__))
+            # Adjust this relative path if your repo layout changes
+            base_directory = os.path.abspath(
+                os.path.join(here, "../../adore_scenarios")
+            )
+
         self.base_directory = base_directory
         self.current_process = None
         self.status = "idle"
@@ -594,26 +602,53 @@ class ScenarioManager:
 
         try:
             if is_file:
+                # scenario_input like:
+                #   "adore_simulation_scenarios/dlr_118_to_gate.launch.py"
+                # relative to self.base_directory (which points at adore_scenarios/)
                 scenario_path = os.path.join(
                     self.base_directory, scenario_input)
-                if not os.path.exists(scenario_path):
-                    return {"success": False, "message": f"Scenario file not found: {scenario_input}"}
+                full_path = os.path.abspath(scenario_path)
 
-                with open(scenario_path, 'r') as f:
+                if not os.path.exists(full_path):
+                    return {
+                        "success": False,
+                        "message": f"Scenario file not found: {full_path}",
+                    }
+
+                # Store content for status/debug
+                with open(full_path, "r") as f:
                     self.current_scenario_content = f.read()
 
-                cmd = ["ros2", "launch", scenario_path]
+                # 🔧 Important: use absolute path, not package/file
+                # This maps directly onto the working CLI command:
+                #   ros2 launch /abs/path/to/launch.py
+                cmd = ["ros2", "launch", full_path]
+                cwd = None
                 self.current_scenario = scenario_input
-                cwd = self.base_directory
+
+                print(
+                    f"[ScenarioManager] Starting scenario via ros2 launch: "
+                    f"{full_path} (base_directory='{self.base_directory}')"
+                )
             else:
+                # Custom launch content passed directly
                 temp_file = os.path.join(
-                    self.base_directory, "temp_custom_scenario.launch.py")
-                with open(temp_file, 'w') as f:
+                    self.base_directory, "temp_custom_scenario.launch.py"
+                )
+                full_path = os.path.abspath(temp_file)
+
+                with open(full_path, "w") as f:
                     f.write(scenario_input)
+
                 self.current_scenario_content = scenario_input
-                cmd = ["ros2", "launch", temp_file]
                 self.current_scenario = "temp_custom_scenario.launch.py"
-                cwd = self.base_directory
+
+                cmd = ["ros2", "launch", full_path]
+                cwd = None
+
+                print(
+                    f"[ScenarioManager] Starting custom scenario from temp file: {full_path}"
+                )
 
             self.current_process = subprocess.Popen(
                 cmd,
@@ -621,7 +656,7 @@ class ScenarioManager:
                 stderr=subprocess.STDOUT,
                 universal_newlines=True,
                 bufsize=1,
-                cwd=cwd
+                cwd=cwd,
             )
 
             self.status = "running"
@@ -634,7 +669,10 @@ class ScenarioManager:
 
         except Exception as e:
             self.status = "failed"
-            return {"success": False, "message": f"Failed to start scenario: {str(e)}"}
+            return {
+                "success": False,
+                "message": f"Failed to start scenario: {str(e)}",
+            }
 
     def stop_scenario(self):
         if not self.current_process:
@@ -996,26 +1034,31 @@ def api_status():
 
 
 @app.route('/api/scenario/start', methods=['POST'])
-def start_scenario():
-    data = request.json
+def start_scenario_route():
+    # Be tolerant if client sends no/invalid JSON
+    data = request.get_json(silent=True) or {}
+
     scenario_input = data.get(
-        'scenario', "adore_simulation_scenarios/simulation_test.launch.py")
+        'scenario', "adore_simulation_scenarios/simulation_test.launch.py"
+    )
     is_file = data.get('is_file', True)
     model_check_enabled = data.get('model_check_enabled', False)
     if isinstance(model_check_enabled, str):
         model_check_enabled = model_check_enabled.lower() == 'true'
     model_check_config = data.get('model_check_config', 'config/default.yaml')
+
     if not scenario_input:
         return jsonify({"success": False, "message": "No scenario provided"}), 400
 
-    # Use the new method that starts model checking first
+    # Currently you’re explicitly disabling model checking here
+    model_check_enabled = False
 
-    if model_check_enabled == True:
+    if model_check_enabled:
         result = scenario_manager.start_model_check_then_scenario(
             scenario_input,
             is_file,
             model_check_enabled,
-            model_check_config
+            model_check_config,
         )
     else:
         result = scenario_manager.start_scenario(scenario_input, is_file)

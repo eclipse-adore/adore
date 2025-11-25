@@ -3,10 +3,8 @@ repo_url: https://github.com/eclipse-adore/adore
 
 nav:
   - Home: index.md
-  - Overview:
-      - What is ADORe?: technical_reference_manual/about_adore.md
-      - Quick start: technical_reference_manual/quick_start.md
-      - Publications: technical_reference_manual/publications.md
+  - Overview: 
+      - About: technical_reference_manual/about_adore.md
       - Contact: technical_reference_manual/contact.md
 
   - Getting started:
@@ -50,32 +48,18 @@ nav:
           - adore_ros2_msgs: generated/ros2_messages/adore_ros2_msgs/README.md
 
       - Tools:
-          - ADORe API tools: generated/tools/adore_api/README.md
+          - ADORe API: generated/tools/adore_api/README.md
           - ROS 2 observer: generated/tools/ros2_observer/README.md
+          - ADORe model checker: generated/tools/adore_model_checker/README.md
 
-      - Testing:
-          - ADORe model checker: generated/testing/adore_model_checker/README.md
-
-
-
-  - Using ADORe:
+  - System & development:
       - ADORe CLI: technical_reference_manual/system_and_development/adore_cli.md
-      - Scenario generation: technical_reference_manual/system_and_development/scenario_generation.md
-      - Model checking with ADORe Mission Control: technical_reference_manual/system_and_development/model_checking_with_the_adore_mission_control.md
-      - Problems and solutions: technical_reference_manual/problems_and_solutions.md
-
-  - Development guide:
-      - Development overview: technical_reference_manual/system_and_development/system_and_development.md
       - Anonymous cloning: technical_reference_manual/system_and_development/anonymous_cloning.md
-      - Creating a new node: technical_reference_manual/system_and_development/creating_a_new_node.md
-      - ROS unit testing: technical_reference_manual/system_and_development/ros_unit_testing.md
-      - C++ library testing: technical_reference_manual/system_and_development/library_testing.md
-      - System tests: technical_reference_manual/system_and_development/system_tests.md
-      - Multi-arch support: technical_reference_manual/system_and_development/multiarch_support.md
+      - Creating a ROS2 node: technical_reference_manual/system_and_development/creating_a_new_node.md
       - Documentation system: technical_reference_manual/system_and_development/documentation_generation_system.md
-      - Doxygen documentation: technical_reference_manual/system_and_development/doxygen_documentation.md
-      - Documentation overview: technical_reference_manual/system_and_development/documentation.md
-      - Docs style guide: technical_reference_manual/styleguide.md
+      - Scenario generation: technical_reference_manual/system_and_development/scenario_generation.md
+      - System Tests: technical_reference_manual/system_and_development/system_tests.md
+      - Unit Tests: technical_reference_manual/system_and_development/unit_testing.md
 
   - Licensing & legal:
       - Licensing overview: technical_reference_manual/licensing.md
