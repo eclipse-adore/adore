@@ -46,6 +46,8 @@ if is_in_docker; then
   pkill -f "rclpy"             || true
   pkill -f "ros2 daemon"       || true
   pkill -f "colcon"            || true
+  pkill -f "rosapi"            || true
+
 
   echo "-> Killing workspace binaries from build tree (container)..."
   # Prefer REPO_ROOT if set; fall back to $HOME/adore
@@ -79,6 +81,8 @@ else
       pkill -f "rclpy"             || true
       pkill -f "ros2 daemon"       || true
       pkill -f "colcon"            || true
+      pkill -f "rosapi"            || true
+
 
       echo "   (container) Killing workspace binaries from build tree..."
       workspace_pattern="$HOME/adore/.colcon_workspace/build"

@@ -1,6 +1,49 @@
 {
   "configById": {
-    "Plot!ougvpn": {
+    "map!45g6wqb": {
+      "center": {
+        "lat": 52.31469679871519,
+        "lon": 10.563064446170777
+      },
+      "customTileUrl": "",
+      "disabledTopics": [],
+      "followTopic": "",
+      "layer": "map",
+      "topicColors": {},
+      "zoomLevel": 16,
+      "maxNativeZoom": 18
+    },
+    "Plot!33m6o5o": {
+      "paths": [
+        {
+          "timestampMethod": "receiveTime",
+          "value": "/ego_vehicle/vehicle_state_dynamic.ax",
+          "enabled": true
+        },
+        {
+          "timestampMethod": "receiveTime",
+          "value": "/ego_vehicle/vehicle_state_dynamic.steering_angle",
+          "enabled": true
+        },
+        {
+          "timestampMethod": "receiveTime",
+          "value": "/ego_vehicle/vehicle_state_dynamic.vx",
+          "enabled": true
+        }
+      ],
+      "minYValue": -3,
+      "maxYValue": 15,
+      "showXAxisLabels": false,
+      "showYAxisLabels": true,
+      "showLegend": false,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": false,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240,
+      "followingViewWidth": 10
+    },
+    "Plot!2t4gjm1": {
       "paths": [
         {
           "timestampMethod": "receiveTime",
@@ -35,7 +78,7 @@
       "maxYValue": 19,
       "showXAxisLabels": true,
       "showYAxisLabels": true,
-      "showLegend": true,
+      "showLegend": false,
       "legendDisplay": "floating",
       "showPlotValuesInLegend": false,
       "isSynced": true,
@@ -44,42 +87,12 @@
       "minXValue": 0,
       "maxXValue": 35
     },
-    "Plot!33m6o5o": {
-      "paths": [
-        {
-          "timestampMethod": "receiveTime",
-          "value": "/ego_vehicle/vehicle_state_dynamic.ax",
-          "enabled": true
-        },
-        {
-          "timestampMethod": "receiveTime",
-          "value": "/ego_vehicle/vehicle_state_dynamic.steering_angle",
-          "enabled": true
-        },
-        {
-          "timestampMethod": "receiveTime",
-          "value": "/ego_vehicle/vehicle_state_dynamic.vx",
-          "enabled": true
-        }
-      ],
-      "minYValue": -3,
-      "maxYValue": 15,
-      "showXAxisLabels": false,
-      "showYAxisLabels": true,
-      "showLegend": true,
-      "legendDisplay": "floating",
-      "showPlotValuesInLegend": false,
-      "isSynced": false,
-      "xAxisVal": "timestamp",
-      "sidebarDimension": 240,
-      "followingViewWidth": 10
-    },
     "3D!18i6zy7": {
       "cameraState": {
         "perspective": true,
-        "distance": 88.52082284947214,
+        "distance": 88.520822849471,
         "phi": 55.59158906060233,
-        "thetaOffset": 89.35535065054101,
+        "thetaOffset": 89.35535065054121,
         "targetOffset": [
           29.677432940641093,
           -0.0945973414305224,
@@ -606,6 +619,45 @@
         },
         "/infrastructure/viz/infrastructure/v2x_planned_traffic": {
           "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/caution_zones": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/controller_trajectory": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/local_map": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/mission/goal_request": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/reference_trajectory": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/route": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/safety_corridor": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/suggested_trajectory": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/traffic_participants": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/trajectory_decision": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/trajectory_suggestion": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/vehicle_state_dynamic": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/remote_operation_waypoints": {
+          "visible": true
         }
       },
       "layers": {},
@@ -628,13 +680,17 @@
   },
   "layout": {
     "direction": "row",
-    "first": "Plot!ougvpn",
+    "first": "map!45g6wqb",
     "second": {
       "direction": "row",
-      "first": "Plot!33m6o5o",
+      "first": {
+        "first": "Plot!33m6o5o",
+        "second": "Plot!2t4gjm1",
+        "direction": "column"
+      },
       "second": "3D!18i6zy7",
-      "splitPercentage": 41.82879377431907
+      "splitPercentage": 29.444063143445437
     },
-    "splitPercentage": 29.444063143445437
+    "splitPercentage": 34.16139113711035
   }
 }

@@ -45,7 +45,7 @@ def create_visualization_nodes(whitelist, asset_folder, visualization_offset, ns
                 {'address': '0.0.0.0'},
                 {'use_compression': False},
                 {'fragment_timeout': 600},
-                {'delay_between_messages': 0},
+                {'delay_between_messages': 0.0},
                 {'max_message_size': 10000000},
                 {'unregister_timeout': 10.0}
             ]

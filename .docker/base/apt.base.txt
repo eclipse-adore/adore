@@ -22,6 +22,7 @@ python3-pyproj
 ros-jazzy-rclcpp-components
 ros-jazzy-cv-bridge
 ros-jazzy-rosbridge-server
+ros-jazzy-foxglove-msgs
 
 libgeographiclib-dev
 geographiclib-tools
