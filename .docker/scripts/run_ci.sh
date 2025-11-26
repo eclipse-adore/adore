@@ -70,9 +70,8 @@ docker run --rm \
     echo "COLCON_WS_ROOT=${COLCON_WS_ROOT}"
     echo "PWD=$(pwd)"   # should be /home/${USER_NAME}/adore
 
-    just build
+    just clean_build
     just test_ws
-
 
     if command -v gcovr >/dev/null 2>&1; then
       echo "--- Generating coverage reports with gcovr ---"
