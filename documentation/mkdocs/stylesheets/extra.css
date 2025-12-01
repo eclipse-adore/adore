@@ -1,0 +1,184 @@
+/* === Index page specific styles - only when a .hero-section exists === */
+
+/* Hide sidebars on landing page */
+body:has(.hero-section) .md-sidebar,
+body:has(.hero-section) .md-sidebar--primary,
+body:has(.hero-section) .md-sidebar--secondary {
+  display: none !important;
+}
+
+/* Make the whole content stack full-width and remove padding/margins */
+body:has(.hero-section) .md-container,
+body:has(.hero-section) .md-main,
+body:has(.hero-section) .md-main__inner,
+body:has(.hero-section) .md-content,
+body:has(.hero-section) .md-content__inner,
+body:has(.hero-section) .md-typeset {
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Remove Material's top spacer bar that creates a gap above content */
+body:has(.hero-section) .md-content__inner::before,
+body:has(.hero-section) .md-content__inner::after {
+  content: none !important;
+  display: none !important;
+  height: 0 !important;
+}
+
+/* Hide the markdown H1 on the landing page (hero acts as title) */
+body:has(.hero-section) .md-content h1:first-of-type {
+  display: none !important;
+}
+
+/* Hide only "View source of this page" on the landing page */
+body:has(.hero-section)
+  a.md-content__button[title="View source of this page"],
+body:has(.hero-section)
+  a.md-content__button[aria-label="View source of this page"] {
+  display: none !important;
+}
+
+/* Hide the site_name text in the header, keep nav + buttons */
+/* If you only want this on the landing page, wrap it with body:has(.hero-section) */
+.md-header__title .md-header__topic:first-child {
+  display: none !important;
+}
+
+/* === Hero section === */
+.hero-section {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+
+  /* Fill viewport; if header overlap occurs, use calc(100vh - var(--md-toolbar-height)) */
+  min-height: calc(90vh);
+
+  margin: 0;
+  padding: 4rem 1.5rem;
+
+  color: #fff;
+  background: linear-gradient(
+    180deg,
+    var(--md-primary-fg-color),
+    var(--md-accent-fg-color)
+  );
+}
+
+/* If you don't use these visually, you can keep them invisible */
+.hero-background,
+.hero-overlay {
+  display: none;
+}
+
+.hero-content {
+  max-width: 52rem;
+}
+
+/* Center logo in hero */
+.hero-logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.hero-logo-container img {
+  max-width: 320px;
+  height: auto;
+}
+
+/* Theme-aware logo swap: default = light, slate = dark */
+.logo-light {
+  display: block;
+}
+
+.logo-dark {
+  display: none;
+}
+
+[data-md-color-scheme="slate"] .logo-light {
+  display: none;
+}
+
+[data-md-color-scheme="slate"] .logo-dark {
+  display: block;
+}
+
+.hero-description {
+  margin: 0 auto 2rem;
+  font-size: 1.2rem;
+  line-height: 1.7;
+}
+
+/* Hero buttons */
+.hero-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.hero-button {
+  display: inline-block;
+  padding: 0.8rem 1.7rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.hero-button-primary {
+  background-color: var(--md-accent-fg-color);
+  color: #fff !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.hero-button-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.hero-button-secondary {
+  background-color: transparent;
+  color: #fff !important;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+}
+
+.hero-button-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Simple responsive tweak */
+@media screen and (max-width: 768px) {
+  .hero-section {
+    padding: 3rem 1.2rem;
+  }
+
+  .hero-description {
+    font-size: 1.05rem;
+  }
+
+  .hero-buttons {
+    flex-direction: column;
+  }
+
+  .hero-button {
+    width: 100%;
+    max-width: 260px;
+  }
+
+  .hero-logo-container img {
+    max-width: 260px;
+  }
+}

@@ -1,4 +1,4 @@
-site_name: ADORe Documentation
+site_name: ADORe
 repo_url: https://github.com/eclipse-adore/adore
 
 nav:
@@ -81,8 +81,12 @@ extra:
   - icon: material/web
     link: https://www.eclipse.org/adore/         # if you have a landing page
 
+extra_css:
+  - stylesheets/extra.css
+
 theme:
   name: material
+  custom_dir: overrides
   logo: img/adore_logo_white.png
   favicon: img/DLR_Logo.svg
   font:

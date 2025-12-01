@@ -228,7 +228,9 @@ docs_build: docs_build_mkdocs
     rm -rf docs && \
     mkdir -p docs && \
     cp -r mkdocs/site docs/mkdocs &&\
-    cp -r mkdocs/img docs/mkdocs
+    cp -r mkdocs/img docs/mkdocs  &&\
+    cp -r mkdocs/stylesheets docs/mkdocs &&\
+    cp -r mkdocs/overrides docs/mkdocs
 
 # Build and serve docs at http://localhost:8000
 docs_serve: docs_build
