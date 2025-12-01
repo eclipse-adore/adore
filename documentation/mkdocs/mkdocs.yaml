@@ -75,6 +75,11 @@ nav:
 
 extra:
   github_issues: "https://github.com/eclipse-adore/adore/issues"
+  social:
+  - icon: fontawesome/brands/github
+    link: https://github.com/eclipse-adore/adore
+  - icon: material/web
+    link: https://www.eclipse.org/adore/         # if you have a landing page
 
 theme:
   name: material
@@ -108,6 +113,10 @@ theme:
     - toc.integrate
     - content.code.copy
     - content.tabs.link
+    - content.action.view        # “View source” link
+    - search.suggest             # search suggestions
+    - search.highlight           # highlight matches in search results
+    - search.share               # shareable search URLs
 
 # Nice markdown extras powered by pymdown-extensions
 markdown_extensions:

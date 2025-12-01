@@ -40,13 +40,13 @@ if is_in_docker; then
   echo "[container] Cleaning ROS 2 / colcon processes inside this container..."
 
   echo "-> Killing ros2/colcon wrapper processes..."
-  pkill -f "ros2 launch"       || true
-  pkill -f "ros2 run"          || true
-  pkill -f "python3.*launch"   || true
-  pkill -f "rclpy"             || true
-  pkill -f "ros2 daemon"       || true
-  pkill -f "colcon"            || true
-  pkill -f "rosapi"            || true
+  pkill -9 -f "ros2 launch"       || true
+  pkill -9 -f "ros2 run"          || true
+  pkill -9 -f "python3.*launch"   || true
+  pkill -9 -f "rclpy"             || true
+  pkill -9 -f "ros2 daemon"       || true
+  pkill -9 -f "colcon"            || true
+  pkill -9 -f "rosapi"            || true
 
 
   echo "-> Killing workspace binaries from build tree (container)..."
@@ -75,13 +75,13 @@ else
     docker exec "${DOCKER_CONTAINER_NAME}" bash -lc '
       set -e
       echo "   (container) Killing ros2/colcon wrappers..."
-      pkill -f "ros2 launch"       || true
-      pkill -f "ros2 run"          || true
-      pkill -f "python3.*launch"   || true
-      pkill -f "rclpy"             || true
-      pkill -f "ros2 daemon"       || true
-      pkill -f "colcon"            || true
-      pkill -f "rosapi"            || true
+      pkill -9 -f "ros2 launch"       || true
+      pkill -9 -f "ros2 run"          || true
+      pkill -9 -f "python3.*launch"   || true
+      pkill -9 -f "rclpy"             || true
+      pkill -9 -f "ros2 daemon"       || true
+      pkill -9 -f "colcon"            || true
+      pkill -9 -f "rosapi"            || true
 
 
       echo "   (container) Killing workspace binaries from build tree..."
