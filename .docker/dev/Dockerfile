@@ -34,6 +34,7 @@ RUN set -eux; \
     fi
 
 USER ${USERNAME}
+ENV IN_ADORE_DOCKER=1
 
 # Oh My Zsh (non-interactive)
 ENV RUNZSH=no \
@@ -80,6 +81,9 @@ RUN set -eux; \
       echo '  source "$HOME/adore/.colcon_workspace/install/local_setup.zsh"'; \
       echo 'elif [ -f "$HOME/adore/.colcon_workspace/install/setup.zsh" ]; then'; \
       echo '  source "$HOME/adore/.colcon_workspace/install/setup.zsh"'; \
+      echo 'fi'; \
+      echo 'if [[ -n "$IN_ADORE_DOCKER" ]]; then'; \
+      echo '  PROMPT="%F{green}[ADORe-DEV]%f ${PROMPT}"'; \
       echo 'fi'; \
     } >> "$ZSHRC"
 

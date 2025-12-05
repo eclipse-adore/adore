@@ -222,7 +222,7 @@ def create_simulated_vehicle_nodes(
     simulated_v2x_mode: bool = False,
     request_assistance_polygon: Optional[List[float]] = None,
     composable: bool = False,
-    local_map_size: float = 50.0,
+    local_map_size: float = 100.0,
 ) -> List[Action]:
     """Create simulated vehicle nodes or components for ROS 2 launch.
 
