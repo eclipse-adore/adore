@@ -9,9 +9,9 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* /tmp/*
 
 # Helix editor
-RUN curl -L https://github.com/helix-editor/helix/releases/download/25.01.1/helix-25.01.1-x86_64-linux.tar.xz \
+RUN curl -L https://github.com/helix-editor/helix/releases/download/25.07.1/helix-25.07.1-x86_64-linux.tar.xz \
     | tar -xJ && \
-    mv helix-25.01.1-x86_64-linux /opt/helix && \
+    mv helix-25.07.1-x86_64-linux /opt/helix && \
     ln -s /opt/helix/hx /usr/local/bin/hx && \
     echo "export HELIX_RUNTIME=/opt/helix/runtime" >> /etc/profile
 
