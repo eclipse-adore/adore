@@ -29,7 +29,7 @@ from adore_ros2_msgs.msg import *
 def generate_test_description():
     launch_file = os.path.join(
         os.path.dirname(__file__),
-        '..', 'adore_simulation_scenarios', 'simulation_test.launch.py'
+        '..', 'simulation_scenarios', 'simulation_test.launch.py'
     )
 
     return (
