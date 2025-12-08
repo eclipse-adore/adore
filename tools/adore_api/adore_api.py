@@ -1039,7 +1039,7 @@ def start_scenario_route():
     data = request.get_json(silent=True) or {}
 
     scenario_input = data.get(
-        'scenario', "adore_simulation_scenarios/simulation_test.launch.py"
+        'scenario', "simulation_scenarios/simulation_test.launch.py"
     )
     is_file = data.get('is_file', True)
     model_check_enabled = data.get('model_check_enabled', False)
