@@ -1,0 +1,12 @@
+build:
+  symlink-install: true
+  continue-on-error: true
+  cmake-args:
+    - -DCMAKE_C_COMPILER_LAUNCHER=ccache
+    - -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+    - -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+    - -DCMAKE_BUILD_TYPE=Release
+
+test:
+  event-handlers:
+    - console_cohesion+

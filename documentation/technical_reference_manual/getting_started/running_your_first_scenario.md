@@ -8,17 +8,19 @@ see the [ADORe Lichtblick-Suite README 🔗](../generated/visualization/lichtbli
 
 2. Run a scenario, launch or attach to the `ADORe CLI` from the root of the `ADORe` repo:
 ```bash
-make cli
+just dev
 cd adore_scenarios/simulation_scenarios
 ros2 launch simulation_test.launch.py
 ```
 
-3. Open lichtblick (in another shell):
+3. In a separate tab, start Lichtblick visualization
 ```bash
-chromium  http://localhost:8080//?ds=rosbridge-websocket&ds.url=ws://localhost:9090&ds\=rosbridge-websocket\&layout\=Default.json
+just lichtblick
 ```
-or with a link:
-[http://localhost:8080//?ds=rosbridge-websocket&ds.url=ws://localhost:9090&ds\=rosbridge-websocket\&layout\=Default.json](http://localhost:8080//?ds=rosbridge-websocket&ds.url=ws://localhost:9090&ds\=rosbridge-websocket\&layout\=Default.json)
+Then open the displayed URL with chome based browser. 
+
+Some visualization layouts are available in tools/lichtblick/lichtblick_layouts
+
 
 ## Running A Scenario With The ADORe Mission Control Web Interface
 1. Start `lichtblick suite` aka `foxglove` aka `foxbox`.
@@ -26,20 +28,26 @@ see the [ADORe Lichtblick-Suite README 🔗](../generated/visualization/lichtbli
 
 2. start the `ADORe CLI` from the root of the `ADORe` repo:
 ```bash
-make cli
+just dev
 ```
-or headlessly:
+
+or
+
 ```bash
-make start
+./.docker/scripts/run_dev.sh
 ```
 
-The ADORe Mission Control will automatically start with the ADORe CLI.
+3. Start the adore API
+```bash
+just api_start
+```
 
-3. Open the ADORe Mission Control
+
+4. Open the web based gui
 [http://localhost:8888](http://localhost:8888)
 
-4. Select a scenario in the `Senario Manager` and click start
+5. Select a scenario in the `Senario Manager` and click start
 
-5. Switch to the `Visualization` tab to visualize the scenario
+6. Switch to the `Visualization` tab to visualize the scenario
 
 See the [ADORe Mission Control README 🔗](../generated/api/adore_api/adore_mission_control.md) for more information on the `ADORe Mission Control`. 

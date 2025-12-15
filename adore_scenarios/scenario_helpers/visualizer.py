@@ -14,16 +14,16 @@
 from launch_ros.actions import Node
 import os
 
-def create_visualization_nodes(whitelist, asset_folder, ns="ego_vehicle", use_center_ego=True, port=9090, send_buffer_limit=500000000):
+
+def create_visualization_nodes(whitelist, asset_folder, visualization_offset, ns="visualizer", port=8765, send_buffer_limit=500000000):
     """
-    Returns a list of nodes for visualization (rosbridge, rosapi and visualizer).
+    Returns a list of nodes for visualization (foxglove bridge and visualizer).
 
     Parameters:
         whitelist (list[str]): List of topic namespace prefixes to visualize.
         asset_folder (str): Path to folder containing map image assets.
-        use_center_ego (bool): Whether the ego vehicle should be used as map center.
-        port (int): Port for Rosbridge (default 9090).
-        send_buffer_limit (int): Buffer limit for Rosbridge.
+        port (int): Port for Foxglove Bridge.
+        send_buffer_limit (int): Buffer limit for Foxglove Bridge.
 
     Returns:
         list[Node]: Launchable ROS 2 Node actions.
@@ -45,7 +45,7 @@ def create_visualization_nodes(whitelist, asset_folder, ns="ego_vehicle", use_ce
                 {'address': '0.0.0.0'},
                 {'use_compression': False},
                 {'fragment_timeout': 600},
-                {'delay_between_messages': 0},
+                {'delay_between_messages': 0.0},
                 {'max_message_size': 10000000},
                 {'unregister_timeout': 10.0}
             ]
@@ -58,7 +58,8 @@ def create_visualization_nodes(whitelist, asset_folder, ns="ego_vehicle", use_ce
             parameters=[
                 {"asset folder": asset_folder},
                 {"whitelist": whitelist},
-                {"center_ego_vehicle": use_center_ego}
+                {"visualization_offset_x": visualization_offset[0]},
+                {"visualization_offset_y": visualization_offset[1]},
             ]
         )
     ]

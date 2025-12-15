@@ -13,12 +13,15 @@ To use the interactive goal picker tool:
 
 1. Start `lichtblick suite` from the `ADORe` project root:
 ```bash
-cd tools/lichtblick
-make build
-make start
+just lichtblick
 ```
 
 2. Open the goal picker tool in your browser:
+
+```bash
+just api_start
+```
+
 ```bash
 chromium http://localhost:8080/assets/goal_picker.html
 ```

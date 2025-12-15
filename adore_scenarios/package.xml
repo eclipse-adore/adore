@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>adore_scenarios</name>
+  <version>0.1.0</version>
+  <description>Collection of scenarios, integration tests for the ADORe system.</description>
+
+  <maintainer email="opensource-ts@dlr.de">DLR-TS</maintainer>
+  <license>Eclipse 2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Core Python-based ROS 2 usage -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+
+  <!-- Testing dependencies -->
+  <test_depend>ament_cmake_pytest</test_depend>
+  <test_depend>launch_testing</test_depend>
+  <test_depend>launch_testing_ros</test_depend>
+  <test_depend>rclpy</test_depend>
+  <depend>adore_ros2_msgs</depend>
+
+
+  <!-- Needed for `colcon test` to find and run the tests -->
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

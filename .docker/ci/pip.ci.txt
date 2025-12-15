@@ -1,0 +1,4 @@
+mkdocs-material
+pymdown-extensions
+mkdocs-redirects
+gcovr

@@ -1,3 +1,4 @@
+# util/ros_marshaller.py
 # ********************************************************************************
 # Copyright (c) 2025 Contributors to the Eclipse Foundation
 #
@@ -15,550 +16,504 @@
 ros_marshaller.py
 
 A dynamic utility for subscribing to, parsing, converting, and publishing ROS 1/2 messages
-using YAML and JSON formats. Designed to work in both live and debug (file-based) modes,
-this tool supports automated message type detection and stream framing.
-
-Features:
-    - Detects ROS 1 or ROS 2 at runtime
-    - Subscribes to ROS topics and extracts YAML message streams
-    - Converts YAML to JSON, enriched with topic and datatype metadata
-    - Republish messages in real-time (optionally re-encoded as std_msgs/String)
-    - Tracks transmission and reception metrics over time
-    - Provides debug mode using static YAML files for testing without ROS
-    - Safely manages subprocesses and threading for I/O operations
-
-Main Class:
-    ROSMarshaller
-
-    Key Methods:
-        - subscribe(topic, callback)
-        - publish(json_string, topic, datatype)
-        - get_datatype(topic)
-        - callback_json / callback_republish / callback_republish_std_msgs_string_json
-        - set_debug_mode(enable, debug_file)
-        - start_metrics_reporter()
-        - stop()
-        - get_metrics(), print_metrics()
-
-Command-line Usage:
-    python ros_marshaller.py --topic /your/topic [--debug --debug-file file.yaml --max-lines 50]
-
-Dependencies:
-    - ROS 1: `rostopic`, `rospy`
-    - ROS 2: `ros2 topic`, `rclpy`
-    - External: `yq` (YAML-to-JSON converter), `ujson` (optional fast JSON parsing)
-
+using command-line tools.
 """
 
 import subprocess
 import os
 import sys
-
-import pty
 import threading
 import yaml
 import traceback
 import time
-import concurrent.futures
 import shlex
 import select
 from collections import deque
 from datetime import datetime
-import json as standard_json
-import yq
-
-import yaml
 import json
-from yaml import CLoader as Loader
+import logging
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from util.ros_message_importer import ROSMessageImporter
-ROSMessageImporter.import_all_messages()
+# Local import for message class loading
+from .ros_message_importer import ROSMessageImporter
 
+# Initialize logging for the marshaller
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+
+# Ensure ROS messages are loaded before use
 try:
-    import ujson as json
-    USING_UJSON = True
-    JSONDecodeError = standard_json.JSONDecodeError
-except ImportError:
-    import json
-    USING_UJSON = False
-    JSONDecodeError = json.JSONDecodeError
+    ROSMessageImporter.import_all_messages()
+    MESSAGES_LOADED = True
+except Exception as e:
+    logging.warning(
+        f"Failed to import ROS messages: {e}. ROS functionality will be limited.")
+    MESSAGES_LOADED = False
+
 
 class ROSMarshaller:
-    ROSCMD = ["", "rostopic echo", "ros2 topic echo"]
-    ROSPUBCMD = ["", "rostopic pub", "ros2 topic pub -t 1 -w 0 --keep-alive 10"]
-    ROS_VERSION = None
+    # --- Static Configuration ---
+    ROSCMD = ["", "rostopic echo --no-arr", "ros2 topic echo --no-arr"]
+    ROSPUBCMD = ["", "rostopic pub -1",
+                 "ros2 topic pub -t 1 -w 0 --keep-alive 10"]
+    ROS_VERSION = 0  # 1 for ROS 1, 2 for ROS 2, 0 for not detected/unknown
     STD_MSGS_STRING_DATATYPE = None
+
+    DEBUG_MODE = False
+    DEBUG_FILE = "data/debug_sample.yaml"
+
+    # --- Runtime State ---
     _stop_event = threading.Event()
-    threads = []
-    executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
+    _threads = []
     _command_cache = {}
-    _process_pool = {}
+    _process_pool = {}  # Currently unused, but kept for future command management
     _process_lock = threading.RLock()
-    MAX_YAML_LINES = 0  # Default limit for YAML lines collection (0 means unlimited)
-    YQ_BINARY = "./yq"  # Path to yq binary for YAML to JSON conversion
-    DEBUG_MODE = False  # When True, use file reading instead of ROS commands
-    DEBUG_FILE = "data/monster.yaml"  # File to read in debug mode
-    
-    # Metrics tracking
+
+    # Metrics tracking (simplified)
     _metrics_lock = threading.RLock()
-    _tx_timestamps = deque(maxlen=1000) 
-    _rx_timestamps = deque(maxlen=1000)
-    _last_metrics_report = 0
-    _metrics_report_interval = 5.0  # Report metrics every 5 seconds
-    
-    _yaml_buffer_cache = {}
-    _yaml_buffer_lock = threading.RLock()
-    
+    _tx_count = 0
+    _rx_count = 0
+
+    # --- Initialization and Detection ---
+
     @staticmethod
-    def set_debug_mode(enable=True, debug_file="data/monster.yaml"):
+    def initialize():
+        """Detect ROS version and configure command strings."""
+        if ROSMarshaller.ROS_VERSION == 0:
+            try:
+                subprocess.run(
+                    ['rostopic', '--help'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+                ROSMarshaller.ROS_VERSION = 1
+                ROSMarshaller.STD_MSGS_STRING_DATATYPE = "std_msgs/String"
+                logging.info("ROS 1 detected.")
+            except (FileNotFoundError, subprocess.CalledProcessError):
+                try:
+                    subprocess.run(
+                        ['ros2', 'topic', '--help'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+                    ROSMarshaller.ROS_VERSION = 2
+                    ROSMarshaller.STD_MSGS_STRING_DATATYPE = "std_msgs/msg/String"
+                    logging.info("ROS 2 detected.")
+                except (FileNotFoundError, subprocess.CalledProcessError):
+                    logging.error(
+                        "Could not detect ROS 1 or ROS 2. Command-line tools not available.")
+                    ROSMarshaller.ROS_VERSION = 0
+        return ROSMarshaller.ROS_VERSION > 0
+
+    @staticmethod
+    def set_debug_mode(enable=True, debug_file=None):
         """Enable or disable debug mode with optional debug file path"""
         ROSMarshaller.DEBUG_MODE = enable
         if debug_file:
             ROSMarshaller.DEBUG_FILE = debug_file
-        print(f"Debug mode {'enabled' if enable else 'disabled'}" + 
-              (f", using file: {debug_file}" if enable and debug_file else ""))
-    
+
+        if enable and not os.path.exists(ROSMarshaller.DEBUG_FILE):
+            with open(ROSMarshaller.DEBUG_FILE, 'w') as f:
+                f.write("test: debug\n---\n")
+
+        logging.info(f"Debug mode {'enabled' if enable else 'disabled'}" +
+                     (f", using file: {ROSMarshaller.DEBUG_FILE}" if enable and debug_file else ""))
+
+    # --- Utilities ---
+    @staticmethod
+    def get_datatype(topic):
+        """Get the ROS message datatype for a topic using ROS command-line tools."""
+        if ROSMarshaller.DEBUG_MODE:
+            # Return a default type in debug mode
+            return ROSMarshaller.STD_MSGS_STRING_DATATYPE or "std_msgs/msg/String"
+
+        if ROSMarshaller.ROS_VERSION == 0 and not ROSMarshaller.initialize():
+            return None
+
+        try:
+            if ROSMarshaller.ROS_VERSION == 1:
+                result = subprocess.run(
+                    ["rostopic", "type", topic], capture_output=True, text=True, check=True, timeout=5)
+            else:
+                result = subprocess.run(
+                    ["ros2", "topic", "type", topic], capture_output=True, text=True, check=True, timeout=5)
+            return result.stdout.strip()
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+            return None
+
+    @staticmethod
+    def _yaml_to_json(yaml_string, topic, datatype):
+        """Convert YAML message string to JSON, adding metadata."""
+        try:
+            # Use safe_load to process the YAML string
+            obj = yaml.safe_load(yaml_string)
+            if not isinstance(obj, dict):
+                # Handles cases where YAML is a single value, list, or null
+                obj = {"data": obj}
+
+            # Enrich with metadata
+            obj['topic'] = topic
+            obj['datatype'] = datatype
+
+            # Convert to JSON string
+            return json.dumps(obj)
+
+        except yaml.YAMLError as ye:
+            logging.error(f"YAML parsing error for topic {topic}: {ye}")
+            return json.dumps({"error": "YAML_PARSE_ERROR", "raw_content": yaml_string, "topic": topic, "datatype": datatype})
+        except Exception as e:
+            logging.error(f"Conversion error for topic {topic}: {e}")
+            return json.dumps({"error": "CONVERSION_ERROR", "raw_content": yaml_string, "topic": topic, "datatype": datatype})
+
+    @staticmethod
+    def shell_escape(input_string):
+        """Escapes a string for safe use in a shell command."""
+        return shlex.quote(input_string)
+
+    # --- Metrics ---
     @staticmethod
     def _increment_tx_counter():
         """Increment the transmitted messages counter"""
         with ROSMarshaller._metrics_lock:
-            ROSMarshaller._tx_timestamps.append(time.time())
-            
+            ROSMarshaller._tx_count += 1
+
     @staticmethod
     def _increment_rx_counter():
         """Increment the received messages counter"""
         with ROSMarshaller._metrics_lock:
-            ROSMarshaller._rx_timestamps.append(time.time())
-    
-    @staticmethod
-    def _calculate_message_rate(timestamps):
-        """Calculate messages per second from a deque of timestamps"""
-        if not timestamps:
-            return 0.0
-            
-        now = time.time()
-        recent = [ts for ts in timestamps if now - ts <= 1.0]
-        
-        if not recent and len(timestamps) >= 2:
-            time_span = timestamps[-1] - timestamps[0]
-            if time_span > 0:
-                return (len(timestamps) - 1) / time_span
-            return 0.0
-            
-        return len(recent)
-    
+            ROSMarshaller._rx_count += 1
+
     @staticmethod
     def get_metrics():
-        """Get current message rates"""
+        """Get current message counts"""
         with ROSMarshaller._metrics_lock:
-            tx_rate = ROSMarshaller._calculate_message_rate(ROSMarshaller._tx_timestamps)
-            rx_rate = ROSMarshaller._calculate_message_rate(ROSMarshaller._rx_timestamps)
-            
-        return {
-            "tx_rate": tx_rate,
-            "rx_rate": rx_rate,
-            "timestamp": time.time()
-        }
-    
-    @staticmethod
-    def print_metrics():
-        """Print current metrics to console"""
-        metrics = ROSMarshaller.get_metrics()
-        timestamp = datetime.fromtimestamp(metrics["timestamp"]).strftime('%Y-%m-%d %H:%M:%S')
-        print(f"[{timestamp}] Metrics - TX: {metrics['tx_rate']:.2f} msg/s, RX: {metrics['rx_rate']:.2f} msg/s")
-    
-    @staticmethod
-    def start_metrics_reporter():
-        """Start a background thread to periodically report metrics"""
-        def report_metrics():
-            while not ROSMarshaller._stop_event.is_set():
-                now = time.time()
-                if now - ROSMarshaller._last_metrics_report >= ROSMarshaller._metrics_report_interval:
-                    ROSMarshaller.print_metrics()
-                    ROSMarshaller._last_metrics_report = now
-                time.sleep(1.0)
-                
-        reporter = threading.Thread(target=report_metrics, daemon=True)
-        reporter.start()
-        ROSMarshaller.threads.append(reporter)
-        return reporter
+            return {
+                "tx_count": ROSMarshaller._tx_count,
+                "rx_count": ROSMarshaller._rx_count,
+                "timestamp": time.time()
+            }
 
-    @staticmethod
-    def _detect_ros_version():
-        if ROSMarshaller.ROS_VERSION is None:
-            try:
-                subprocess.run(['rostopic', '--help'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                ROSMarshaller.ROS_VERSION = 1
-                ROSMarshaller.STD_MSGS_STRING_DATATYPE = "std_msgs/String"
-            except FileNotFoundError:
-                ROSMarshaller.ROS_VERSION = 2
-                ROSMarshaller.STD_MSGS_STRING_DATATYPE = "std_msgs/msg/String" 
-        return ROSMarshaller.ROS_VERSION
-
-    @staticmethod
-    def get_datatype(topic):
-        if ROSMarshaller.DEBUG_MODE:
-            return "std_msgs/msg/String"
-            
-        ros_version = ROSMarshaller._detect_ros_version()
-        try:
-            if ros_version == 1:
-                result = subprocess.run(["rostopic", "type", topic], capture_output=True, text=True, check=True)
-            else:
-                result = subprocess.run(["ros2", "topic", "type", topic], capture_output=True, text=True, check=True)
-            return result.stdout.strip()
-        except subprocess.CalledProcessError:
-            return None
-
-
-
-    def yaml_to_json(yaml_string, topic, datatype):
-        obj = yaml.load(yaml_string, Loader=Loader)
-        obj['topic'] = topic 
-        obj['datatype'] = datatype 
-        json_string = json.dumps(obj)
-
-        return json_string
-
-    @staticmethod
-    def to_dict(raw_json, topic, datatype):
-        """Process JSON input and output as JSON with topic and datatype metadata"""
-        obj = raw_json 
-        try:
-            obj = json.loads(raw_json)
-        except (ValueError, JSONDecodeError) as e:
-            print(f"JSON parsing error in callback_json: {str(e)}")
-            obj = {"raw_content": raw_json, "error": str(e)}
-        
-        # Add topic metadata to data structure
-        obj['topic'] = topic 
-        obj['datatype'] = datatype 
-        return obj 
-
-    @staticmethod
-    def to_json(raw_json, topic, datatype):
-        return json.dumps(ROSMarshaller.to_dict(raw_json, topic, datatype))
-
-    @staticmethod
-    def callback_json(raw_json, topic, datatype):
-        """Process JSON input and output as JSON with topic and datatype metadata"""
-        data = ROSMarshaller.to_dict(raw_json, topic, datatype)
-        import sys
-        with open(f"{topic.replace("/", "_")}.json", "w") as f:
-            f.write(json.dumps(data, indent=4))
-        print(json.dumps(data, indent=4))
-
-    @staticmethod
-    def callback_republish_std_msgs_string_json(raw_json, topic, datatype):
-        """Process JSON input and republish as std_msgs/String"""
-        try:
-            obj = json.loads(raw_json)
-        except (ValueError, JSONDecodeError) as e:
-            print(f"JSON parsing error in callback_republish_std_msgs_string_json: {str(e)}")
-            obj = {"raw_content": raw_json, "error": str(e)}
-        
-        # Add topic metadata to data structure
-        obj['topic'] = topic 
-        obj['datatype'] = datatype 
-        
-        # Republish as std_msgs/String on a new topic
-        new_topic = f"{topic}_json"
-        new_datatype = ROSMarshaller.STD_MSGS_STRING_DATATYPE
-        json_string = f"data: {json.dumps(obj)}"
-        ROSMarshaller.publish(json_string, new_topic, new_datatype)
-
-    @staticmethod
-    def callback_republish(raw_json, topic, datatype):
-        """Process JSON input and republish on a new topic"""
-        try:
-            obj = json.loads(raw_json)
-        except (ValueError, JSONDecodeError) as e:
-            print(f"JSON parsing error in callback_republish: {str(e)}")
-            obj = {"raw_content": raw_json, "error": str(e)}
-        
-        # Republish on a new topic
-        new_topic = f"{topic}_republish"
-        ROSMarshaller.publish(obj, new_topic, datatype)
+    # --- Subscriber Core ---
 
     @staticmethod
     def _process_yaml_document(yaml_data, topic, datatype, callback):
-        """Process a complete YAML document in one go"""
+        """Process a complete YAML document and send to callback."""
         if not yaml_data.strip():
             return
-          
-        json_str = ROSMarshaller.yaml_to_json(yaml_data, topic, datatype)
+
+        json_str = ROSMarshaller._yaml_to_json(yaml_data, topic, datatype)
         ROSMarshaller._increment_rx_counter()
 
+        # The callback is expected to accept (json_data_str, topic_name, datatype_str)
+        # Note: We pass the JSON string here, not the loaded object.
         callback(json_str, topic, datatype)
 
     @staticmethod
     def _direct_read_thread(process, topic, datatype, callback, stop_event):
-        """stdout yaml document framer, extracts yaml documents from the stdout stream"""
+        """Monitors the stdout of the ROS topic echo process and frames YAML documents."""
         try:
             buffer = ""
-            
+
+            # Use process.stdout.read1() for efficient reading of binary data
+            # and then decode it. Using `universal_newlines=True` is often less
+            # efficient with streaming subprocesses.
             while not stop_event.is_set() and process.poll() is None:
-                read_ready, _, _ = select.select([process.stdout], [], [], 0.1)
+                # Wait for data to be available on stdout
+                read_ready, _, _ = select.select(
+                    [process.stdout], [], [], 0.05)
                 if not read_ready:
                     continue
-                    
-                chunk = process.stdout.read1(4096).decode('utf-8')
+
+                # Read a chunk (e.g., 4KB)
+                chunk = process.stdout.read(4096).decode(
+                    'utf-8', errors='ignore')
                 if not chunk:
-                    break
-                    
+                    break  # EOF
+
                 buffer += chunk
-                
+
+                # Split buffer by YAML document separator '---'
                 while '---' in buffer:
                     doc, buffer = buffer.split('---', 1)
                     if doc.strip():
-                        ROSMarshaller._process_yaml_document(doc, topic, datatype, callback)
-            
+                        ROSMarshaller._process_yaml_document(
+                            doc, topic, datatype, callback)
+
+            # Process any remaining data in the buffer after the process terminates
             if buffer.strip() and not stop_event.is_set():
-                ROSMarshaller._process_yaml_document(buffer, topic, datatype, callback)
-                
+                ROSMarshaller._process_yaml_document(
+                    buffer, topic, datatype, callback)
+
         except Exception as e:
-            print(f"Error in direct reader thread for topic {topic}: {e}")
+            logging.error(
+                f"Error in direct reader thread for topic {topic}: {e}")
             traceback.print_exc()
 
     @staticmethod
     def _debug_reader_thread(topic, datatype, callback, stop_event):
-        """file yaml document framer, extracts yaml documents from the stdout stream"""
+        """Reads a static YAML file in a loop for debug mode."""
         try:
             while not stop_event.is_set():
+                time.sleep(1.0)  # Reduce CPU usage in the loop
                 try:
                     with open(ROSMarshaller.DEBUG_FILE, 'r') as f:
                         content = f.read()
-                    
+
                     docs = content.split('---')
                     for doc in docs:
                         if doc.strip() and not stop_event.is_set():
-                            ROSMarshaller._process_yaml_document(doc, topic, datatype, callback)
+                            ROSMarshaller._process_yaml_document(
+                                doc, topic, datatype, callback)
                 except IOError as e:
-                    print(f"I/O error in debug reader: {e}")
-                    
+                    logging.error(f"I/O error in debug reader: {e}")
+
         except Exception as e:
-            print(f"Error in debug reader thread for topic {topic}: {e}")
+            logging.error(
+                f"Error in debug reader thread for topic {topic}: {e}")
             traceback.print_exc()
 
     @staticmethod
-    def stop():
-        print("Stopping ROSMarshaller threads...")
-        ROSMarshaller._stop_event.set()
-        
-        ROSMarshaller.print_metrics()
-        
-        ROSMarshaller.executor.shutdown(wait=False)
-        
-        threads_to_join = ROSMarshaller.threads.copy()
-        
-        ROSMarshaller.threads = []
-        
-        for thread in threads_to_join:
-            try:
-                thread.join(timeout=1.0)
-            except Exception as e:
-                print(f"Error joining thread: {e}")
-        
-        with ROSMarshaller._process_lock:
-            for cmd, process in ROSMarshaller._process_pool.items():
-                try:
-                    process.terminate()
-                except:
-                    pass
-            ROSMarshaller._process_pool.clear()
-
-    @staticmethod
-    def yaml_to_dict(raw_yaml):
-        """Convert YAML to dict, compatible with the original method but using the new converter"""
-        try:
-            json_str = ROSMarshaller.yaml_to_json(raw_yaml)
-            return json.loads(json_str)
-        except Exception as e:
-            return {"error": str(e), "raw_content": raw_yaml}
-    
-    @staticmethod
-    def _get_or_create_process(command_str):
-        with ROSMarshaller._process_lock:
-            if command_str in ROSMarshaller._process_pool:
-                process = ROSMarshaller._process_pool[command_str]
-                if process.poll() is None:
-                    return process
-            
-            command = shlex.split(command_str)
-            process = subprocess.Popen(
-                command,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                bufsize=1
-            )
-            ROSMarshaller._process_pool[command_str] = process
-            return process
-    
-    @staticmethod
-    def subscribe(topic, callback=None):
-        if callback is None:
-            callback = ROSMarshaller.callback_json
+    def subscribe(topic, callback):
+        """
+        Starts a subscription thread for a given ROS topic.
+        Callback signature: (json_data_str, topic_name, datatype_str)
+        """
+        if not ROSMarshaller.DEBUG_MODE and not ROSMarshaller.initialize():
+            raise RuntimeError("ROS environment not initialized or detected.")
 
         datatype = ROSMarshaller.get_datatype(topic)
-        
+        if datatype is None and not ROSMarshaller.DEBUG_MODE:
+            logging.warning(
+                f"Could not determine datatype for topic: {topic}. Subscription may fail.")
+
         if ROSMarshaller.DEBUG_MODE:
-            if not os.path.exists(ROSMarshaller.DEBUG_FILE):
-                with open(ROSMarshaller.DEBUG_FILE, 'w') as f:
-                    f.write("test: debug\n---\n")
-                print(f"Created debug file: {ROSMarshaller.DEBUG_FILE}")
-                
-            def run_debug():
-                print(f"Starting debug reader for topic: {topic}")
-                ROSMarshaller._debug_reader_thread(topic, datatype, callback, ROSMarshaller._stop_event)
-                
-            debug_thread = threading.Thread(target=run_debug, daemon=True)
-            debug_thread.start()
-            ROSMarshaller.threads.append(debug_thread)
-            print(f"Debug subscription thread started for topic: {topic}")
-            return debug_thread
+            thread = threading.Thread(
+                target=ROSMarshaller._debug_reader_thread,
+                args=(topic, datatype, callback, ROSMarshaller._stop_event),
+                daemon=True
+            )
+            thread.start()
+            ROSMarshaller._threads.append(thread)
+            logging.info(
+                f"Debug subscription thread started for topic: {topic}")
+            return thread
         else:
-            ros_version = ROSMarshaller._detect_ros_version()
+            ros_version = ROSMarshaller.ROS_VERSION
+            # Command: 'ros2 topic echo /topic --no-arr'
             base_command = (ROSMarshaller.ROSCMD[ros_version]).split()
             base_command.append(topic)
-            command_str = ' '.join(base_command)
-            print(f"ROS command: {command_str}")
-            
+
             def run():
-                retry_delay = 0.1
+                retry_delay = 0.5
                 max_delay = 5.0
-                
+
                 while not ROSMarshaller._stop_event.is_set():
                     process = None
-                    
                     try:
+                        # Start the ROS command process
                         process = subprocess.Popen(
                             base_command,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
                             stdin=subprocess.DEVNULL,
                             bufsize=4096,
-                            universal_newlines=False
+                            universal_newlines=False  # Read bytes, decode in _direct_read_thread
                         )
-                        print(f"Started process for {topic} (PID: {process.pid})")
-                        
+                        logging.info(
+                            f"Started process for {topic} (PID: {process.pid})")
+
+                        # Monitor and process the output
                         ROSMarshaller._direct_read_thread(
                             process, topic, datatype, callback, ROSMarshaller._stop_event
                         )
-                        
-                        retry_delay = 0.1
-                        
+
+                        retry_delay = 0.5  # Reset delay after a successful run/termination
+
                     except Exception as e:
-                        print(f"Error in subscription to {topic}: {e}")
-                        traceback.print_exc()
-                    
-                    if process is not None and process.poll() is None:
-                        try:
-                            process.terminate()
-                            print(f"Terminated process for {topic} (PID: {process.pid})")
-                        except:
-                            pass
-                    
+                        logging.error(
+                            f"Error in subscription loop for {topic}: {e}")
+
+                    finally:
+                        if process is not None and process.poll() is None:
+                            try:
+                                # Ensure process is terminated if it crashed
+                                process.terminate()
+                                process.wait(timeout=2)
+                                if process.poll() is None:
+                                    process.kill()
+                                logging.info(
+                                    f"Terminated process for {topic} (PID: {process.pid})")
+                            except Exception as term_e:
+                                logging.error(
+                                    f"Error terminating process for {topic}: {term_e}")
+
                     if not ROSMarshaller._stop_event.is_set():
-                        print(f"Retrying subscription to {topic} in {retry_delay}s")
+                        logging.info(
+                            f"Retrying subscription to {topic} in {retry_delay:.1f}s")
                         time.sleep(retry_delay)
                         retry_delay = min(retry_delay * 2, max_delay)
 
-            sub_thread = threading.Thread(target=run, daemon=True)
-            sub_thread.start()
-            ROSMarshaller.threads.append(sub_thread)
-            print(f"Subscription thread started for topic: {topic}")
-            return sub_thread
+            thread = threading.Thread(target=run, daemon=True)
+            thread.start()
+            ROSMarshaller._threads.append(thread)
+            logging.info(f"Subscription thread started for topic: {topic}")
+            return thread
 
+    # --- Publisher Core ---
     @staticmethod
-    def shell_escape(input_string):
-        return shlex.quote(input_string)
+    def publish(json_data, topic=None, datatype=None):
+        """
+        Publishes a message to a ROS topic. 
+        `json_data` can be a dict, JSON string, or a string starting with "data: " (for std_msgs/String).
+        """
+        if not ROSMarshaller.DEBUG_MODE and not ROSMarshaller.initialize():
+            logging.error(
+                "ROS environment not initialized or detected. Cannot publish.")
+            return
 
-    @staticmethod
-    def publish(json_string, topic=None, datatype=None):
         try:
-            if isinstance(json_string, str) and json_string.startswith("data: "):
-                data_content = json_string[6:]
-                obj = {"data": data_content}
+            # 1. Parse Input
+            if isinstance(json_data, str):
+                if json_data.startswith("data: "):
+                    # Handle std_msgs/String JSON format
+                    payload_data = json_data[6:].strip()
+                    try:
+                        # Attempt to load as JSON to validate, then dump it back for the shell command
+                        payload_obj = json.loads(payload_data)
+                    except json.JSONDecodeError:
+                        # If it's just a raw string for std_msgs/String, wrap it
+                        payload_obj = {"data": payload_data}
+                else:
+                    # Assume it's a JSON string of a complex message
+                    payload_obj = json.loads(json_data)
+            elif isinstance(json_data, dict):
+                payload_obj = json_data
             else:
-                obj = json_string if isinstance(json_string, dict) else json.loads(json_string)
-            
-            if topic is None or datatype is None:
-                topic = obj.get('topic')
-                datatype = obj.get('datatype')
-                if topic is None or datatype is None:
-                    raise ValueError("Topic and datatype must be provided either in the JSON or as arguments")
-            
-            if ROSMarshaller.DEBUG_MODE:
-                print(f"DEBUG PUBLISH to {topic} ({datatype}): {json.dumps(obj)}")
-                ROSMarshaller._increment_tx_counter()
-                return
-            
-            publish_obj = obj.copy() if isinstance(obj, dict) else obj
+                raise ValueError("json_data must be a dict or string")
+
+            # 2. Determine Topic/Datatype
+            pub_topic = topic or payload_obj.get('topic')
+            pub_datatype = datatype or payload_obj.get('datatype')
+
+            if pub_topic is None or pub_datatype is None:
+                raise ValueError(
+                    "Topic and datatype must be provided either in the JSON/dict or as arguments")
+
+            # 3. Clean Payload for ROS
+            publish_obj = payload_obj.copy() if isinstance(
+                payload_obj, dict) else payload_obj
             if isinstance(publish_obj, dict):
                 publish_obj.pop('datatype', None)
                 publish_obj.pop('topic', None)
-            
+
+            # 4. Escape and Execute Command
             json_payload = json.dumps(publish_obj)
+
+            if ROSMarshaller.DEBUG_MODE:
+                logging.debug(
+                    f"DEBUG PUBLISH to {pub_topic} ({pub_datatype}): {json_payload}")
+                ROSMarshaller._increment_tx_counter()
+                return
+
             json_escaped = ROSMarshaller.shell_escape(json_payload)
-            
-            ros_version = ROSMarshaller._detect_ros_version()
-            cache_key = f"{ros_version}:{topic}:{datatype}"
+
+            ros_version = ROSMarshaller.ROS_VERSION
+
+            # Use a cache for command fragments
+            cache_key = f"{ros_version}:{pub_topic}:{pub_datatype}"
             if cache_key not in ROSMarshaller._command_cache:
                 command = (ROSMarshaller.ROSPUBCMD[ros_version]).split()
-                command.extend([topic, datatype])
+                command.extend([pub_topic, pub_datatype])
                 ROSMarshaller._command_cache[cache_key] = command
-            
+
             command = ROSMarshaller._command_cache[cache_key].copy()
             command.append(json_escaped)
-            
+
+            # Execute the publish command
             subprocess.run(
-                command, 
-                check=True, 
-                stdout=subprocess.DEVNULL, 
-                stderr=subprocess.PIPE
+                command,
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+                timeout=5
             )
-            
+
             ROSMarshaller._increment_tx_counter()
-            
+
         except Exception as e:
-            print(f"Failed to publish message to {topic}: {e}")
-            traceback.print_exc()
+            logging.error(
+                f"Failed to publish message to {pub_topic or 'Unknown'}: {e}")
+            logging.debug(traceback.format_exc())
+
+    # --- Shutdown ---
+    @staticmethod
+    def stop():
+        """Stops all running threads and processes."""
+        logging.info("Stopping ROSMarshaller threads and processes...")
+        ROSMarshaller._stop_event.set()
+
+        # Stop all running subprocesses
+        with ROSMarshaller._process_lock:
+            for process in ROSMarshaller._process_pool.values():
+                try:
+                    if process.poll() is None:
+                        process.terminate()
+                except:
+                    pass
+            ROSMarshaller._process_pool.clear()
+
+        # Wait for all custom threads to finish
+        for thread in ROSMarshaller._threads:
+            try:
+                thread.join(timeout=1.0)
+            except Exception as e:
+                logging.error(f"Error joining thread: {e}")
+
+        ROSMarshaller._threads = []
+        logging.info(
+            f"Final Metrics - TX Count: {ROSMarshaller._tx_count}, RX Count: {ROSMarshaller._rx_count}")
+
 
 if __name__ == '__main__':
     import argparse
-    
-    parser = argparse.ArgumentParser(description='ROSMarshaller - ROS message processor')
-    parser.add_argument('--debug', action='store_true', help='Enable debug mode')
-    parser.add_argument('--debug-file', default='data/monster.yaml', help='File to read in debug mode')
-    parser.add_argument('--max-lines', type=int, default=0, help='Maximum YAML lines to collect (0 for unlimited)')
-    parser.add_argument('--topic', default='/dummy', help='Topic to subscribe to')
-    
+
+    parser = argparse.ArgumentParser(
+        description='ROSMarshaller - ROS message processor')
+    parser.add_argument('--debug', action='store_true',
+                        help='Enable debug mode')
+    parser.add_argument(
+        '--debug-file', default='data/debug_sample.yaml', help='File to read in debug mode')
+    parser.add_argument('--topic', default='/chatter',
+                        help='Topic to subscribe to')
+
     args = parser.parse_args()
-    
-    ROSMarshaller.MAX_YAML_LINES = args.max_lines
+
+    ROSMarshaller.initialize()
     if args.debug:
         ROSMarshaller.set_debug_mode(True, args.debug_file)
-        
+
     topic = args.topic
-    
-    print(f"Starting ROSMarshaller with topic: {topic}")
-    print(f"Debug mode: {ROSMarshaller.DEBUG_MODE}")
-    print(f"Max YAML lines: {ROSMarshaller.MAX_YAML_LINES}")
-    
-    metrics_thread = ROSMarshaller.start_metrics_reporter()
-    
-    # Subscribe to topics
-    #repub_json_thread = ROSMarshaller.subscribe(topic, ROSMarshaller.callback_republish_std_msgs_string_json)
-    echo_thread = ROSMarshaller.subscribe(topic, ROSMarshaller.callback_json)
-    #repub_thread = ROSMarshaller.subscribe(topic, ROSMarshaller.callback_republish)
+
+    # Example callback function
+    def print_json_callback(json_str, topic_name, datatype_str):
+        data = json.loads(json_str)
+        print(
+            f"[{datetime.now().strftime('%H:%M:%S.%f')}] RCV on {topic_name}: {data['datatype']}")
+
+    logging.info(f"Starting ROSMarshaller with topic: {topic}")
+
+    # Start subscription
+    sub_thread = ROSMarshaller.subscribe(topic, print_json_callback)
 
     try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("Stopping...")
-        ROSMarshaller.stop()
+        # Simple publish example (assuming std_msgs/String for simplicity)
+        if ROSMarshaller.initialize():
+            time.sleep(5)
+            logging.info("Testing publish...")
+            publish_data = {"data": "Hello World from ROSMarshaller!"}
+            ROSMarshaller.publish(publish_data, topic='/test_publish',
+                                  datatype=ROSMarshaller.STD_MSGS_STRING_DATATYPE)
 
+        while sub_thread.is_alive():
+            time.sleep(1)
+            metrics = ROSMarshaller.get_metrics()
+            logging.info(
+                f"Loop Metrics - TX: {metrics['tx_count']}, RX: {metrics['rx_count']}")
+    except KeyboardInterrupt:
+        logging.info("Stopping...")
+    except Exception as e:
+        logging.error(f"Main loop error: {e}")
+    finally:
+        ROSMarshaller.stop()
