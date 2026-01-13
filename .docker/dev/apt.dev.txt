@@ -8,6 +8,9 @@ tree
 bat
 ripgrep
 gdb
+clangd
+clangd++
+libstdc++-12-dev
 
 ros-jazzy-rqt
 ros-jazzy-rqt-common-plugins
