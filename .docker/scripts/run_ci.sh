@@ -42,8 +42,8 @@ fi
 # --------------------------------------------------------------------
 # Ensure ci image exists; build it if needed
 # --------------------------------------------------------------------
-if ! docker image inspect "${DOCKER_CI_IMAGE_LATEST}" >/dev/null 2>&1; then
-  echo "--- ci image ${DOCKER_CI_IMAGE_LATEST} not found; building it ---"
+if ! docker image inspect "${DOCKER_CI_IMAGE_TAGGED}" >/dev/null 2>&1; then
+  echo "--- ci image ${DOCKER_CI_IMAGE_TAGGED} not found; building it ---"
   "${SCRIPT_DIR}/build_ci.sh"
 fi
 
@@ -55,7 +55,7 @@ fi
 # Default for COLCON_WS_ROOT inside the container (relative to repo root)
 CONTAINER_COLCON_WS_ROOT="${CONTAINER_COLCON_WS_ROOT:-.colcon_workspace}"
 
-echo "--- Running CI in Docker image ${DOCKER_CI_IMAGE_LATEST} ---"
+echo "--- Running CI in Docker image ${DOCKER_CI_IMAGE_TAGGED} ---"
 docker run --rm \
   -v "${WORKSPACE_ROOT}:/home/${USER_NAME}/adore" \
   -w "/home/${USER_NAME}/adore" \

@@ -38,7 +38,10 @@ USER_GID="${USER_GID:-$(id -g)}"
 # Git / arch info for tagging images
 GIT_HASH="${GIT_HASH:-$(cd "${WORKSPACE_ROOT}" && git rev-parse --short HEAD 2>/dev/null || echo dev)}"
 ARCH="${ARCH:-$(uname -m)}"
-IMAGE_TAG="${IMAGE_TAG:-${GIT_HASH}-${ARCH}}"
+CLEAN_WORKSPACE_NAME=$(basename "$WORKSPACE_ROOT" \
+  | tr '[:upper:]' '[:lower:]' \
+  | sed 's/[^a-z0-9._-]/-/g; s/^-*//; s/-*$//')
+IMAGE_TAG="${IMAGE_TAG:-${CLEAN_WORKSPACE_NAME}-${ARCH}}"
 
 # Container name for the dev shell
 DOCKER_CONTAINER_NAME="${DOCKER_CONTAINER_NAME:-adore}"

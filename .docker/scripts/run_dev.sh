@@ -24,7 +24,7 @@ require_host "Use this script from the host, not from inside a container."
 
 cd "${WORKSPACE_ROOT}"
 
-IMAGE="${DOCKER_DEV_IMAGE_LATEST}"
+IMAGE="${DOCKER_DEV_IMAGE_TAGGED}"
 CONTAINER_NAME="${DOCKER_CONTAINER_NAME}"
 
 # --------------------------------------------------------------------

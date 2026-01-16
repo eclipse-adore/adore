@@ -72,6 +72,9 @@ build_dev:
 dev: setup_colcon_src
     cd "$WORKSPACE_ROOT" && .docker/scripts/run_dev.sh
 
+get_image_names:
+    cd "$WORKSPACE_ROOT" && .docker/scripts/get_docker_images_names.sh
+
 # Remove local ADORe Docker images
 clean_images:
     cd "$WORKSPACE_ROOT" && .docker/scripts/clean_images.sh
