@@ -9,7 +9,7 @@ set shell := ["/bin/bash", "-c"]
 export WORKSPACE_ROOT := justfile_directory()
 
 # Colcon workspace dir (always .colcon_workspace under repo root)
-export COLCON_WS_ROOT := WORKSPACE_ROOT + "/.colcon_workspace"
+export COLCON_WS_ROOT := WORKSPACE_ROOT
 
 # Documentation root
 export DOCS_ROOT := WORKSPACE_ROOT + "/documentation"
