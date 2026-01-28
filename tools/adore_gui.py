@@ -29,8 +29,8 @@ DOCKER_CONTAINER_NAME = "adore"
 USER = getpass.getuser()
 
 CONTAINER_ADORE_PATH = f"/home/{USER}/adore"
-CONTAINER_WS_PATH = f"{CONTAINER_ADORE_PATH}/.colcon_workspace"
-CONTAINER_SCENARIO_DIR = f"{CONTAINER_WS_PATH}/src/adore_scenarios"
+CONTAINER_WS_PATH = CONTAINER_ADORE_PATH
+CONTAINER_SCENARIO_DIR = f"{CONTAINER_ADORE_PATH}/adore_scenarios"
 
 LAUNCH_EXT = ".launch.py"
 EXCLUDED_DIRS = {"integration_tests", "assets", "scenario_helpers"}
@@ -65,7 +65,7 @@ EXCLUDED_COMMNANDS = {
     "run_ci",
     "docs_build",
     "docs_serve",
-    "setup_colcon_src",
+
     "docs_clean",
     "docs_build_mkdocs",
     "docs_build",

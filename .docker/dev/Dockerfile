@@ -77,14 +77,33 @@ RUN set -eux; \
       echo 'fi'; \
       echo ''; \
       echo '# Source local colcon workspace overlay if it exists'; \
-      echo 'if [ -f "$HOME/adore/.colcon_workspace/install/local_setup.zsh" ]; then'; \
-      echo '  source "$HOME/adore/.colcon_workspace/install/local_setup.zsh"'; \
-      echo 'elif [ -f "$HOME/adore/.colcon_workspace/install/setup.zsh" ]; then'; \
-      echo '  source "$HOME/adore/.colcon_workspace/install/setup.zsh"'; \
+      echo 'if [ -f "$HOME/adore/install/local_setup.zsh" ]; then'; \
+      echo '  source "$HOME/adore/install/local_setup.zsh"'; \
+      echo 'elif [ -f "$HOME/adore/install/setup.zsh" ]; then'; \
+      echo '  source "$HOME/adore/install/setup.zsh"'; \
       echo 'fi'; \
       echo 'if [[ -n "$IN_ADORE_DOCKER" ]]; then'; \
       echo '  PROMPT="%F{green}[ADORe-DEV]%f ${PROMPT}"'; \
       echo 'fi'; \
-    } >> "$ZSHRC"
+    } >> "$ZSHRC"; \
+    # --- Same for Bash ---
+    BASHRC="$HOME/.bashrc"; \
+    touch "$BASHRC"; \
+    { \
+      echo ''; \
+      echo '# --- ADORe ROS environment -----------------------------------------'; \
+      echo 'if [ -f "/opt/ros/${ROS_DISTRO:-jazzy}/setup.bash" ]; then'; \
+      echo '  source "/opt/ros/${ROS_DISTRO:-jazzy}/setup.bash"'; \
+      echo 'fi'; \
+      echo ''; \
+      echo 'if [ -f "$HOME/adore/install/local_setup.bash" ]; then'; \
+      echo '  source "$HOME/adore/install/local_setup.bash"'; \
+      echo 'elif [ -f "$HOME/adore/install/setup.bash" ]; then'; \
+      echo '  source "$HOME/adore/install/setup.bash"'; \
+      echo 'fi'; \
+      echo 'if [[ -n "$IN_ADORE_DOCKER" ]]; then'; \
+      echo '  PS1="\[\033[01;32m\][ADORe-DEV]\[\033[00m\] ${PS1}"'; \
+      echo 'fi'; \
+    } >> "$BASHRC"
 
 CMD ["/usr/bin/zsh", "-l"]

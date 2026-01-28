@@ -8,7 +8,7 @@ set shell := ["/bin/bash", "-c"]
 # Root of the repo (directory containing this Justfile)
 export WORKSPACE_ROOT := justfile_directory()
 
-# Colcon workspace dir (always .colcon_workspace under repo root)
+# Colcon workspace dir (project root)
 export COLCON_WS_ROOT := WORKSPACE_ROOT
 
 # Documentation root
@@ -17,8 +17,7 @@ export DOCS_ROOT := WORKSPACE_ROOT + "/documentation"
 # Default ROS distro; can be overridden from the environment
 export ROS_DISTRO := env('ROS_DISTRO', 'jazzy')
 
-# Script to set up colcon_workspace/src symlinks
-export SETUP_COLCON_SCRIPT := ".docker/scripts/setup_colcon_src.sh"
+
 
 # Helpers: use shell variables and command substitution, no {{...}} inside
 source_ros := 'source /opt/ros/$ROS_DISTRO/setup.sh; \
@@ -42,20 +41,7 @@ default: help
 help:
     @just --list
 
-# -------------------------------------------------------------------
-# Symlink setup for colcon workspace
-# -------------------------------------------------------------------
 
-# Ensure .colcon_workspace/src symlinks are up to date
-setup_colcon_src:
-    cd "$WORKSPACE_ROOT" && \
-    if [ -x "$SETUP_COLCON_SCRIPT" ]; then \
-        echo "--- Ensuring colcon_workspace/src symlinks are set up ---"; \
-        "$SETUP_COLCON_SCRIPT"; \
-    else \
-        echo "ERROR: $SETUP_COLCON_SCRIPT not found or not executable" >&2; \
-        exit 1; \
-    fi
 
 # -------------------------------------------------------------------
 # Docker-backed targets (dev image)
@@ -69,20 +55,20 @@ build_dev:
     cd "$WORKSPACE_ROOT" && .docker/scripts/build_dev.sh
 
 # Start or attach to the ADORe dev container
-dev: setup_colcon_src
+dev:
     cd "$WORKSPACE_ROOT" && .docker/scripts/run_dev.sh
 
 # Remove local ADORe Docker images
 clean_images:
     cd "$WORKSPACE_ROOT" && .docker/scripts/clean_images.sh
 
-# Remove .colcon_workspace build/install/log directories
+# Remove build/install/log directories
 clean_ws:
     rm -rf "$COLCON_WS_ROOT/build" "$COLCON_WS_ROOT/install" "$COLCON_WS_ROOT/log"
 
-# Full clean: Docker images + .colcon_workspace artifacts
+# Full clean: Docker images + workspace build artifacts
 clean: clean_images clean_ws
-    echo "--- Cleaned docker images and .colcon_workspace build artifacts ---"
+    echo "--- Cleaned docker images and workspace build artifacts ---"
 
 # Clean workspace and rebuild (host colcon)
 clean_build: clean_ws build
@@ -116,11 +102,11 @@ lichtblick:
 # -------------------------------------------------------------------
 
 # Build documentation inside the CI Docker image
-docs: setup_colcon_src
+docs:
     cd "$WORKSPACE_ROOT" && .docker/scripts/run_docs.sh
 
 # Convenience: run tests and docs (full CI) locally
-ci: setup_colcon_src
+ci:
     cd "$WORKSPACE_ROOT" && .docker/scripts/run_ci.sh
 
 # -------------------------------------------------------------------
@@ -153,7 +139,7 @@ api_status:
 
 
 # -------------------------------------------------------------------
-# Host colcon builds in .colcon_workspace (no Docker)
+# Host colcon builds in project root (no Docker)
 # -------------------------------------------------------------------
 
 # Build the entire workspace locally (host colcon)

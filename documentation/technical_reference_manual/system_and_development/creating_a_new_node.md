@@ -34,13 +34,13 @@ In ADORe, the layout is slightly different:
   /home/<user>/adore
   ```
 
-* The **colcon workspace** is:
-
+* The **workspace** is the repo root itself:
+  
   ```bash
-  /home/<user>/adore/.colcon_workspace
+  /home/<user>/adore
   ```
 
-* `.colcon_workspace/src` is populated via symlinks, created by `.docker/scripts/setup_colcon_src.sh`, to mirror a set of top-level “category” directories in the repo (nodes, libraries, interfaces, vendor, etc.).
+* Packages are located in top-level “category” directories (nodes, libraries, interfaces, vendor, etc.) and found automatically by `colcon`.
 
 **Where to put your new node package**
 
@@ -64,8 +64,7 @@ In ADORe, the layout is slightly different:
 
 3. You can create the package either:
 
-   * Directly in the **top-level category directory**, or
-   * Via the **colcon symlink** under `.colcon_workspace/src/<category>` → both end up in the same place because of the symlink.
+   * Directly in the **top-level category directory**.
 
 ---
 
@@ -76,11 +75,11 @@ Here’s a quick comparison between the official docs and the ADORe flow:
 
 | Topic                    | ROS 2 tutorials                                     | ADORe specifics                                               |
 | ------------------------ | --------------------------------------------------- | ------------------------------------------------------------- |
-| Workspace location       | `~/ros2_ws/src`                                     | Repo root + `.colcon_workspace/src` via symlinks              |
-| Environment setup        | Manually source `/opt/ros/<distro>/setup`           | Dev container auto-sources ROS Jazzy and the colcon overlay   |
+| Workspace location       | `~/ros2_ws/src`                                     | Repo root directory                           |
+| Environment setup        | Manually source `/opt/ros/<distro>/setup`           | Dev container auto-sources ROS Jazzy and the workspace overlay |
 | Package creation command | `ros2 pkg create ...`                               | Same command, but run inside the dev container                |
 | Where to create packages | Directly in `~/ros2_ws/src`                         | In the appropriate top-level category inside the repo         |
-| Build command            | `colcon build`                                      | `just build` or `colcon build` inside `.colcon_workspace`     |
+| Build command            | `colcon build`                                      | `just build` or `colcon build` inside repo root               |
 | Running nodes            | `ros2 run <pkg> <exec>`                             | Same, but from inside dev container (recommended)             |
 
 If you follow the official Jazzy “Developing a ROS 2 package” tutorial step-by-step **inside** the ADORe dev container and just adjust the workspace paths and category directory, you’ll end up with a node that behaves exactly like any other ADORe node, and it will be built and tested automatically by the existing `just`/colcon workflow.
