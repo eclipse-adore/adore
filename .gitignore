@@ -7,6 +7,8 @@ build
 deploy.env
 libraries/cmake/ignore/ignore.log
 .log
+plugins/*
+!plugins/.gitkeep
 
 **.vscode
 .colcon_workspace/build
