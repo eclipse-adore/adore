@@ -38,30 +38,39 @@ USER_GID="${USER_GID:-$(id -g)}"
 # Git / arch info for tagging images
 GIT_HASH="${GIT_HASH:-$(cd "${WORKSPACE_ROOT}" && git rev-parse --short HEAD 2>/dev/null || echo dev)}"
 ARCH="${ARCH:-$(uname -m)}"
+
+# Workspace identity to allow multiple concurrent workspaces on the same host.
+# We use a short hash of the absolute path to WORKSPACE_ROOT.
+WORKSPACE_HASH=$(echo -n "${WORKSPACE_ROOT}" | sha256sum | head -c 8)
+
 CLEAN_WORKSPACE_NAME=$(basename "$WORKSPACE_ROOT" \
   | tr '[:upper:]' '[:lower:]' \
   | sed 's/[^a-z0-9._-]/-/g; s/^-*//; s/-*$//')
-IMAGE_TAG="${IMAGE_TAG:-${CLEAN_WORKSPACE_NAME}-${ARCH}}"
 
-# Container name for the dev shell
-DOCKER_CONTAINER_NAME="${DOCKER_CONTAINER_NAME:-adore}"
+# Portable tag (no workspace hash) used for sharing images between hosts/workspaces
+DOCKER_PORTABLE_TAG="${CLEAN_WORKSPACE_NAME}-${ARCH}"
+
+IMAGE_TAG="${IMAGE_TAG:-${DOCKER_PORTABLE_TAG}-${WORKSPACE_HASH}}"
+
+# Container name for the dev shell (e.g., adore-my-workspace-5ea27ccd)
+DOCKER_CONTAINER_NAME="${DOCKER_CONTAINER_NAME:-adore-${CLEAN_WORKSPACE_NAME}-${WORKSPACE_HASH}}"
 
 # Base image (ROS + apt deps, no user/tooling)
 DOCKER_BASE_IMAGE_BASE="${DOCKER_BASE_IMAGE_BASE:-adore_base}"
 DOCKER_BASE_IMAGE_TAGGED="${DOCKER_BASE_IMAGE_BASE}:${IMAGE_TAG}"
-DOCKER_BASE_IMAGE_LATEST="${DOCKER_BASE_IMAGE_BASE}:latest"
+DOCKER_BASE_IMAGE_LATEST="${DOCKER_BASE_IMAGE_BASE}:latest-${WORKSPACE_HASH}"
 DOCKER_BASE_DOCKERFILE="${DOCKER_BASE_DOCKERFILE:-${WORKSPACE_ROOT}/.docker/base/Dockerfile}"
 
 # Dev image (what developers use locally)
 DOCKER_DEV_IMAGE_BASE="${DOCKER_DEV_IMAGE_BASE:-adore_dev}"
 DOCKER_DEV_IMAGE_TAGGED="${DOCKER_DEV_IMAGE_BASE}:${IMAGE_TAG}"
-DOCKER_DEV_IMAGE_LATEST="${DOCKER_DEV_IMAGE_BASE}:latest"
+DOCKER_DEV_IMAGE_LATEST="${DOCKER_DEV_IMAGE_BASE}:latest-${WORKSPACE_HASH}"
 DOCKER_DEV_DOCKERFILE="${DOCKER_DEV_DOCKERFILE:-${WORKSPACE_ROOT}/.docker/dev/Dockerfile}"
 
 # CI image (used for tests/docs in GitHub Actions and locally)
 DOCKER_CI_IMAGE_BASE="${DOCKER_CI_IMAGE_BASE:-adore_ci}"
 DOCKER_CI_IMAGE_TAGGED="${DOCKER_CI_IMAGE_BASE}:${IMAGE_TAG}"
-DOCKER_CI_IMAGE_LATEST="${DOCKER_CI_IMAGE_LATEST:-${DOCKER_CI_IMAGE_BASE}:latest}"
+DOCKER_CI_IMAGE_LATEST="${DOCKER_CI_IMAGE_BASE}:latest-${WORKSPACE_HASH}"
 DOCKER_CI_DOCKERFILE="${DOCKER_CI_DOCKERFILE:-${WORKSPACE_ROOT}/.docker/ci/Dockerfile}"
 
 # Location for saved images

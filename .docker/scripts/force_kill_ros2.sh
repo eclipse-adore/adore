@@ -21,15 +21,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/common.sh"
 source "${SCRIPT_DIR}/env.sh"
 
-# Dev container name can be overridden from env
-DOCKER_CONTAINER_NAME="${DOCKER_CONTAINER_NAME:-adore}"
-
-# Repo root: two levels up from .docker/scripts, unless WORKSPACE_ROOT already set
-if [[ -n "${WORKSPACE_ROOT-}" ]]; then
-  REPO_ROOT="${WORKSPACE_ROOT}"
-else
-  REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-fi
+# Sourcing common.sh already sets up WORKSPACE_ROOT and DOCKER_CONTAINER_NAME correctly.
+REPO_ROOT="${WORKSPACE_ROOT}"
 
 echo "=== Forcefully killing lingering ROS 2 / colcon processes ==="
 

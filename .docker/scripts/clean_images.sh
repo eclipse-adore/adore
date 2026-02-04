@@ -25,12 +25,17 @@ require_host "You appear to be inside a container; image cleanup should be done 
 echo "--- Removing dev container '${DOCKER_CONTAINER_NAME}' if it exists ---"
 docker rm -f "${DOCKER_CONTAINER_NAME}" >/dev/null 2>&1 || true
 
-echo "--- Removing ADORe Docker images (dev, CI, base) ---"
-# Remove dev + CI images before base to avoid dependency issues.
+echo "--- Removing ADORe Docker images for this workspace (tag: ${IMAGE_TAG}) ---"
+# Remove dev + CI images belonging to this workspace.
 for repo in "${DOCKER_DEV_IMAGE_BASE}" "${DOCKER_CI_IMAGE_BASE}" "${DOCKER_BASE_IMAGE_BASE}"; do
-  ids=$(docker images --format '{{.Repository}} {{.ID}}' | awk -v repo="$repo" '$1 == repo {print $2}')
-  if [[ -n "${ids}" ]]; then
-    echo "  -> Removing images for repository '${repo}'"
-    docker rmi -f ${ids} || true
+  # Remove the specific tagged image
+  if docker image inspect "${repo}:${IMAGE_TAG}" >/dev/null 2>&1; then
+    echo "  -> Removing image '${repo}:${IMAGE_TAG}'"
+    docker rmi -f "${repo}:${IMAGE_TAG}" || true
+  fi
+  # Remove the workspace-specific 'latest' tag
+  if docker image inspect "${repo}:latest-${WORKSPACE_HASH}" >/dev/null 2>&1; then
+    echo "  -> Removing image '${repo}:latest-${WORKSPACE_HASH}'"
+    docker rmi -f "${repo}:latest-${WORKSPACE_HASH}" || true
   fi
 done

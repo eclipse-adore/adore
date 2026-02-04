@@ -32,3 +32,16 @@ fi
 
 echo "--- Loading dev Docker image from ${IN} ---"
 docker load -i "${IN}"
+
+PORTABLE_IMAGE="${DOCKER_DEV_IMAGE_BASE}:${DOCKER_PORTABLE_TAG}"
+
+echo "--- Re-tagging ${PORTABLE_IMAGE} for this workspace ---"
+docker tag "${PORTABLE_IMAGE}" "${DOCKER_DEV_IMAGE_TAGGED}"
+docker tag "${PORTABLE_IMAGE}" "${DOCKER_DEV_IMAGE_LATEST}"
+
+# Cleanup the portable tag if it's different from what we want to keep
+if [[ "${DOCKER_PORTABLE_TAG}" != "${IMAGE_TAG}" ]]; then
+  docker rmi "${PORTABLE_IMAGE}" >/dev/null 2>&1 || true
+fi
+
+echo "--- Loaded and tagged as ${DOCKER_DEV_IMAGE_TAGGED} ---"

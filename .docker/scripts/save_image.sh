@@ -25,7 +25,14 @@ require_host "Saving/loading images should be done from the host."
 mkdir -p "${DOCKER_BUILD_DIR}"
 
 OUT="${DOCKER_BUILD_DIR}/${DOCKER_TAR_NAME}"
+PORTABLE_IMAGE="${DOCKER_DEV_IMAGE_BASE}:${DOCKER_PORTABLE_TAG}"
 
-echo "--- Saving dev Docker image ${DOCKER_DEV_IMAGE_LATEST} to ${OUT} ---"
-docker save -o "${OUT}" "${DOCKER_DEV_IMAGE_LATEST}"
+echo "--- Tagging ${DOCKER_DEV_IMAGE_TAGGED} as ${PORTABLE_IMAGE} ---"
+docker tag "${DOCKER_DEV_IMAGE_TAGGED}" "${PORTABLE_IMAGE}"
+
+echo "--- Saving dev Docker image ${PORTABLE_IMAGE} to ${OUT} ---"
+docker save -o "${OUT}" "${PORTABLE_IMAGE}"
 echo "Docker image saved to ${OUT}"
+
+# Cleanup the portable tag locally to keep things clean
+docker rmi "${PORTABLE_IMAGE}" >/dev/null 2>&1 || true
