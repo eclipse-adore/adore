@@ -21,7 +21,7 @@
 # - Installs Docker or updates Docker to the latest version.
 # - Checks the Ubuntu version against supported versions.
 # - Anonymously clones the ADORe repository to '~/adore'.
-# - Builds the ADORe Docker images and prepares the colcon workspace.
+# - Builds the ADORe Docker images.
 #
 # Usage:
 # Run this script using one of the following commands:
@@ -347,18 +347,7 @@ clone_adore() {
     fi
 }
 
-setup_colcon_workspace() {
-    cd "${CLONE_DIR}/adore"
 
-    local setup_script=".docker/scripts/setup_colcon_src.sh"
-
-    if [[ -x "${setup_script}" ]]; then
-        echo "Setting up .colcon_workspace/src symlinks..."
-        "${setup_script}"
-    else
-        echo "WARNING: ${setup_script} not found or not executable; skipping colcon workspace symlink setup."
-    fi
-}
 
 build_adore_dev_images() {
     cd "${CLONE_DIR}/adore"
@@ -394,7 +383,7 @@ main() {
     install_dependencies
     clone_adore
     install_docker
-    setup_colcon_workspace
+
     build_adore_dev_images
 }
 

@@ -20,16 +20,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "${SCRIPT_DIR}/common.sh"
 
-# Prepare .colcon_workspace/src (symlinks into src/ etc.)
-"${SCRIPT_DIR}/setup_colcon_src.sh"
+
 
 # ---------------------------------------------------------------------------
 # On arm64, disable the sumo_bridge package via COLCON_IGNORE
 # ---------------------------------------------------------------------------
 ARCH="$(uname -m)"
-COLCON_WS_ROOT="${WORKSPACE_ROOT}/.colcon_workspace"
+COLCON_WS_ROOT="${WORKSPACE_ROOT}"
 if [[ "${DOCKER_DEFAULT_PLATFORM:-}" == "linux/arm64" || "${ARCH}" == "aarch64" ]]; then
-  SUMO_BRIDGE_DIR="${COLCON_WS_ROOT}/src/adore_interfaces/sumo_bridge"
+  SUMO_BRIDGE_DIR="${COLCON_WS_ROOT}/adore_interfaces/sumo_bridge"
 
   if [[ -d "${SUMO_BRIDGE_DIR}" ]]; then
     echo "Disabling sumo_bridge on arm64 via COLCON_IGNORE"
@@ -53,7 +52,7 @@ fi
 # ---------------------------------------------------------------------------
 
 # Default for COLCON_WS_ROOT inside the container (relative to repo root)
-CONTAINER_COLCON_WS_ROOT="${CONTAINER_COLCON_WS_ROOT:-.colcon_workspace}"
+CONTAINER_COLCON_WS_ROOT="${CONTAINER_COLCON_WS_ROOT:-.}"
 
 echo "--- Running CI in Docker image ${DOCKER_CI_IMAGE_LATEST} ---"
 docker run --rm \

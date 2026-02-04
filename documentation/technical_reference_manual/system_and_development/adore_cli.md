@@ -117,8 +117,8 @@ Key behavior of the dev image:
     * Sources `/opt/ros/${ROS_DISTRO:-jazzy}/setup.zsh` if it exists.
     * Sources the local colcon workspace overlay, preferring:
 
-      * `$HOME/adore/.colcon_workspace/install/local_setup.zsh`
-      * then `$HOME/adore/.colcon_workspace/install/setup.zsh`.
+      * `$HOME/adore/install/local_setup.zsh`
+      * then `$HOME/adore/install/setup.zsh`.
 * **Default command**
 
   * The container entrypoint is a login zsh shell:
@@ -230,45 +230,7 @@ Key points:
 
 ---
 
-### `.docker/scripts/setup_colcon_src.sh`
 
-Keeps `.colcon_workspace/src` in sync with the top-level package layout:
-
-* Expects **categories** under the repo root:
-
-  ```bash
-  adore_scenarios
-  adore_ros2_conversions
-  adore_interfaces
-  adore_libraries
-  adore_ros2_nodes
-  adore_ros2_msgs
-  vendor
-  ```
-
-* For each category:
-
-  * If `${WORKSPACE_ROOT}/${category}` does **not** exist:
-
-    * Prints a warning and skips it.
-  * If `.colcon_workspace/src/${category}` is already a symlink:
-
-    * Verifies it points at the expected relative path (`../../${category}`).
-    * Leaves it alone or updates it if the target changed.
-  * If a non-symlink node exists at that path:
-
-    * Prints an error and exits, to avoid clobbering user files.
-  * Otherwise:
-
-    * Creates the symlink:
-
-      ```bash
-      ln -sfn "../../${category}" ".colcon_workspace/src/${category}"
-      ```
-
-`just dev` always runs `setup_colcon_src` first, so the colcon workspace reflects whatever packages are present at the top level.
-
----
 
 ## Justfile integration
 
@@ -279,7 +241,7 @@ Important recipes related to the dev environment:
 * **Entry points**
 
   * `just` or `just help` – list all available recipes.
-  * `just dev` – ensure colcon symlinks, then run the dev container.
+  * `just dev` – run the dev container.
 * **Docker images**
 
   * `just build_dev` – build base + dev images (host).
@@ -287,12 +249,12 @@ Important recipes related to the dev environment:
   * `just save` / `just load` – save/load dev/CI images as tarballs.
 * **Workspace cleanup**
 
-  * `just clean_ws` – delete `.colcon_workspace/{build,install,log}`.
+  * `just clean_ws` – delete `{build,install,log}`.
   * `just clean` – `clean_images` + `clean_ws`.
   * `just clean_build` – clean the workspace and then build.
 * **Colcon builds & tests** (host or inside the dev container)
 
-  * `just build` – build the entire `.colcon_workspace`.
+  * `just build` – build the workspace.
   * `just test_ws` – run `colcon test` (skipping vendor packages) + `colcon test-result`.
   * `just build_scenarios`, `just build_nodes`, etc. – targeted builds for subsets of packages.
 * **Tools & GUI**
@@ -314,14 +276,14 @@ You can run these either **on the host** (if you have ROS and dependencies insta
 Once you’re inside the dev container via `just dev` or `.docker/scripts/run_dev.sh`:
 
 * Working directory: `/home/<user>/adore` (the mounted repo).
-* Colcon workspace: `/home/<user>/adore/.colcon_workspace`.
-* Sources: `.colcon_workspace/src` (symlinks back to top-level ADORe directories).
+* Colcon workspace: `/home/<user>/adore`.
+* Sources: Top-level packages directories (`adore_nodes` etc).
 * Default shell: `zsh` with Oh My Zsh and custom history options.
 * Editor: `hx` (Helix) is available.
 * ROS:
 
   * `/opt/ros/$ROS_DISTRO/setup.zsh` is sourced automatically.
-  * If you have built the workspace, the overlay under `.colcon_workspace/install` is also sourced automatically by `.zshrc`.
+  * If you have built the workspace, the overlay under `install` is also sourced automatically by `.zshrc`.
 
 All ROS tools from `apt.dev.txt` are ready to use: `rqt`, `ros2trace`, `foxglove-bridge`, etc.
 
@@ -344,7 +306,6 @@ All ROS tools from `apt.dev.txt` are ready to use: `rqt`, `ros2trace`, `foxglove
 
    This will:
 
-   * Set up `.colcon_workspace/src` symlinks.
    * Build the base/dev images if needed.
    * Start the container or attach to it if already running.
    * Drop you into a login zsh shell inside `adore_dev`.
@@ -352,7 +313,7 @@ All ROS tools from `apt.dev.txt` are ready to use: `rqt`, `ros2trace`, `foxglove
 3. **Build the workspace** (inside the container):
 
    ```bash
-   cd .colcon_workspace
+   cd ~/adore
    colcon build
    ```
 
@@ -394,6 +355,6 @@ The ADORe Docker development environment provides:
 
 * A consistent ROS 2 Jazzy-based stack with all necessary tools.
 * A user inside the container that matches your host user, avoiding permissions pain.
-* A colcon workspace layout centered on `.colcon_workspace` with symlinks mirroring the repo.
+* A colcon workspace layout centered on the project root.
 * Simple host-side entrypoints (`just dev`, `.docker/scripts/run_dev.sh`) to start or attach to a ready-to-use dev shell.
 * Persistent shell history and a curated CLI experience tuned for day-to-day ADORe development.
