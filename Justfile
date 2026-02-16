@@ -123,9 +123,6 @@ docs: setup_colcon_src
 ci: setup_colcon_src
     cd "$WORKSPACE_ROOT" && .docker/scripts/run_ci.sh
 
-publish:
-    cd "$WORKSPACE_ROOT" && documentation/publish_gh-pages.sh
-
 # -------------------------------------------------------------------
 # ADORe API control (via tools/adore_api/adore_api.sh)
 # -------------------------------------------------------------------
