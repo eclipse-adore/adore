@@ -41,6 +41,7 @@ jobs:
           echo "Platform: ${{ matrix.platform }}"
           uname -a
           docker info
+          .docker/scripts/get_docker_images_names.sh
 
       - name: Cache ccache
         uses: actions/cache@v4
