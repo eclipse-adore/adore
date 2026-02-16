@@ -1,5 +1,6 @@
 # .docker/dev/Dockerfile
-FROM adore_base:latest
+ARG BASE_IMAGE=adore_base:latest
+FROM ${BASE_IMAGE}
 
 # Dev-only APT deps (shell candy, X11, tracing, etc.)
 COPY .docker/dev/apt.dev.txt /tmp/apt.dev.txt

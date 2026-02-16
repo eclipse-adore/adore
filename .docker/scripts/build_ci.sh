@@ -41,6 +41,7 @@ fi
 echo "--- Building CI Docker image ${DOCKER_CI_IMAGE_LATEST} (${DOCKER_CI_IMAGE_TAGGED}) ---"
 docker build \
   -f "${DOCKER_CI_DOCKERFILE}" \
+  --build-arg BASE_IMAGE="${DOCKER_BASE_IMAGE_LATEST}" \
   --build-arg USER_UID="${USER_UID}" \
   --build-arg USER_GID="${USER_GID}" \
   --build-arg USERNAME="${USER_NAME}" \

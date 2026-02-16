@@ -1,5 +1,6 @@
 # .docker/ci/Dockerfile
-FROM adore_base:latest
+ARG BASE_IMAGE=adore_base:latest
+FROM ${BASE_IMAGE}
 
 # -------------------------------------------------------------------
 # CI-specific system dependencies (docs, test tooling, etc.)

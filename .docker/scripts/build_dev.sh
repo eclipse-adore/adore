@@ -36,6 +36,7 @@ fi
 echo "--- Building dev Docker image ${DOCKER_DEV_IMAGE_LATEST} (${DOCKER_DEV_IMAGE_TAGGED}) ---"
 docker build \
   -f "${DOCKER_DEV_DOCKERFILE}" \
+  --build-arg BASE_IMAGE="${DOCKER_BASE_IMAGE_LATEST}" \
   --build-arg USER_UID="${USER_UID}" \
   --build-arg USER_GID="${USER_GID}" \
   --build-arg USERNAME="${USER_NAME}" \
