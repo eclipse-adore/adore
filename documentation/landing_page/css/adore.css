@@ -1,0 +1,134 @@
+:root{
+	--header:#000;
+	--main:#f0f0f0;
+	--bg:#f0f0f0;
+	--adore_color: #4DB6AC;
+	/* Colors gpicked from the DLR banner picture */
+    --road_color: #5A5F7E;
+    --traffic_light_red_color: #CE4E47;
+    --traffic_light_yellow_color: #D7C726;
+    --traffic_light_green_color: #00C892;
+}
+
+html,
+body{
+	width: 100%;
+    height: 100%;
+	margin: 0;
+	padding: 0;
+	overflow: visible;
+	color: var(--main);
+	background-image: url("../img/background.png");
+	background-size: cover;
+}
+
+body{
+	font-family: 'Istok Web', 'Muli', 'Helvetica', 'Arial', 'sans-serif';
+}
+
+header{
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-weight: 100;
+	padding: 40px 0;
+	background-color: var(--bg);
+	height: 25px;
+}
+
+.navbar {
+    background-color: var(--bg);
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+.navbar-brand {
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.navbar-nav {
+	display: flex;
+    margin-left: auto;
+}
+
+.nav-link {
+	text-decoration: none;
+    margin-right: 20px;
+    margin-left: 20px;
+	color: #949494;
+}
+
+.nav-link:hover{
+	color: var(--header);
+}
+
+.container-fluid{
+	padding: 0;
+}
+
+.section{
+	margin-top: 15%;
+	margin-bottom: 15%;
+	justify-content: space-between;
+	overflow: hidden;
+	font-weight: normal;
+	background-color: var(--bg);
+	color: #000;
+}
+
+.title{
+	width: 100%;
+	text-align: center;
+	overflow: hidden;
+	color: var(--header);
+	font-size: 3rem;
+	font-weight: bold;
+	margin-top: 5vmin;
+}
+
+.text{
+	display: inline-block;
+	margin: 0 25%;
+	min-height: 100%;
+}
+
+.p{
+	text-align: left;
+}
+
+.a{
+	color: #0044CC;
+	text-decoration: underline;
+}
+
+.input-group{
+	display: flex;
+	min-width: 220%;
+}
+
+.one-liner-field input[type="text"] {
+    background-color: black;
+    color: white;
+    page-break-inside: avoid;
+    font-family: monospace;
+}
+
+.one-liner-field .input-group-append button {
+    background-color: black;
+    color: white;
+    border: none;
+}
+
+footer {
+	position: fixed;
+	bottom: 0;
+	width: 100%;
+	height: 70px;
+	justify-content: space-between;
+	align-items: center;
+	font-weight: normal;
+	background-color: var(--bg);
+	color: black;
+	margin-top: 100px;
+}
