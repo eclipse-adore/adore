@@ -214,7 +214,7 @@ build_vendor:
 # -------------------------------------------------------------------
 
 # Clean and rebuild documentation (mkdocs + docs/)
-docs_all: docs_clean docs_build
+docs_all: docs_clean docs_serve
 
 # Build mkdocs site into documentation/mkdocs/site
 docs_build_mkdocs:
