@@ -42,7 +42,8 @@
 	url = git@github.com:eclipse-adore/adore_controllers.git
 [submodule "libraries/adore_map"]
 	path = adore_libraries/adore_map
-	url = git@github.com:eclipse-adore/adore_map.git
+	url = git@github.com:s0nofab1t/adore_map.git
+	branch = feature/wfs-downloader
 [submodule "libraries/adore_math"]
 	path = adore_libraries/adore_math
 	url = git@github.com:eclipse-adore/adore_math.git
@@ -76,3 +77,7 @@
 [submodule "tools/adore_model_checker"]
 	path = tools/adore_model_checker
 	url = git@github.com:DLR-TS/adore_model_checker.git
+[submodule "vendor/caches"]
+	path = vendor/caches
+	url = git@github.com:s0nofab1t/caches.git
+	branch = feature/wfs-downloader
