@@ -15,7 +15,7 @@ from launch_ros.actions import Node
 import os
 
 
-def create_visualization_nodes(whitelist, asset_folder, visualization_offset, ns="visualizer", port=8765, send_buffer_limit=500000000):
+def create_visualization_nodes(whitelist, asset_folder, visualization_offset, ns="visualizer", port=9090, send_buffer_limit=500000000):
     """
     Returns a list of nodes for visualization (foxglove bridge and visualizer).
 
