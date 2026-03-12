@@ -76,3 +76,7 @@
 [submodule "tools/adore_model_checker"]
 	path = tools/adore_model_checker
 	url = git@github.com:DLR-TS/adore_model_checker.git
+[submodule "vendor/caches"]
+	path = vendor/caches
+	url = git@github.com:s0nofab1t/caches.git
+	branch = feature/wfs-downloader

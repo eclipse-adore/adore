@@ -1,0 +1,11 @@
+{
+  "url" : "https://ts.dlr.de/mumme-server/",
+  "project_name" : "urbandrive",
+  "target_srs" : "EPSG:25832",
+  "bbox" : [ 603632.89, 5795082.02, 603926.31, 5795362.59 ],
+  "username" : "adore-ts_reader",
+  "password" : "Enter Your Password Here",
+  "reference_lines" : "adore-urbandrive-r2s-referenceline",
+  "laneborders" : "adore-urbandrive-r2s-laneborder",
+  "output" : "../../../../adore_test_programs/adore_map_downloader_test/tracks/de_bs_borders_wfs"
+}

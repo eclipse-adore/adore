@@ -1,6 +1,6 @@
 # Third-Party Libraries and Tools
 
-This project makes use of the following third-party libraries, tools, and components.  
+This project makes use of the following third-party libraries, tools, and components.
 Paths indicate where the content lives in this repository or how it is consumed
 (vendored vs. system / container dependency).
 
@@ -22,6 +22,7 @@ Paths indicate where the content lives in this repository or how it is consumed
 | spline.h           | GNU General Public License v2    | `libraries/lib/adore_math/include/spline.h`      | https://kluge.in-chemnitz.de/opensource/spline/spline.h |
 | Tracecompass       | Eclipse Public License 2.0       | `vendor/ros2_observer/trace_compass`             | https://github.com/eclipse-tracecompass/org.eclipse.tracecompass |
 | lttng-scope        | Eclipse Public License 1.0       | `vendor/ros2_observer/lttng_scope`               | https://github.com/lttng/lttng-scope |
+| caches             | BSD 3-Clause License             | `vendor/caches/LICENSE.md`                       | https://github.com/s0nofab1t/caches (fork of https://github.com/vpetrigo/caches) |
 
 ---
 

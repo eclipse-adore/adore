@@ -29,6 +29,7 @@ CATEGORIES=(
   "adore_ros2_conversions"
   "adore_interfaces"
   "adore_libraries"
+  "adore_test_programs"
   "adore_ros2_nodes"
   "adore_ros2_msgs"
   "vendor"
