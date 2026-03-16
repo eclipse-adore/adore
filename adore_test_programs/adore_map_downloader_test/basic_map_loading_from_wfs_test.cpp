@@ -208,6 +208,9 @@ int main( int argc, char* argv[] )
     return -1; // Return error code if files differ
   }
 
+  std::cout << std::endl << std::endl << module_name( argv[0] ) 
+    << ": All tests passed successfully, good!" << std::endl << std::endl << std::endl;
+
   // Clean up: remove the created JSON files for lane borders
   std::remove( cfg.lane_border_filename.c_str() );
   std::remove( lane_border_loaded_filename.c_str() );
