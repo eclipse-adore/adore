@@ -1,1 +1,0 @@
-technical_reference_manual/quick_start.md
