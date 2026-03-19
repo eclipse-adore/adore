@@ -1365,7 +1365,7 @@ def start_scenario_model_checked():
 
     Request JSON Parameters:
         scenario (str, optional): Name of the launch file to run. 
-            Default: "adore_simulation_scenarios/simulation_test.launch.py"
+            Default: "adore_scenarios/simulation_scenarios/simulation_test.launch.py"
         duration (int|float, optional): How long to run the scenario in seconds.
             Must be a positive number. Default: 5
 
@@ -1412,7 +1412,7 @@ def start_scenario_model_checked():
     """
     data = request.json or {}
     scenario = data.get(
-        'scenario', 'adore_simulation_scenarios/simulation_test.launch.py')
+        'scenario', 'simulation_scenarios/simulation_test.launch.py')
     duration = data.get('duration', 5)
 
     if not isinstance(duration, (int, float)) or duration <= 0:

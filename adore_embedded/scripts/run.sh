@@ -2,6 +2,11 @@
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/adore.env"
+
+if ! docker image inspect "${IMAGE}" >/dev/null 2>&1; then
+    "${SCRIPT_DIR}/load.sh"
+fi
+
 if docker ps --format "{{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
     echo "Already running: ${CONTAINER_NAME}"
 else

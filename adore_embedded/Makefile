@@ -35,6 +35,13 @@ CONTEXT_DIR        := $(ROOT_DIR)/context
 IMAGE_ARCHIVE_NAME := $(IMAGE_NAME)_$(IMAGE_TAG).tar
 IMAGE_ARCHIVE      := $(BUILD_DIR)/$(IMAGE_ARCHIVE_NAME)
 
+.PHONY: help
+help: ## Show this help
+	@printf "\n\033[1mTargets:\033[0m\n"
+	@grep -E '^[a-zA-Z][a-zA-Z0-9_-]*:.*##' $(MAKEFILE_LIST) \
+	    | awk 'BEGIN {FS = ":.*##"}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@printf "\n"
+
 .PHONY: build
 build: _gather ## Build the image, compile the ROS2 workspace, and save to build/<tag>/
 	@echo "=== Building $(IMAGE) ==="
@@ -66,7 +73,7 @@ build: _gather ## Build the image, compile the ROS2 workspace, and save to build
 	@docker stop $(CONTAINER_NAME)
 	@docker rm -f $(CONTAINER_NAME)
 	@echo "=== Saving $(IMAGE) → $(IMAGE_ARCHIVE) ==="
-	docker save $(IMAGE) -o $(IMAGE_ARCHIVE)
+	docker save $(IMAGE) | gzip > $(IMAGE_ARCHIVE).gz
 	@cp -r "$(ROS2_WORKSPACE)" $(BUILD_DIR)/ros2_workspace
 	@cp -r "$(ROOT_DIR)/../adore_scenarios" $(BUILD_DIR)/ros2_workspace/adore_scenarios
 	@cp -r "$(CONTEXT_DIR)" $(BUILD_DIR)/ros2_workspace/context

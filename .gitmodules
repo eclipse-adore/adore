@@ -102,3 +102,6 @@
 [submodule "ros2_workspace/src/vendor/multi_agent_solver"]
 	path = ros2_workspace/src/vendor/multi_agent_solver
 	url = git@github.com:DLR-TS/multi_agent_solver.git
+[submodule "ros2_workspace/src/vendor/osqp"]
+	path = ros2_workspace/src/vendor/osqp
+	url = https://github.com/osqp/osqp.git
