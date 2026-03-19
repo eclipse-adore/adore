@@ -42,7 +42,7 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
         set +a
         echo "Sourced ${LOCAL_SETUP_SCRIPT} environment"
     else
-        echo "WARNING: ${LOCAL_SETUP_SCRIPT} does not exist. Did you build the ROS nodes?"
+        echo "WARNING: ${LOCAL_SETUP_SCRIPT} does not exist. Did you build the ROS workspace?"
         echo "    To build the ROS nodes with 'cd ros2_workspace && make build' inside the ADORe CLI." >&2
     fi
 else

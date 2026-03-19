@@ -24,9 +24,10 @@ help:
 
 
 .PHONY: build
-build: ## Build all ROS2 packages
+build: clean ## Build all ROS2 packages
 	@echo "Detected RAM: $(RAM_KB) kB ($(RAM_GB) GB)"
 	@echo "Executor mode: $(EXECUTOR_ARG)"
+#	source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build --packages-select caches $(EXECUTOR_ARG)
 	source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build $(EXECUTOR_ARG)
 	@echo "✅ ROS workspace build complete"
 	touch build/build.success

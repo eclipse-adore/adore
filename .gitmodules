@@ -64,9 +64,6 @@
 [submodule "vendor/osqp_eigen"]
 	path = vendor/osqp/osqp_eigen
 	url = https://github.com/robotology/osqp-eigen.git
-[submodule "vendor/multi_agent_solver"]
-	path = ros2_workspace/src/vendor/multi_agent_solver
-	url = git@github.com:markomiz/multi_agent_solver.git
 [submodule "vendor/osqp"]
 	path = vendor/osqp/osqp
 	url = https://github.com/osqp/osqp.git
@@ -96,3 +93,12 @@
 [submodule "tools/lichtblick/lichtblick"]
 	path = tools/lichtblick/lichtblick
 	url = https://github.com/Lichtblick-Suite/lichtblick.git
+[submodule "vendor/libOpenDRIVE/libOpenDRIVE"]
+	path = vendor/libOpenDRIVE/libOpenDRIVE
+	url = git@github.com:pageldev/libOpenDRIVE.git
+[submodule "ros2_workspace/src/vendor/osqp-eigen"]
+	path = ros2_workspace/src/vendor/osqp-eigen
+	url = https://github.com/robotology/osqp-eigen.git
+[submodule "ros2_workspace/src/vendor/multi_agent_solver"]
+	path = ros2_workspace/src/vendor/multi_agent_solver
+	url = git@github.com:DLR-TS/multi_agent_solver.git

@@ -50,5 +50,5 @@ check_section() {
 }
 
 # Run checks
-check_section "ADORe ROS2 Packages Build Status" "${ROS2_WS_DIR}" "${ROS2_MARKER}" "make build_ros_nodes"
+check_section "ADORe ROS2 Workspace Build Status" "${ROS2_WS_DIR}" "${ROS2_MARKER}" "make build_ros_workspace"
 

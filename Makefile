@@ -29,11 +29,12 @@ BRANCH:=$(shell bash ${MAKE_GADGETS_DIR}/tools/branch_name.sh)
 
 # Include adore_cli functionality
 include ${SUBMODULES_PATH}/adore_cli/ci_teststand/ci_teststand.mk
-include utils.mk
+#include utils.mk
 include adore_cli/adore_cli.mk
+include adore_cli/package.mk
 
 .PHONY: build
-build: docker_host_context_check clean stop_adore_cli build_vendor_libraries build_adore_cli build_ros_workspace ## Build and setup adore cli
+build: docker_host_context_check clean stop_adore_cli build_vendor_libraries build_adore_cli build_ros_workspace build_services ## Build and setup adore cli
 	make clean_tag_history
 
 .PHONY: build_all
@@ -73,8 +74,7 @@ check_adore_binaries: ## Checks for ADORe binaries
 
 .PHONY: clean
 clean: docker_host_context_check stop clean_adore_cli clean_tag_history ## Clean ADORe build artifacts 
-	#cd vendor && make clean
-	#cd libraries && make clean
+	cd vendor && make clean
 	cd ros2_workspace && make clean
 	rm -rf build
 

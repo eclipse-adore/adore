@@ -1,0 +1,696 @@
+{
+  "configById": {
+    "map!45g6wqb": {
+      "center": {
+        "lat": 52.31469679871519,
+        "lon": 10.563064446170777
+      },
+      "customTileUrl": "",
+      "disabledTopics": [],
+      "followTopic": "",
+      "layer": "map",
+      "topicColors": {},
+      "zoomLevel": 16,
+      "maxNativeZoom": 18
+    },
+    "Plot!33m6o5o": {
+      "paths": [
+        {
+          "timestampMethod": "receiveTime",
+          "value": "/ego_vehicle/vehicle_state_dynamic.ax",
+          "enabled": true
+        },
+        {
+          "timestampMethod": "receiveTime",
+          "value": "/ego_vehicle/vehicle_state_dynamic.steering_angle",
+          "enabled": true
+        },
+        {
+          "timestampMethod": "receiveTime",
+          "value": "/ego_vehicle/vehicle_state_dynamic.vx",
+          "enabled": true
+        }
+      ],
+      "minYValue": -3,
+      "maxYValue": 15,
+      "showXAxisLabels": false,
+      "showYAxisLabels": true,
+      "showLegend": false,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": false,
+      "xAxisVal": "timestamp",
+      "sidebarDimension": 240,
+      "followingViewWidth": 10
+    },
+    "Plot!2t4gjm1": {
+      "paths": [
+        {
+          "timestampMethod": "receiveTime",
+          "value": "/ego_vehicle/trajectory_decision_transpose.ax[:]",
+          "enabled": true
+        },
+        {
+          "timestampMethod": "receiveTime",
+          "value": "/ego_vehicle/controller_trajectory_transpose.ax[:]",
+          "enabled": true,
+          "color": "#69f54c"
+        },
+        {
+          "timestampMethod": "receiveTime",
+          "value": "/ego_vehicle/trajectory_decision_transpose.steering_angle[:]",
+          "enabled": true,
+          "color": "#ff2900"
+        },
+        {
+          "timestampMethod": "receiveTime",
+          "value": "/ego_vehicle/controller_trajectory_transpose.steering_angle[:]",
+          "enabled": true,
+          "color": "#cb5cd6"
+        },
+        {
+          "timestampMethod": "receiveTime",
+          "value": "/ego_vehicle/trajectory_decision_transpose.vx[:]",
+          "enabled": true
+        }
+      ],
+      "minYValue": -3,
+      "maxYValue": 19,
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": false,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "index",
+      "sidebarDimension": 240,
+      "minXValue": 0,
+      "maxXValue": 35
+    },
+    "3D!18i6zy7": {
+      "cameraState": {
+        "perspective": true,
+        "distance": 88.520822849471,
+        "phi": 55.59158906060233,
+        "thetaOffset": 89.35535065054121,
+        "targetOffset": [
+          29.677432940641093,
+          -0.0945973414305224,
+          1.5489074787849061e-15
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "fovy": 45,
+        "near": 0.5,
+        "far": 5000
+      },
+      "followMode": "follow-pose",
+      "followTf": "ego_vehicle",
+      "scene": {
+        "backgroundColor": "#515151"
+      },
+      "transforms": {
+        "frame:world": {
+          "visible": false
+        },
+        "frame:ego_vehicle": {
+          "visible": false
+        },
+        "frame:visualization_offset": {
+          "visible": false
+        },
+        "frame:sim_vehicle_1": {
+          "visible": false
+        },
+        "frame:sim_vehicle_2": {
+          "visible": false
+        },
+        "frame:sim_vehicle_3": {
+          "visible": false
+        },
+        "frame:sim_vehicle_4": {
+          "visible": false
+        },
+        "frame:sim_vehicle_5": {
+          "visible": false
+        }
+      },
+      "topics": {
+        "/ego_vehicle/visualize_occupancy_grid": {
+          "visible": true
+        },
+        "/ego_vehicle/visualization/trajectory_decision": {
+          "visible": true
+        },
+        "/ego_vehicle/visualization/traffic_prediction": {
+          "visible": true
+        },
+        "/ego_vehicle/visualization/traffic_participants": {
+          "visible": true
+        },
+        "/ego_vehicle/visualization/safety_corridor": {
+          "visible": true
+        },
+        "/ego_vehicle/visualization/planned_trajectory": {
+          "visible": true
+        },
+        "/ego_vehicle/visualization/ignored_participants": {
+          "visible": true
+        },
+        "/ego_vehicle/visualization/ego_vehicle": {
+          "visible": true,
+          "namespaces": {
+            "ego_vehicle": {
+              "visible": true
+            }
+          }
+        },
+        "/ego_vehicle/visualization/driven_path": {
+          "visible": true
+        },
+        "/ego_vehicle/map_cloud": {
+          "visible": false,
+          "colorField": "rgb",
+          "colorMode": "rgb",
+          "colorMap": "turbo",
+          "pointSize": 2,
+          "explicitAlpha": 1,
+          "pointShape": "square",
+          "stixelsEnabled": false
+        },
+        "/ego_vehicle/visualize_/ego_vehicle/caution_zones": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_/ego_vehicle/controller_trajectory": {
+          "visible": false
+        },
+        "/ego_vehicle/visualize_/ego_vehicle/local_map": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_/ego_vehicle/mission/goal_position": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_/ego_vehicle/mission/goal_request": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_/ego_vehicle/remote_operation_waypoints": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_/ego_vehicle/route": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_/ego_vehicle/safety_corridor": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_/ego_vehicle/traffic_participants": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_/ego_vehicle/traffic_signals": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_ego_vehicle": {
+          "visible": true,
+          "showOutlines": true,
+          "namespaces": {
+            "ego_vehicle": {
+              "visible": true
+            }
+          }
+        },
+        "/ego_vehicle/visualize_driven_path": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_/ego_vehicle/trajectory_suggestion": {
+          "visible": false
+        },
+        "/ego_vehicle/visualize_/ego_vehicle/trajectory_decision": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_/infrastructure/traffic_participants": {
+          "visible": true,
+          "showOutlines": true
+        },
+        "/infrastructure/visualize_/ego_vehicle/infrastructure_traffic_participants": {
+          "visible": true
+        },
+        "/infrastructure/visualize_/ego_vehicle/remote_operation_waypoints": {
+          "visible": true
+        },
+        "/infrastructure/visualize_/ego_vehicle/safety_corridor": {
+          "visible": true
+        },
+        "/infrastructure/map_cloud": {
+          "visible": true,
+          "colorField": "rgb",
+          "colorMode": "rgb",
+          "colorMap": "turbo",
+          "pointSize": 7,
+          "explicitAlpha": 0.3
+        },
+        "/infrastructure/visualize_/ego_vehicle/traffic_participants": {
+          "visible": true
+        },
+        "/infrastructure/visualize_/ego_vehicle/traffic_signals": {
+          "visible": true
+        },
+        "/infrastructure/visualize_/ego_vehicle/trajectory_suggestion": {
+          "visible": true
+        },
+        "/infrastructure/visualize_/infrastructure/local_map": {
+          "visible": true
+        },
+        "/infrastructure/visualize_/infrastructure/traffic_participants": {
+          "visible": true
+        },
+        "/infrastructure/visualize_driven_path": {
+          "visible": true
+        },
+        "/infrastructure/visualize_ego_vehicle": {
+          "visible": true,
+          "showOutlines": false
+        },
+        "/infrastructure/visualize_/infrastructure/infrastructure_position": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_/infrastructure/infrastructure_position": {
+          "visible": true,
+          "color": "#00e9f5ff",
+          "showOutlines": false
+        },
+        "/ego_vehicle/visualize_/infrastructure/local_map": {
+          "visible": false
+        },
+        "/ego_vehicle/visualize_/ego_vehicle/infrastructure_traffic_participants": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_/ego_vehicle/sensor_traffic_participants": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_/ego_vehicle/trailer_pos": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_/ego_vehicle/ignored_participants": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_/sim_vehicle_3/caution_zones": {
+          "visible": false
+        },
+        "/ego_vehicle/visualize_/sim_vehicle_3/controller_trajectory": {
+          "visible": false
+        },
+        "/ego_vehicle/visualize_/sim_vehicle_3/local_map": {
+          "visible": false
+        },
+        "/ego_vehicle/visualize_/sim_vehicle_3/mission/goal_position": {
+          "visible": false
+        },
+        "/ego_vehicle/visualize_/sim_vehicle_3/mission/goal_request": {
+          "visible": false
+        },
+        "/ego_vehicle/visualize_/sim_vehicle_3/traffic_participants": {
+          "visible": false
+        },
+        "/ego_vehicle/visualize_/sim_vehicle_3/remote_operation_waypoints": {
+          "visible": false
+        },
+        "/ego_vehicle/visualize_/sim_vehicle_3/route": {
+          "visible": false
+        },
+        "/ego_vehicle/visualize_/sim_vehicle_3/safety_corridor": {
+          "visible": false
+        },
+        "/ego_vehicle/visualize_/sim_vehicle_1/trajectory_decision": {
+          "visible": false
+        },
+        "/ego_vehicle/visualize_/sim_vehicle_1/mission/goal_position": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_/sim_vehicle_1/traffic_participants": {
+          "visible": false
+        },
+        "/ego_vehicle/visualize_/sim_vehicle_1/safety_corridor": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_/madurban/track_level_fusion/fusion/fused": {
+          "visible": false
+        },
+        "/ego_vehicle/map_grid": {
+          "visible": false,
+          "colorMode": "raw",
+          "alpha": 1
+        },
+        "/ego_vehicle/viz/ego_vehicle/caution_zones": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/controller_trajectory": {
+          "visible": true,
+          "color": "#dd25f8f5"
+        },
+        "/ego_vehicle/viz/ego_vehicle/infrastructure_traffic_participants": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/local_map": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/mission/goal_position": {
+          "visible": true,
+          "showOutlines": false
+        },
+        "/ego_vehicle/viz/ego_vehicle/mission/goal_request": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/remote_operation_waypoints": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/route": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/safety_corridor": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/traffic_participants": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/traffic_signals": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/trajectory_decision": {
+          "visible": true,
+          "showOutlines": false,
+          "namespaces": {
+            "decision": {
+              "visible": true
+            },
+            "trajectory_label": {
+              "visible": false
+            }
+          }
+        },
+        "/ego_vehicle/viz/ego_vehicle/trajectory_suggestion": {
+          "visible": true
+        },
+        "/infrastructure/map_grid": {
+          "visible": false
+        },
+        "/infrastructure/viz/infrastructure/local_map": {
+          "visible": true
+        },
+        "/infrastructure/viz/infrastructure/infrastructure_position": {
+          "visible": true
+        },
+        "/infrastructure/viz/global/infrastructure_calculated_traffic_participants": {
+          "visible": false
+        },
+        "/infrastructure/viz/ego_vehicle/caution_zones": {
+          "visible": true
+        },
+        "/infrastructure/viz/ego_vehicle/controller_trajectory": {
+          "visible": true
+        },
+        "/infrastructure/viz/ego_vehicle/infrastructure_traffic_participants": {
+          "visible": false
+        },
+        "/infrastructure/viz/ego_vehicle/local_map": {
+          "visible": true
+        },
+        "/infrastructure/viz/ego_vehicle/mission/goal_position": {
+          "visible": false
+        },
+        "/infrastructure/viz/ego_vehicle/mission/goal_request": {
+          "visible": true
+        },
+        "/infrastructure/viz/ego_vehicle/remote_operation_waypoints": {
+          "visible": true
+        },
+        "/infrastructure/viz/ego_vehicle/route": {
+          "visible": true
+        },
+        "/infrastructure/viz/ego_vehicle/safety_corridor": {
+          "visible": true
+        },
+        "/infrastructure/viz/ego_vehicle/traffic_participants": {
+          "visible": true
+        },
+        "/infrastructure/viz/ego_vehicle/traffic_signals": {
+          "visible": true
+        },
+        "/infrastructure/viz/ego_vehicle/trajectory_decision": {
+          "visible": true
+        },
+        "/infrastructure/viz/ego_vehicle/trajectory_suggestion": {
+          "visible": true
+        },
+        "/infrastructure/viz/infrastructure/traffic_participants": {
+          "visible": false
+        },
+        "/infrastructure/viz/infrastructure/traffic_participants_with_trajectories": {
+          "visible": true
+        },
+        "/infrastructure/viz/sim_vehicle_1/caution_zones": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_1/controller_trajectory": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_1/infrastructure_traffic_participants": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_1/local_map": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_1/mission/goal_position": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_1/mission/goal_request": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_1/remote_operation_waypoints": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_1/route": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_1/safety_corridor": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_1/traffic_participants": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_1/traffic_signals": {
+          "visible": true
+        },
+        "/infrastructure/viz/sim_vehicle_1/trajectory_decision": {
+          "visible": true
+        },
+        "/infrastructure/viz/sim_vehicle_1/trajectory_suggestion": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_2/caution_zones": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_2/controller_trajectory": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_2/infrastructure_traffic_participants": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_2/local_map": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_2/mission/goal_position": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_2/mission/goal_request": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_2/remote_operation_waypoints": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_2/route": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_2/safety_corridor": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_2/traffic_participants": {
+          "visible": false
+        },
+        "/infrastructure/viz/sim_vehicle_2/traffic_signals": {
+          "visible": true
+        },
+        "/infrastructure/viz/sim_vehicle_2/trajectory_decision": {
+          "visible": true
+        },
+        "/infrastructure/viz/sim_vehicle_2/trajectory_suggestion": {
+          "visible": false
+        },
+        "/initialpose": {
+          "visible": true
+        },
+        "/move_base_simple/goal": {
+          "visible": true
+        },
+        "/infrastructure/viz/ego_vehicle/reference_trajectory": {
+          "visible": true
+        },
+        "/infrastructure/viz/ego_vehicle/suggested_trajectory": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/sim_vehicle_1/infrastructure_traffic_participants": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/global/infrastructure_calculated_traffic_participants": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/infrastructure/traffic_participants_with_trajectories": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/reference_trajectory": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/suggested_trajectory": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/infrastructure/infrastructure_position": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/infrastructure/local_map": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/infrastructure/traffic_participants": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/sim_vehicle_1/caution_zones": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/sim_vehicle_1/controller_trajectory": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/sim_vehicle_1/local_map": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/sim_vehicle_1/mission/goal_position": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/sim_vehicle_1/mission/goal_request": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/sim_vehicle_1/reference_trajectory": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/sim_vehicle_1/remote_operation_waypoints": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/sim_vehicle_1/route": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/sim_vehicle_1/safety_corridor": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/sim_vehicle_1/suggested_trajectory": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/sim_vehicle_1/traffic_participants": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/sim_vehicle_1/trajectory_decision": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/sim_vehicle_1/trajectory_suggestion": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/traffic_prediction": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/global/traffic_signals": {
+          "visible": true
+        },
+        "/infrastructure/viz/global/traffic_signals": {
+          "visible": true
+        },
+        "/infrastructure/viz/infrastructure/v2x_planned_traffic": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/caution_zones": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/controller_trajectory": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/local_map": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/mission/goal_request": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/reference_trajectory": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/route": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/safety_corridor": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/suggested_trajectory": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/traffic_participants": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/trajectory_decision": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/trajectory_suggestion": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/vehicle_state_dynamic": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/remote_operation_waypoints": {
+          "visible": true
+        }
+      },
+      "layers": {},
+      "publish": {
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      },
+      "imageMode": {}
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": {
+    "speed": 1
+  },
+  "layout": {
+    "direction": "row",
+    "first": "map!45g6wqb",
+    "second": {
+      "direction": "row",
+      "first": {
+        "first": "Plot!33m6o5o",
+        "second": "Plot!2t4gjm1",
+        "direction": "column"
+      },
+      "second": "3D!18i6zy7",
+      "splitPercentage": 29.444063143445437
+    },
+    "splitPercentage": 34.16139113711035
+  }
+}

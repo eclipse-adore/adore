@@ -3,7 +3,7 @@ SHELL:=/bin/bash
 .DEFAULT_GOAL := all
 
 ROOT_DIR:=$(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
-OUTPUT_DIRECTORY=${ROOT_DIR}/output
+OUTPUT_DIRECTORY=${ROOT_DIR}/build
 SUBMODULES_PATH?=${ROOT_DIR}
 
 .EXPORT_ALL_VARIABLES:
@@ -52,7 +52,7 @@ build: check_cross_compile_deps
             --build-arg ARCH=$(ARCH) \
             --build-arg PROJECT=$(PROJECT) .; \
     fi
-	docker cp $$(docker create --rm ${PROJECT}:${TAG}):/tmp/libOpenDRIVE/libOpenDRIVE/build "${ROOT_DIR}/libOpenDRIVE"
+	docker cp $$(docker create --rm ${PROJECT}:${TAG}):$$(docker run --rm ${PROJECT}:${TAG} sh -c 'find /tmp -name "*.deb" | head -n 1') build/
 
 .PHONY: test
 test: build

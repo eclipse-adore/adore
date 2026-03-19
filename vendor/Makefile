@@ -18,6 +18,7 @@ build:  ## build all vendor libraries and copy output to ./build
 	cp mathematics_toolbox/eigen/build build/eigen -r
 	cp mathematics_toolbox/osqp/build build/osqp -r
 	cp OptiNLC/OptiNLC/build build/OptiNLC -r
+	cp libOpenDRIVE/build build/libOpenDRIVE -r
 	cp ros2_observer/build build/ros2_observer -r
 	cp adore_model_checker/build build/adore_model_checker -r
 

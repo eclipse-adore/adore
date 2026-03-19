@@ -1,14 +1,14 @@
 BUILD_DIR := .
 DOCKER_IMAGE := lichtblick
 OUTPUT_DIR := /build
-ASSET_DIRECTORY := $(CURDIR)/../../adore_scenarios/assets
+MAKEFILE_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+ASSET_DIRECTORY := "${MAKEFILE_DIR}/assets"
 ASSET_MOUNTPOINT := /srv/assets
 PORT ?= 8080
 
 GITHUB_REPOSITORY ?= $(shell git config --get remote.origin.url | sed -E 's|^.*github\.com[:/]||; s|\.git$$||')
 ARCH ?= $(shell uname -m)
 
-MAKEFILE_DIR := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
 LICHTBLICK_HASH := $(shell cat $(MAKEFILE_DIR)/Dockerfile.lichtblick $(MAKEFILE_DIR)/index.tsx 2>/dev/null | sha256sum | cut -c1-7)
 LICHTBLICK_TAG := $(ARCH)_$(LICHTBLICK_HASH)
@@ -66,7 +66,7 @@ pull_lichtblick: _try_pull_lichtblick
 	@echo "✓ Pull complete"
 
 .PHONY: start
-start:
+start: stop
 	@echo "=== Starting Lichtblick container ==="
 	@if ! docker image inspect "$(LICHTBLICK_IMAGE)" >/dev/null 2>&1; then \
 		echo "Image not found. Building..."; \
@@ -78,6 +78,9 @@ start:
 		--volume $(ASSET_DIRECTORY):$(ASSET_MOUNTPOINT) \
 		$(LICHTBLICK_IMAGE)
 	@echo "Lichtblick started, navigate to http://localhost:$(PORT) for the web ui"
+	@echo "http://localhost:8080//?ds=rosbridge-websocket&ds.url=ws://localhost:9090&ds=foxglove-websocket&layout=Default.json"
+
+
 
 .PHONY: stop
 stop:
