@@ -63,7 +63,7 @@
 	url = git@github.com:eclipse-adore/adore_simulated_remote_operator.git
 [submodule "vendor/osqp_eigen"]
 	path = vendor/osqp/osqp_eigen
-	url = https://github.com/robotology/osqp-eigen.git
+	url = https://github.com/dlr-ts/osqp-eigen.git
 [submodule "vendor/osqp"]
 	path = vendor/osqp/osqp
 	url = https://github.com/osqp/osqp.git
@@ -105,3 +105,12 @@
 [submodule "ros2_workspace/src/vendor/osqp"]
 	path = ros2_workspace/src/vendor/osqp
 	url = https://github.com/osqp/osqp.git
+[submodule "ros2_workspace/src/vendor/libOpenDRIVE"]
+	path = ros2_workspace/src/vendor/libOpenDRIVE
+	url = git@github.com:pageldev/libOpenDRIVE.git
+[submodule "ros2_workspace/src/vendor/qdldl"]
+	path = ros2_workspace/src/vendor/qdldl
+	url = git@github.com:osqp/qdldl.git
+[submodule "ros2_workspace/src/vendor/pugixml"]
+	path = ros2_workspace/src/vendor/pugixml
+	url = git@github.com:zeux/pugixml.git
