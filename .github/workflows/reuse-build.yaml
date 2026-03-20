@@ -70,7 +70,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y make curl jq
 
-      - name: Build ADORe CLI
+      - name: Build ADORe
         shell: bash
         run: |
           make build
