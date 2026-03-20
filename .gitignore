@@ -9,6 +9,9 @@ libraries/cmake/ignore/ignore.log
 .log
 plugins/*
 !plugins/.gitkeep
+adore_embedded/context/
+adore_embedded/packages/
+adore_embedded/build/
 
 **.vscode
 .colcon_workspace/build

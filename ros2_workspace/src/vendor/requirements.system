@@ -1,0 +1,5 @@
+## Required by osqp
+libeigen3-dev
+
+## Required by libOpenDRIVE
+libpugixml-dev

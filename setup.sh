@@ -49,6 +49,9 @@ else
     echo "ERROR: script designed to be sourced. Call again with 'source setup.sh'" >&2
     return 1
 fi
-
+source /opt/adore_venv/bin/activate
 source "${SCRIPT_DIRECTORY}/adore.env"
 source ${SCRIPT_DIRECTORY}/tools/adore_api/adore_api.sh
+
+PYVER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+export PYTHONPATH="/opt/adore_venv/lib/python${PYVER}/site-packages:${PYTHONPATH}"

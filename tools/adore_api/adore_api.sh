@@ -24,8 +24,7 @@ start_adore_api() {
     mkdir -p "${LOG_DIRECTORY}"
     
     if pgrep -f "$APP_NAME" > /dev/null; then
-        local old_pid
-        old_pid=$(cat "$PID_FILE" 2>/dev/null || echo "unknown")
+        local old_pid; old_pid=$(pgrep -f "$APP_NAME" | head -1)
         echo "ADORe API is running (PID: $old_pid), access at: http://localhost:$APP_PORT"
         return 0
     fi
@@ -102,10 +101,6 @@ status_adore_api() {
     fi
 }
 
-alias start_adore_api="start_adore_api"
-alias stop_adore_api="stop_adore_api"
-alias restart_adore_api="restart_adore_api"
-alias status_adore_api="status_adore_api"
 
 if [ "$(printf '%s' "$ENABLE_ADORE_API" | tr '[:upper:]' '[:lower:]')" != "false" ]; then
     start_adore_api

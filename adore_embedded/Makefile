@@ -31,6 +31,7 @@ IMAGE          := $(IMAGE_NAME):$(IMAGE_TAG)
 CONTAINER_NAME := $(IMAGE_NAME)_$(IMAGE_TAG)
 
 BUILD_DIR          := $(ROOT_DIR)/build/$(IMAGE_TAG)
+PACKAGES_DIR       := $(ROOT_DIR)/packages
 CONTEXT_DIR        := $(ROOT_DIR)/context
 IMAGE_ARCHIVE_NAME := $(IMAGE_NAME)_$(IMAGE_TAG).tar
 IMAGE_ARCHIVE      := $(BUILD_DIR)/$(IMAGE_ARCHIVE_NAME)
@@ -43,8 +44,9 @@ help: ## Show this help
 	@printf "\n"
 
 .PHONY: build
-build: _gather ## Build the image, compile the ROS2 workspace, and save to build/<tag>/
+build: _gather ## Build the image, compile the ROS2 workspace via BuildKit, and save to build/<tag>/
 	@echo "=== Building $(IMAGE) ==="
+	cd ${VENDOR_PATH} && make build
 	docker build \
 	    --platform $(DOCKER_PLATFORM) \
 	    --build-arg ROS_DISTRO=$(ROS_DISTRO) \
@@ -52,31 +54,20 @@ build: _gather ## Build the image, compile the ROS2 workspace, and save to build
 	    --build-arg ARCH=$(ARCH) \
 	    --build-arg SHORT_HASH=$(SHORT_HASH) \
 	    --build-arg REQUIREMENTS_HASH=$(REQUIREMENTS_HASH) \
+	    --build-context ros2_workspace=$(ROS2_WORKSPACE) \
+	    --build-context adore_scenarios=$(ROOT_DIR)/../adore_scenarios \
+	    --target runtime \
 	    -t $(IMAGE) \
 	    -f $(ROOT_DIR)/Dockerfile \
 	    $(ROOT_DIR)
 	@mkdir -p $(BUILD_DIR)
-	@echo "=== Building ROS2 workspace inside container ==="
-	@docker stop $(CONTAINER_NAME) 2>/dev/null || true
-	@docker rm -f $(CONTAINER_NAME) 2>/dev/null || true
-	docker run --detach \
-	    --name $(CONTAINER_NAME) \
-	    --platform $(DOCKER_PLATFORM) \
-	    --network host \
-	    --user "$(HOST_UID):$(HOST_GID)" \
-	    --env-file "$(ROOT_DIR)/container.env" \
-	    -e ROS_DISTRO=$(ROS_DISTRO) \
-	    -v "$(ROS2_WORKSPACE):/ros2_workspace" \
-	    $(IMAGE) \
-	    sleep infinity
-	docker exec --workdir /ros2_workspace $(CONTAINER_NAME) make build
-	@docker stop $(CONTAINER_NAME)
-	@docker rm -f $(CONTAINER_NAME)
-	@echo "=== Saving $(IMAGE) → $(IMAGE_ARCHIVE) ==="
-	docker save $(IMAGE) | gzip > $(IMAGE_ARCHIVE).gz
-	@cp -r "$(ROS2_WORKSPACE)" $(BUILD_DIR)/ros2_workspace
-	@cp -r "$(ROOT_DIR)/../adore_scenarios" $(BUILD_DIR)/ros2_workspace/adore_scenarios
+	@echo "=== Extracting built workspace from image ==="
+	@cid=$$(docker create --platform $(DOCKER_PLATFORM) $(IMAGE) /bin/true); \
+	    docker cp "$$cid":/ros2_workspace_dist/. $(BUILD_DIR)/ros2_workspace/; \
+	    docker rm "$$cid"
 	@cp -r "$(CONTEXT_DIR)" $(BUILD_DIR)/ros2_workspace/context
+	@echo "=== Saving $(IMAGE) → $(IMAGE_ARCHIVE).gz ==="
+	docker save $(IMAGE) | gzip > $(IMAGE_ARCHIVE).gz
 	@$(MAKE) --no-print-directory _write_scripts \
 	    _BUILD_DIR=$(BUILD_DIR) \
 	    _IMAGE=$(IMAGE) \
@@ -108,6 +99,46 @@ stop: ## Stop and remove the container
 	@docker stop $(CONTAINER_NAME) 2>/dev/null || true
 	@docker rm -f $(CONTAINER_NAME) 2>/dev/null || true
 	@echo "✓ Stopped: $(CONTAINER_NAME)"
+
+.PHONY: package
+package: ## Save the current build output as a tar.gz in packages/
+	@if [ ! -d "$(BUILD_DIR)" ]; then \
+	    echo "ERROR: No build output at $(BUILD_DIR). Run 'make build' first."; exit 1; \
+	fi
+	@mkdir -p $(PACKAGES_DIR)
+	@PKG=$(PACKAGES_DIR)/$(IMAGE_NAME)_$(IMAGE_TAG).tar.gz; \
+	echo "=== Packaging $(BUILD_DIR) → $$PKG ==="; \
+	tar -czf "$$PKG" -C "$(ROOT_DIR)/build" "$(IMAGE_TAG)"; \
+	echo "=== Saved: $$PKG ==="
+
+.PHONY: bundle
+BUNDLE_NAME := $(IMAGE_NAME)_$(IMAGE_TAG)_bundle
+BUNDLE_DIR  := $(PACKAGES_DIR)/$(BUNDLE_NAME)
+bundle: ## Create a self-contained Docker-free rootfs bundle in packages/
+	@if ! docker image inspect $(IMAGE) >/dev/null 2>&1; then \
+	    echo "ERROR: Image $(IMAGE) not found. Run 'make build' first."; exit 1; \
+	fi
+	@if [ ! -d "$(BUILD_DIR)/ros2_workspace" ]; then \
+	    echo "ERROR: No workspace at $(BUILD_DIR)/ros2_workspace. Run 'make build' first."; exit 1; \
+	fi
+	@mkdir -p $(PACKAGES_DIR)
+	@echo "=== Creating bundle → $(BUNDLE_DIR).tar.gz ==="
+	@rm -rf $(BUNDLE_DIR) && mkdir -p $(BUNDLE_DIR)/rootfs
+	@echo "  Exporting rootfs (this may take a while)..."
+	@cid=$$(docker create --platform $(DOCKER_PLATFORM) $(IMAGE) /bin/true); \
+	    docker export "$$cid" | tar -x -C $(BUNDLE_DIR)/rootfs; \
+	    docker rm "$$cid"
+	@cp -r $(BUILD_DIR)/ros2_workspace $(BUNDLE_DIR)/ros2_workspace
+	@cp $(ROOT_DIR)/container.env $(BUNDLE_DIR)/container.env
+	@printf 'ROS_DISTRO=%s\nDOCKER_PLATFORM=%s\n' "$(ROS_DISTRO)" "$(DOCKER_PLATFORM)" \
+	    > $(BUNDLE_DIR)/bundle.env
+	@cp $(ROOT_DIR)/scripts/bundle_run.sh   $(BUNDLE_DIR)/run.sh   && chmod +x $(BUNDLE_DIR)/run.sh
+	@cp $(ROOT_DIR)/scripts/bundle_shell.sh $(BUNDLE_DIR)/shell.sh && chmod +x $(BUNDLE_DIR)/shell.sh
+	@cp $(ROOT_DIR)/scripts/bundle_inner.sh $(BUNDLE_DIR)/.bundle_inner.sh && chmod +x $(BUNDLE_DIR)/.bundle_inner.sh
+	@echo "  Compressing..."
+	@tar -czf $(BUNDLE_DIR).tar.gz -C $(PACKAGES_DIR) $(BUNDLE_NAME)
+	@rm -rf $(BUNDLE_DIR)
+	@echo "=== Bundle: $(BUNDLE_DIR).tar.gz ==="
 
 .PHONY: run
 run: start ## Start the container detached (alias for start)
@@ -143,6 +174,9 @@ _write_scripts:
 	@cp $(ROOT_DIR)/scripts/run.sh   $(_BUILD_DIR)/run.sh   && chmod +x $(_BUILD_DIR)/run.sh
 	@cp $(ROOT_DIR)/scripts/stop.sh  $(_BUILD_DIR)/stop.sh  && chmod +x $(_BUILD_DIR)/stop.sh
 	@cp $(ROOT_DIR)/scripts/build_ros_workspace.sh $(_BUILD_DIR)/build_ros_workspace.sh && chmod +x $(_BUILD_DIR)/build_ros_workspace.sh
+	@cp $(ROOT_DIR)/scripts/bundle_run.sh   $(_BUILD_DIR)/bundle_run.sh   && chmod +x $(_BUILD_DIR)/bundle_run.sh
+	@cp $(ROOT_DIR)/scripts/bundle_shell.sh $(_BUILD_DIR)/bundle_shell.sh && chmod +x $(_BUILD_DIR)/bundle_shell.sh
+	@cp $(ROOT_DIR)/scripts/bundle_inner.sh $(_BUILD_DIR)/.bundle_inner.sh && chmod +x $(_BUILD_DIR)/.bundle_inner.sh
 	@cp $(ROOT_DIR)/container.env $(_BUILD_DIR)/container.env
 
 .PHONY: _gather
