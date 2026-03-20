@@ -18,6 +18,10 @@ LICHTBLICK_CONTAINER_NAME := lichtblick_$(LICHTBLICK_TAG)
 GITHUB_REPO_LOWER := $(shell echo "$(GITHUB_REPOSITORY)" | tr '[:upper:]' '[:lower:]')
 REGISTRY_IMAGE := ghcr.io/$(GITHUB_REPO_LOWER)/$(LICHTBLICK_IMAGE)
 
+.PHONY: lichtblick_image
+lichtblick_image:
+	@echo ${LICHTBLICK_IMAGE}
+
 .PHONY: build
 build:
 	@$(MAKE) _try_pull_lichtblick || true
@@ -79,8 +83,6 @@ start: stop
 		$(LICHTBLICK_IMAGE)
 	@echo "Lichtblick started, navigate to http://localhost:$(PORT) for the web ui"
 	@echo "http://localhost:8080//?ds=rosbridge-websocket&ds.url=ws://localhost:9090&ds=foxglove-websocket&layout=Default.json"
-
-
 
 .PHONY: stop
 stop:

@@ -27,15 +27,18 @@ DOCKER_CONFIG?=
 # Branch information
 BRANCH:=$(shell bash ${MAKE_GADGETS_DIR}/tools/branch_name.sh)
 
-# Include adore_cli functionality
 include ${SUBMODULES_PATH}/adore_cli/ci_teststand/ci_teststand.mk
-#include utils.mk
+include utils.mk
 include adore_cli/adore_cli.mk
 include adore_cli/package.mk
 
 .PHONY: build
 build: docker_host_context_check clean stop_adore_cli build_vendor_libraries build_adore_cli build_ros_workspace build_services ## Build and setup adore cli
 	make clean_tag_history
+
+.PHONY: build_adore_embedded
+build_adore_embedded: docker_host_context_check # Build ADORe Embedded docker image
+	cd adore_embedded && make build
 
 .PHONY: build_all
 build_all: clean build #build_services
@@ -58,7 +61,8 @@ build_vendor_libraries: docker_host_context_check ## Builds vendor libraries loc
 
 .PHONY: build_documentation
 build_documentation: docker_host_context_check ## Builds ADORe Documentation in: ./documentation
-	cd documentation && make build
+	echo todo
+	#cd documentation && make build
 
 .PHONY: build_ros_workspace
 build_ros_workspace:  ## Builds ROS2 workspace located in: ${ROS_NODE_PATH}

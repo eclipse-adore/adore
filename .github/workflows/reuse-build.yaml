@@ -1,0 +1,118 @@
+name: ADORe Reusable Build
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        description: 'Runner name'
+        required: true
+        type: string
+      arch:
+        description: 'Target architecture (x86_64 or arm64)'
+        required: true
+        type: string
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ inputs.platform }}
+
+    steps:
+      - name: Init
+        shell: bash
+        run: |
+          df -h
+          sudo apt-get update -y
+
+      - name: Disable man-db
+        shell: bash
+        run: |
+          echo 'set man-db/auto-update false' | sudo debconf-communicate >/dev/null
+          sudo dpkg-reconfigure man-db
+
+      - name: Maximize free space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Freespace check
+        shell: bash
+        run: |
+          REQUIRED_FREE_SPACE=25
+          free_space=$(df -h . | awk '{print $4}' | grep "G")
+          free_space="${free_space%G}"
+          if [ -z "$free_space" ]; then
+              echo "ERROR: free_space variable is empty or not set." >&2
+              exit 1
+          fi
+          df -h
+          echo "Free space (required): ${REQUIRED_FREE_SPACE} GB"
+          echo "Free space (available): ${free_space} GB"
+          if (( REQUIRED_FREE_SPACE > free_space )); then
+              echo "ERROR: Insufficient free space: ${free_space} GB available, ${REQUIRED_FREE_SPACE} GB required." >&2
+              exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Install requirements
+        shell: bash
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y make curl jq
+
+      - name: Build ADORe CLI
+        shell: bash
+        run: |
+          make build
+
+      - name: Test ROS2 installation
+        shell: bash
+        run: |
+          make test_ros2_installation
+
+      - name: CI Test
+        shell: bash
+        run: |
+          df -h
+          make test
+
+      - name: Login to GHCR
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push user image
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          make push_user_image
+
+      - name: Create logs archive
+        if: always()
+        shell: bash
+        run: |
+          if [ -d ".log" ]; then
+            tar -czf logs_${{ inputs.arch }}.tar.gz .log/
+          else
+            touch logs_${{ inputs.arch }}.tar.gz
+          fi
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: logs_${{ inputs.arch }}
+          path: logs_${{ inputs.arch }}.tar.gz

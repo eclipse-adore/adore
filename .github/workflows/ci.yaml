@@ -1,93 +1,34 @@
-name: CI
+name: ADORe CI
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches:
+      - '**'
   pull_request:
-    branches: [ "**" ]
+    branches:
+      - '**'
 
 jobs:
-  ci:
-    name: Tests + Docs (CI image) — ${{ matrix.name }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: x86_64
-            runner: ubuntu-24.04
-            platform: linux/amd64
-          - name: arm64
-            runner: ubuntu-24.04-arm
-            platform: linux/arm64
-
-    runs-on: ${{ matrix.runner }}
-
+  x86_64:
+    name: Native x86_64
+    if: startsWith(github.repository, 'eclipse-adore/')
     permissions:
       contents: read
+      packages: write
+    secrets: inherit
+    uses: ./.github/workflows/reuse-build.yaml
+    with:
+      platform: 'ubuntu-24.04'
+      arch: 'x86_64'
 
-    env:
-      ROS_DISTRO: jazzy
-      DOCKER_DEFAULT_PLATFORM: ${{ matrix.platform }}
-      COLCON_WS_ROOT: .colcon_workspace
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Show environment
-        run: |
-          echo "Runner:   ${{ matrix.runner }}"
-          echo "Platform: ${{ matrix.platform }}"
-          uname -a
-          docker info
-
-      - name: Cache ccache
-        uses: actions/cache@v4
-        with:
-          path: .cache/ccache
-          # One cache per OS + arch + branch
-          key: ccache-${{ runner.os }}-${{ matrix.name }}-${{ github.ref_name }}
-          restore-keys: |
-            ccache-${{ runner.os }}-${{ matrix.name }}-
-            ccache-${{ runner.os }}-
-
-      - name: Build CI Docker image
-        run: .docker/scripts/build_ci.sh
-
-      - name: Run tests + docs inside CI image
-        run: .docker/scripts/run_ci.sh
-
-      - name: Upload colcon logs (${{ matrix.name }})
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: colcon-logs-${{ matrix.name }}
-          path: ${{ env.COLCON_WS_ROOT }}/log
-          if-no-files-found: ignore
-
-      - name: Upload colcon test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results-${{ matrix.name }}
-          path: ${{ env.COLCON_WS_ROOT }}/build/*/test_results/**/*.xml
-          if-no-files-found: ignore
-
-      - name: Upload coverage reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-${{ matrix.name }}
-          path: |
-            .gcovr_reports/coverage.xml
-            .gcovr_reports/coverage.html
-          if-no-files-found: error  # or 'ignore' while you're iterating locally
-
-      - name: Upload built docs (${{ matrix.name }})
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: docs-site-${{ matrix.name }}
-          path: documentation/docs
-          if-no-files-found: ignore
+  arm64:
+    name: Native arm64
+    if: startsWith(github.repository, 'eclipse-adore/')
+    permissions:
+      contents: read
+      packages: write
+    secrets: inherit
+    uses: ./.github/workflows/reuse-build.yaml
+    with:
+      platform: 'ubuntu-24.04-arm'
+      arch: 'arm64'
