@@ -46,27 +46,29 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # ── ADORe CLI + ADORe ─────────────────────────────────────────────────────
-      - name: Build Vendor Libraries
-        run: make build_vendor_libraries
+      - name: Build ADORe
+        run: make build
+      #- name: Build Vendor Libraries
+      #  run: make build_vendor_libraries
 
-      - name: Build ADORe CLI
-        run: make build_adore_cli
+      #- name: Build ADORe CLI
+      #run: make build_adore_cli
 
-      - name: Build ADORe ROS2 Workspace
-        run: make build_ros_workspace
+      #- name: Build ADORe ROS2 Workspace
+      #run: make build_ros_workspace
 
       - name: Package ADORe
         run: make package
 
       # ── ADORe Embedded ────────────────────────────────────────────────────────
-      - name: Build ADORe Embedded (pull or build)
+      - name: Build ADORe Embedded 
         run: cd adore_embedded && make build
 
       - name: Package ADORe Embedded
         run: cd adore_embedded && make package && make bundle
 
       # ── Lichtblick ────────────────────────────────────────────────────────────
-      - name: Build Lichtblick (pull or build)
+      - name: Build Lichtblick
         run: cd tools/lichtblick && make build
 
       # ── Tests ─────────────────────────────────────────────────────────────────
