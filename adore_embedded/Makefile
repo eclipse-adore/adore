@@ -30,6 +30,14 @@ IMAGE_TAG      := $(ARCH)_$(SHORT_HASH)_RH$(REQUIREMENTS_HASH)
 IMAGE          := $(IMAGE_NAME):$(IMAGE_TAG)
 CONTAINER_NAME := $(IMAGE_NAME)_$(IMAGE_TAG)
 
+REPO := $(shell git -C "$(ROOT_DIR)/.." config --get remote.origin.url 2>/dev/null \
+    | sed -e 's|.*github.com[:/]||' -e 's|\.git$$||' | tr '[:upper:]' '[:lower:]')
+ifeq ($(REPO),)
+    REPO := eclipse-adore/adore
+endif
+REGISTRY       := ghcr.io/$(REPO)
+REGISTRY_IMAGE := $(REGISTRY)/$(IMAGE)
+
 BUILD_DIR          := $(ROOT_DIR)/build/$(IMAGE_TAG)
 PACKAGES_DIR       := $(ROOT_DIR)/packages
 CONTEXT_DIR        := $(ROOT_DIR)/context
@@ -75,6 +83,35 @@ build: _gather ## Build the image, compile the ROS2 workspace via BuildKit, and 
 	    _IMAGE_ARCHIVE_NAME=$(IMAGE_ARCHIVE_NAME) \
 	    _CONTAINER_NAME=$(CONTAINER_NAME)
 	@echo "=== Done: $(BUILD_DIR) ==="
+
+.PHONY: pull
+pull: ## Pull the image from the registry; tag it locally
+	@echo "=== Pulling $(REGISTRY_IMAGE) ==="
+	docker pull "$(REGISTRY_IMAGE)"
+	docker tag  "$(REGISTRY_IMAGE)" "$(IMAGE)"
+	@echo "=== Pulled and tagged as $(IMAGE) ==="
+
+.PHONY: pull_or_build
+pull_or_build: _gather ## Pull from registry if available, otherwise build from source
+	@if docker image inspect "$(IMAGE)" >/dev/null 2>&1; then \
+	    echo "✓ Image already present: $(IMAGE)"; \
+	elif docker pull "$(REGISTRY_IMAGE)" 2>/dev/null; then \
+	    echo "✓ Pulled from registry: $(REGISTRY_IMAGE)"; \
+	    docker tag "$(REGISTRY_IMAGE)" "$(IMAGE)"; \
+	else \
+	    echo "Registry pull failed, building from source..."; \
+	    $(MAKE) --no-print-directory build; \
+	fi
+
+.PHONY: push
+push: ## Push the local image to the registry
+	@if ! docker image inspect "$(IMAGE)" >/dev/null 2>&1; then \
+	    echo "ERROR: image $(IMAGE) not found. Run 'make build' first."; exit 1; \
+	fi
+	@echo "=== Pushing $(IMAGE) → $(REGISTRY_IMAGE) ==="
+	docker tag  "$(IMAGE)" "$(REGISTRY_IMAGE)"
+	docker push "$(REGISTRY_IMAGE)"
+	@echo "=== Pushed: $(REGISTRY_IMAGE) ==="
 
 .PHONY: start
 start: _ensure_loaded ## Start the container detached with the live workspace mounted
