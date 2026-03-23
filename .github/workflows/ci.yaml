@@ -1,4 +1,4 @@
-name: ADORe CI
+name: adore CI
 
 on:
   push:
@@ -13,24 +13,84 @@ permissions:
   packages: write
 
 jobs:
-  build-x86_64:
-    uses: ./.github/workflows/reuse-build.yml
-    with:
-      arch: x86_64
-      runner: ubuntu-latest
-      push: ${{ github.event_name != 'pull_request' }}
-    secrets: inherit
+  build-and-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-latest
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
 
-  build-aarch64:
-    uses: ./.github/workflows/reuse-build.yml
-    with:
-      arch: aarch64
-      runner: ubuntu-24.04-arm
-      push: ${{ github.event_name != 'pull_request' }}
-    secrets: inherit
+    runs-on: ${{ matrix.runner }}
 
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── ADORe CLI ─────────────────────────────────────────────────────────────
+      - name: Build ADORe CLI
+        run: make build
+
+      - name: Package ADORe CLI
+        run: make package
+
+      - name: Push ADORe CLI images
+        if: github.event_name != 'pull_request'
+        run: make push_images
+
+      # ── ADORe Embedded ────────────────────────────────────────────────────────
+      - name: Build ADORe Embedded (pull or build)
+        run: cd adore_embedded && make pull_or_build
+
+      - name: Package ADORe Embedded
+        run: cd adore_embedded && make package && make bundle
+
+      # ── Lichtblick ────────────────────────────────────────────────────────────
+      - name: Build Lichtblick (pull or build)
+        run: cd tools/lichtblick && make build
+
+      # ── Tests ─────────────────────────────────────────────────────────────────
+      - name: Run tests
+        run: bash .ci test
+
+      # ── Push images (only after tests pass) ───────────────────────────────────
+      - name: Push ADORe Embedded image
+        if: github.event_name != 'pull_request'
+        run: cd adore_embedded && make push
+
+      - name: Push Lichtblick image
+        if: github.event_name != 'pull_request'
+        run: cd tools/lichtblick && make push_lichtblick
+
+      # ── Upload build artifacts ─────────────────────────────────────────────────
+      - name: Upload ADORe CLI package
+        uses: actions/upload-artifact@v4
+        with:
+          name: adore-cli-package-${{ matrix.arch }}
+          path: build/adore_cli_*.tar.gz
+          if-no-files-found: error
+
+      - name: Upload ADORe Embedded packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: adore-embedded-packages-${{ matrix.arch }}
+          path: adore_embedded/packages/adore_embedded_*.tar.gz
+          if-no-files-found: error
+
+  # ── Release ───────────────────────────────────────────────────────────────────
   release:
-    needs: [build-x86_64, build-aarch64]
+    needs: build-and-test
     if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
 
