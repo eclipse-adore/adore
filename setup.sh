@@ -10,13 +10,17 @@
 #
 # SPDX-License-Identifier: EPL-2.0
 # ********************************************************************************
-
 SCRIPT_DIRECTORY="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 ROS2_WORKSPACE_DIRECTORY="$(realpath "${SCRIPT_DIRECTORY}/ros2_workspace")"
-
 if [ ! -f /.dockerenv ]; then
     echo "ERROR: This script must be sourced inside the ADORe CLI context." >&2
     return 1
+fi
+
+if pgrep -f "Xvfb.*:99" > /dev/null 2>&1; then
+    export DISPLAY=:99
+else
+    export DISPLAY=${DISPLAY:-:0}
 fi
 
 if [[ "$SHELL" == *"bash"* ]]; then
@@ -30,11 +34,9 @@ else
     echo "ERROR: Unsupported shell: $SHELL" >&2
     return 1
 fi
-
 bash ${SCRIPT_DIRECTORY}/tools/check_adore_binaries.sh
 printf "\n"
 source "$ROS_SETUP_SCRIPT"
-
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
     if [[ -f "${LOCAL_SETUP_SCRIPT}" ]]; then
         set -a
@@ -50,8 +52,11 @@ else
     return 1
 fi
 source /opt/adore_venv/bin/activate
-source "${SCRIPT_DIRECTORY}/adore.env"
-source ${SCRIPT_DIRECTORY}/tools/adore_api/adore_api.sh
 
+_VIRTUAL_DISPLAY_INJECTED="${VIRTUAL_DISPLAY:-}"
+source "${SCRIPT_DIRECTORY}/adore.env"
+[ -n "$_VIRTUAL_DISPLAY_INJECTED" ] && export VIRTUAL_DISPLAY="$_VIRTUAL_DISPLAY_INJECTED"
+
+source ${SCRIPT_DIRECTORY}/tools/adore_api/adore_api.sh
 PYVER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
 export PYTHONPATH="/opt/adore_venv/lib/python${PYVER}/site-packages:${PYTHONPATH}"
