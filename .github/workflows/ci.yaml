@@ -13,7 +13,7 @@ permissions:
   packages: write
 
 jobs:
-  build-and-test:
+  build-test-push-publish:
     strategy:
       fail-fast: false
       matrix:
@@ -24,6 +24,13 @@ jobs:
             runner: ubuntu-24.04-arm
 
     runs-on: ${{ matrix.runner }}
+
+    env:
+      # Ensure all image pushes go to the current repo's registry namespace
+      # where GITHUB_TOKEN has write permission. Without this, push_core_image
+      # and push_base_image derive ADORE_CLI_REPO from the adore_cli submodule
+      # remote (eclipse-adore/adore_cli) and fail with permission_denied.
+      ADORE_CLI_REPO: ${{ github.repository }}
 
     steps:
       - uses: actions/checkout@v4
@@ -38,16 +45,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # ── ADORe CLI ─────────────────────────────────────────────────────────────
+      # ── ADORe CLI + ADORe ─────────────────────────────────────────────────────
+      - name: Build Vendor Libraries
+        run: make build_vendor_libraries
+
       - name: Build ADORe CLI
-        run: make build
+        run: make build_adore_cli
 
-      - name: Package ADORe CLI
+      - name: Build ADORe ROS2 Workspace
+        run: make build_ros_workspace
+
+      - name: Package ADORe
         run: make package
-
-      - name: Push ADORe CLI images
-        if: github.event_name != 'pull_request'
-        run: make push_images
 
       # ── ADORe Embedded ────────────────────────────────────────────────────────
       - name: Build ADORe Embedded (pull or build)
@@ -65,6 +74,10 @@ jobs:
         run: bash .ci test
 
       # ── Push images (only after tests pass) ───────────────────────────────────
+      - name: Push ADORe CLI images
+        if: github.event_name != 'pull_request'
+        run: make push_images
+
       - name: Push ADORe Embedded image
         if: github.event_name != 'pull_request'
         run: cd adore_embedded && make push
@@ -74,13 +87,6 @@ jobs:
         run: cd tools/lichtblick && make push_lichtblick
 
       # ── Upload build artifacts ─────────────────────────────────────────────────
-      - name: Upload ADORe CLI package
-        uses: actions/upload-artifact@v4
-        with:
-          name: adore-cli-package-${{ matrix.arch }}
-          path: build/adore_cli_*.tar.gz
-          if-no-files-found: error
-
       - name: Upload ADORe Embedded packages
         uses: actions/upload-artifact@v4
         with:
@@ -90,23 +96,11 @@ jobs:
 
   # ── Release ───────────────────────────────────────────────────────────────────
   release:
-    needs: build-and-test
+    needs: build-test-push-publish
     if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download ADORe CLI package (x86_64)
-        uses: actions/download-artifact@v4
-        with:
-          name: adore-cli-package-x86_64
-          path: dist/
-
-      - name: Download ADORe CLI package (aarch64)
-        uses: actions/download-artifact@v4
-        with:
-          name: adore-cli-package-aarch64
-          path: dist/
-
       - name: Download ADORe Embedded packages (x86_64)
         uses: actions/download-artifact@v4
         with:
