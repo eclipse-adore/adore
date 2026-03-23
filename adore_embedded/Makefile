@@ -51,8 +51,8 @@ help: ## Show this help
 	    | awk 'BEGIN {FS = ":.*##"}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@printf "\n"
 
-.PHONY: build
-build: _gather ## Build the image, compile the ROS2 workspace via BuildKit, and save to build/<tag>/
+.PHONY: _build
+_build: _gather ## Build the image, compile the ROS2 workspace via BuildKit, and save to build/<tag>/
 	@echo "=== Building $(IMAGE) ==="
 	cd ${VENDOR_PATH} && make build
 	docker build \
@@ -91,8 +91,8 @@ pull: ## Pull the image from the registry; tag it locally
 	docker tag  "$(REGISTRY_IMAGE)" "$(IMAGE)"
 	@echo "=== Pulled and tagged as $(IMAGE) ==="
 
-.PHONY: pull_or_build
-pull_or_build: _gather ## Pull from registry if available, otherwise build from source
+.PHONY: build
+build: _gather ## Pull from registry if available, otherwise build from source
 	@if docker image inspect "$(IMAGE)" >/dev/null 2>&1; then \
 	    echo "✓ Image already present: $(IMAGE)"; \
 	elif docker pull "$(REGISTRY_IMAGE)" 2>/dev/null; then \
@@ -100,7 +100,7 @@ pull_or_build: _gather ## Pull from registry if available, otherwise build from 
 	    docker tag "$(REGISTRY_IMAGE)" "$(IMAGE)"; \
 	else \
 	    echo "Registry pull failed, building from source..."; \
-	    $(MAKE) --no-print-directory build; \
+	    $(MAKE) --no-print-directory _build; \
 	fi
 
 .PHONY: push

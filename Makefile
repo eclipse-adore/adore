@@ -64,8 +64,8 @@ build_documentation: docker_host_context_check ## Builds ADORe Documentation in:
 	echo todo
 	#cd documentation && make build
 
-.PHONY: build_ros2_workspace
-build_ros2_workspace:  ## Builds ROS2 workspace located in: ${ROS_NODE_PATH}
+.PHONY: build_ros_workspace
+build_ros_workspace:  ## Builds ROS2 workspace located in: ${ROS_NODE_PATH}
 	if [ -f /.dockerenv ]; then \
 		cd ros2_workspace && make build; \
 	else \

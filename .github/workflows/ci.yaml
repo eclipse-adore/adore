@@ -53,14 +53,14 @@ jobs:
         run: make build_adore_cli
 
       - name: Build ADORe ROS2 Workspace
-        run: make build_ros2_workspace
+        run: make build_ros_workspace
 
       - name: Package ADORe
         run: make package
 
       # ── ADORe Embedded ────────────────────────────────────────────────────────
       - name: Build ADORe Embedded (pull or build)
-        run: cd adore_embedded && make pull_or_build
+        run: cd adore_embedded && make build
 
       - name: Package ADORe Embedded
         run: cd adore_embedded && make package && make bundle
