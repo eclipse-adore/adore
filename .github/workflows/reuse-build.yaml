@@ -1,26 +1,29 @@
-name: ADORe Reusable Build
+name: reuse-build
 
 on:
-  push:
-    branches: ["**"]
-  pull_request:
-    branches: ["**"]
-  release:
-    types: [published]
+  workflow_call:
+    inputs:
+      arch:
+        description: Target architecture (x86_64 or aarch64)
+        required: true
+        type: string
+      runner:
+        description: GitHub Actions runner label
+        required: true
+        type: string
+      push:
+        description: Push images to registry after tests pass
+        required: false
+        type: boolean
+        default: false
 
 permissions:
-  contents: write
+  contents: read
   packages: write
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
-    outputs:
-      adore_cli_tag: ${{ steps.tags.outputs.adore_cli_tag }}
-      embedded_image_tag: ${{ steps.tags.outputs.embedded_image_tag }}
-      embedded_image: ${{ steps.tags.outputs.embedded_image }}
-      embedded_package: ${{ steps.tags.outputs.embedded_package }}
-      embedded_bundle: ${{ steps.tags.outputs.embedded_bundle }}
+    runs-on: ${{ inputs.runner }}
 
     steps:
       - uses: actions/checkout@v4
@@ -35,32 +38,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up QEMU (cross-compile support)
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Compute tags
-        id: tags
-        run: |
-          ADORE_CLI_TAG=$(make image_adore_cli)
-          echo "adore_cli_tag=${ADORE_CLI_TAG}" >> "$GITHUB_OUTPUT"
-
-          EMBEDDED_IMAGE_TAG=$(cd adore_embedded && make --no-print-directory -e \
-              'print_tag:; @echo $(IMAGE_TAG)' print_tag 2>/dev/null \
-            || (source adore_embedded/container.env 2>/dev/null; \
-                ARCH=$(uname -m); \
-                SHORT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "0000000"); \
-                echo "${ARCH}_${SHORT_HASH}_RH0000000"))
-          EMBEDDED_IMAGE="adore_embedded:${EMBEDDED_IMAGE_TAG}"
-          EMBEDDED_PACKAGE="adore_embedded_${EMBEDDED_IMAGE_TAG}.tar.gz"
-          EMBEDDED_BUNDLE="adore_embedded_${EMBEDDED_IMAGE_TAG}_bundle.tar.gz"
-          echo "embedded_image_tag=${EMBEDDED_IMAGE_TAG}" >> "$GITHUB_OUTPUT"
-          echo "embedded_image=${EMBEDDED_IMAGE}"          >> "$GITHUB_OUTPUT"
-          echo "embedded_package=${EMBEDDED_PACKAGE}"      >> "$GITHUB_OUTPUT"
-          echo "embedded_bundle=${EMBEDDED_BUNDLE}"        >> "$GITHUB_OUTPUT"
-
       # ── ADORe CLI ─────────────────────────────────────────────────────────────
       - name: Build ADORe CLI
         run: make build
@@ -69,7 +46,7 @@ jobs:
         run: make package
 
       - name: Push ADORe CLI images
-        if: github.event_name != 'pull_request'
+        if: inputs.push
         run: make push_images
 
       # ── ADORe Embedded ────────────────────────────────────────────────────────
@@ -87,56 +64,26 @@ jobs:
       - name: Run tests
         run: bash .ci test
 
-      # ── Push images (only after tests pass, non-PR branches) ──────────────────
+      # ── Push images (only after tests pass) ───────────────────────────────────
       - name: Push ADORe Embedded image
-        if: github.event_name != 'pull_request'
+        if: inputs.push
         run: cd adore_embedded && make push
 
       - name: Push Lichtblick image
-        if: github.event_name != 'pull_request'
+        if: inputs.push
         run: cd tools/lichtblick && make push_lichtblick
 
       # ── Upload build artifacts ─────────────────────────────────────────────────
       - name: Upload ADORe CLI package
         uses: actions/upload-artifact@v4
         with:
-          name: adore-cli-package
+          name: adore-cli-package-${{ inputs.arch }}
           path: build/adore_cli_*.tar.gz
           if-no-files-found: error
 
       - name: Upload ADORe Embedded packages
         uses: actions/upload-artifact@v4
         with:
-          name: adore-embedded-packages
+          name: adore-embedded-packages-${{ inputs.arch }}
           path: adore_embedded/packages/adore_embedded_*.tar.gz
           if-no-files-found: error
-
-  # ── Release ───────────────────────────────────────────────────────────────────
-  release:
-    needs: build-and-test
-    if: github.event_name == 'release' && github.event.action == 'published'
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 0
-
-      - name: Download ADORe CLI package
-        uses: actions/download-artifact@v4
-        with:
-          name: adore-cli-package
-          path: dist/
-
-      - name: Download ADORe Embedded packages
-        uses: actions/download-artifact@v4
-        with:
-          name: adore-embedded-packages
-          path: dist/
-
-      - name: Publish release assets
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*
-          fail_on_unmatched_files: true
