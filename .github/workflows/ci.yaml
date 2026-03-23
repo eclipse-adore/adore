@@ -53,7 +53,7 @@ jobs:
         run: make build_adore_cli
 
       - name: Build ADORe ROS2 Workspace
-        run: make build_ros_workspace
+        run: make build_ros2_workspace
 
       - name: Package ADORe
         run: make package
