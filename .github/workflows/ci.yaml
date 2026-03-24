@@ -53,6 +53,15 @@ jobs:
       - name: Run tests
         run: make test 
 
+      # ── Package ─────────────────────────────────────────────────────────────────
+      - name: Package ADORe
+        run: make package
+
+      # ── Push images (only after tests pass) ───────────────────────────────────
+      - name: Push ADORe CLI images
+        if: github.event_name != 'pull_request'
+        run: make push_images
+
       #- name: Build Vendor Libraries
       #  run: make build_vendor_libraries
 
@@ -62,9 +71,6 @@ jobs:
       #- name: Build ADORe ROS2 Workspace
       #run: make build_ros_workspace
 
-      - name: Package ADORe
-        run: make package
-
       # ── ADORe Embedded ────────────────────────────────────────────────────────
       - name: Build ADORe Embedded 
         run: cd adore_embedded && make build
@@ -72,22 +78,13 @@ jobs:
       - name: Package ADORe Embedded
         run: cd adore_embedded && make package && make bundle
 
-      # ── Lichtblick ────────────────────────────────────────────────────────────
-      - name: Build Lichtblick
-        run: cd tools/lichtblick && make build
-
-      # ── Tests ─────────────────────────────────────────────────────────────────
-      - name: Run tests
-        run: bash .ci test
-
-      # ── Push images (only after tests pass) ───────────────────────────────────
-      - name: Push ADORe CLI images
-        if: github.event_name != 'pull_request'
-        run: make push_images
-
       - name: Push ADORe Embedded image
         if: github.event_name != 'pull_request'
         run: cd adore_embedded && make push
+
+      # ── Lichtblick ────────────────────────────────────────────────────────────
+      - name: Build Lichtblick
+        run: cd tools/lichtblick && make build
 
       - name: Push Lichtblick image
         if: github.event_name != 'pull_request'
