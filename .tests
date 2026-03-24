@@ -8,7 +8,7 @@ LOG_DIRECTORY="${LOG_DIRECTORY:-.log}"
 
 
 # Global timeout for API readiness check (in seconds)
-API_READINESS_TIMEOUT=10
+API_READINESS_TIMEOUT=60
 
 wait_for_api_ready() {
   local timeout=${1:-$API_READINESS_TIMEOUT}
