@@ -49,13 +49,13 @@ jobs:
       - name: Build ADORe
         run: make build
 
-      # ── Tests ─────────────────────────────────────────────────────────────────
-      - name: Run tests
-        run: make test 
-
       # ── Package ─────────────────────────────────────────────────────────────────
       - name: Package ADORe
         run: make package
+
+      # ── Tests ─────────────────────────────────────────────────────────────────
+      - name: Run tests
+        run: make test 
 
       # ── Push images (only after tests pass) ───────────────────────────────────
       - name: Push ADORe CLI images
