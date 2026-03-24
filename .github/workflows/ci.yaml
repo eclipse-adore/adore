@@ -48,6 +48,11 @@ jobs:
       # ── ADORe CLI + ADORe ─────────────────────────────────────────────────────
       - name: Build ADORe
         run: make build
+
+      # ── Tests ─────────────────────────────────────────────────────────────────
+      - name: Run tests
+        run: make test 
+
       #- name: Build Vendor Libraries
       #  run: make build_vendor_libraries
 
