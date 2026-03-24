@@ -17,7 +17,9 @@ if [ ! -f /.dockerenv ]; then
     return 1
 fi
 
-if pgrep -f "Xvfb.*:99" > /dev/null 2>&1; then
+if [ -f /tmp/.adore_display ]; then
+    source /tmp/.adore_display
+elif pgrep -f "Xvfb.*:99" > /dev/null 2>&1; then
     export DISPLAY=:99
 else
     export DISPLAY=${DISPLAY:-:0}
