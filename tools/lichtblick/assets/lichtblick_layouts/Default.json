@@ -1,15 +1,62 @@
 {
   "configById": {
+    "map!4k2dseo": {
+      "center": {
+        "lat": 52.314365578294215,
+        "lon": 10.56270119619368
+      },
+      "customTileUrl": "",
+      "disabledTopics": [],
+      "followTopic": "/ego_vehicle/vehicle_state_dynamic_nav_sat_fix",
+      "layer": "map",
+      "topicColors": {},
+      "zoomLevel": 17,
+      "maxNativeZoom": 18
+    },
+    "RawMessages!3d7sltj": {
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "topicPath": "/ego_vehicle/trajectory_decision.label",
+      "expansion": "none",
+      "fontSize": 30
+    },
+    "Gauge!2dr017d": {
+      "colorMap": "red-yellow-green",
+      "colorMode": "colormap",
+      "gradient": [
+        "#0000ff",
+        "#ff00ff"
+      ],
+      "maxValue": 13.6,
+      "minValue": 0,
+      "path": "/ego_vehicle/vehicle_state_dynamic.vx",
+      "reverse": false,
+      "lichtblickPanelTitle": "Acceleration"
+    },
+    "Gauge!4heymaz": {
+      "colorMap": "red-yellow-green",
+      "colorMode": "colormap",
+      "gradient": [
+        "#0000ff",
+        "#ff00ff"
+      ],
+      "maxValue": 3.14,
+      "minValue": -3.14,
+      "path": "/ego_vehicle/vehicle_state_dynamic.steering_angle",
+      "reverse": false
+    },
     "3D!3unykn2": {
       "cameraState": {
         "perspective": true,
-        "distance": 41.01092091349232,
-        "phi": 43.235294117646234,
-        "thetaOffset": 86.47058823529461,
+        "distance": 33.40365140229238,
+        "phi": 63.6401524172415,
+        "thetaOffset": 90.11431293165322,
         "targetOffset": [
-          -0.3077038445199368,
-          -1.9489581906649183,
-          -6.136186446706285e-17
+          10.812372786094656,
+          -0.1309830077938935,
+          -0.25096348272435515
         ],
         "target": [
           0,
@@ -91,6 +138,42 @@
         },
         "/move_base_simple/goal": {
           "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/caution_zones": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/controller_trajectory": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/local_map": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/mission/goal_request": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/reference_trajectory": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/route": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/safety_corridor": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/suggested_remote_operator_trajectory": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/traffic_participants": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/trajectory_decision": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/vehicle_state_dynamic": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/vehicle_state_dynamic_own_frame": {
+          "visible": true
         }
       },
       "layers": {},
@@ -104,39 +187,6 @@
         "poseEstimateThetaDeviation": 0.26179939
       },
       "imageMode": {}
-    },
-    "RawMessages!3d7sltj": {
-      "diffEnabled": false,
-      "diffMethod": "custom",
-      "diffTopicPath": "",
-      "showFullMessageForDiff": false,
-      "topicPath": "/ego_vehicle/overview.data",
-      "expansion": "none"
-    },
-    "Gauge!2dr017d": {
-      "colorMap": "red-yellow-green",
-      "colorMode": "colormap",
-      "gradient": [
-        "#0000ff",
-        "#ff00ff"
-      ],
-      "maxValue": 13.6,
-      "minValue": 0,
-      "path": "/ego_vehicle/vehicle_state/dynamic.vx",
-      "reverse": false,
-      "lichtblickPanelTitle": "Acceleration"
-    },
-    "Gauge!4heymaz": {
-      "colorMap": "red-yellow-green",
-      "colorMode": "colormap",
-      "gradient": [
-        "#0000ff",
-        "#ff00ff"
-      ],
-      "maxValue": 3.14,
-      "minValue": -3.14,
-      "path": "/ego_vehicle/vehicle_state/dynamic.steering_angle",
-      "reverse": false
     },
     "3D!186qy8": {
       "cameraState": {
@@ -222,24 +272,136 @@
       },
       "imageMode": {}
     },
+    "map!3wo7xzx": {
+      "center": {
+        "lat": 52.31429015151523,
+        "lon": 10.563779624633789
+      },
+      "customTileUrl": "",
+      "disabledTopics": [],
+      "followTopic": "/ego_vehicle/vehicle_state_dynamic_nav_sat_fix",
+      "layer": "map",
+      "topicColors": {},
+      "maxNativeZoom": 18
+    },
+    "3D!2d5i56h": {
+      "cameraState": {
+        "perspective": true,
+        "distance": 22.160664819943417,
+        "phi": 65.46637744034686,
+        "thetaOffset": 87.95010845987065,
+        "targetOffset": [
+          7.118685720849063,
+          0.4667884393850301,
+          -5.187247412374671e-17
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "fovy": 45,
+        "near": 0.5,
+        "far": 5000
+      },
+      "followMode": "follow-pose",
+      "followTf": "ego_vehicle",
+      "scene": {},
+      "transforms": {
+        "frame:world": {
+          "visible": false
+        },
+        "frame:ego_vehicle": {
+          "visible": false
+        },
+        "frame:visualization_offset": {
+          "visible": false
+        }
+      },
+      "topics": {
+        "/initialpose": {
+          "visible": true
+        },
+        "/move_base_simple/goal": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/caution_zones": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/controller_trajectory": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/local_map": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/mission/goal_request": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/reference_trajectory": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/route": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/safety_corridor": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/suggested_remote_operator_trajectory": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/traffic_participants": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/trajectory_decision": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/vehicle_state_dynamic": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/vehicle_state_dynamic_own_frame": {
+          "visible": true
+        }
+      },
+      "layers": {},
+      "publish": {
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      },
+      "imageMode": {}
+    },
     "Tab!2cablzg": {
       "activeTabIdx": 0,
       "tabs": [
         {
           "title": "SAAD",
           "layout": {
-            "first": "3D!3unykn2",
-            "second": {
-              "first": "RawMessages!3d7sltj",
+            "first": {
+              "first": "map!4k2dseo",
               "second": {
-                "first": "Gauge!2dr017d",
-                "second": "Gauge!4heymaz",
-                "direction": "row"
+                "first": "RawMessages!3d7sltj",
+                "second": {
+                  "first": "Gauge!2dr017d",
+                  "second": "Gauge!4heymaz",
+                  "direction": "row"
+                },
+                "direction": "column"
               },
-              "direction": "row"
+              "direction": "column"
             },
-            "direction": "column",
-            "splitPercentage": 67.80185758513932
+            "second": "3D!3unykn2",
+            "direction": "row",
+            "splitPercentage": 33.19530710835058
           }
         },
         {
@@ -251,9 +413,38 @@
           "layout": "3D!2b0f09d"
         },
         {
-          "title": "Debug"
+          "title": "Debug",
+          "layout": {
+            "first": "map!3wo7xzx",
+            "second": "3D!2d5i56h",
+            "direction": "row",
+            "splitPercentage": 29.39958592132505
+          }
         }
       ]
+    },
+    "RawMessages!2t3j6sy": {
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "topicPath": "/ego_vehicle/vehicle_state_dynamic",
+      "expansion": "none"
+    },
+    "RawMessages!2q0gped": {
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "topicPath": "/ego_vehicle/trajectory_decision",
+      "expansion": "none"
+    },
+    "RawMessages!3o2yovj": {
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "topicPath": ""
     }
   },
   "globalVariables": {},
@@ -261,5 +452,19 @@
   "playbackConfig": {
     "speed": 1
   },
-  "layout": "Tab!2cablzg"
+  "layout": {
+    "first": "Tab!2cablzg",
+    "second": {
+      "first": "RawMessages!2t3j6sy",
+      "second": {
+        "first": "RawMessages!2q0gped",
+        "second": "RawMessages!3o2yovj",
+        "direction": "row"
+      },
+      "direction": "row",
+      "splitPercentage": 32.16011042097999
+    },
+    "direction": "column",
+    "splitPercentage": 64.88833746898263
+  }
 }

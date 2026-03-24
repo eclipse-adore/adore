@@ -8,213 +8,51 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.min.js"></script>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            display: flex;
-            height: 100vh;
+        body { margin:0; padding:0; font-family:Arial,sans-serif; display:flex; height:100vh; }
+        #map { flex:1; height:100%; }
+        .controls { width:350px; padding:20px; background:#f5f5f5; border-left:1px solid #ddd; overflow-y:auto; box-sizing:border-box; }
+        .search-section, .settings-section, .marker-section, .stored-positions {
+            margin-bottom:16px; padding:15px; background:white; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.1);
         }
-        
-        #map {
-            flex: 1;
-            height: 100%;
-        }
-        
-        .controls {
-            width: 350px;
-            padding: 20px;
-            background: #f5f5f5;
-            border-left: 1px solid #ddd;
-            overflow-y: auto;
-        }
-        
-        .search-section {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .search-section input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            font-size: 14px;
-            box-sizing: border-box;
-        }
-        
-        .settings-section {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .checkbox-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .marker-section {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .marker-section h3 {
-            margin: 0 0 10px 0;
-            color: #333;
-        }
-        
-        .coord-display {
-            margin: 8px 0;
-            font-family: monospace;
-            font-size: 12px;
-            background: #f8f8f8;
-            padding: 8px;
-            border-radius: 3px;
-        }
-        
-        .python-code-input {
-            width: 100%;
-            height: 80px;
-            font-family: monospace;
-            font-size: 11px;
-            background: #f0f0f0;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            padding: 8px;
-            box-sizing: border-box;
-            margin-top: 8px;
-            resize: none;
-        }
-        
-        .mode-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .position-buttons {
-            display: flex;
-            gap: 5px;
-            margin-top: 10px;
-        }
-        
-        .position-buttons button {
-            flex: 1;
-            padding: 8px;
-            font-size: 12px;
-        }
-        
-        button {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        button.active {
-            background: #007cba;
-            color: white;
-        }
-        
-        button:not(.active) {
-            background: #e0e0e0;
-            color: #333;
-        }
-        
-        .btn-success {
-            background: #28a745 !important;
-            color: white !important;
-        }
-        
-        .btn-primary {
-            background: #007cba !important;
-            color: white !important;
-        }
-        
-        .clear-btn {
-            background: #dc3545 !important;
-            color: white !important;
-            width: 100%;
-        }
-        
-        .start-marker { color: #28a745; }
-        .goal-marker { color: #dc3545; }
-        
-        .search-results {
-            max-height: 150px;
-            overflow-y: auto;
-            border: 1px solid #ddd;
-            border-top: none;
-            background: white;
-            display: none;
-        }
-        
-        .search-result {
-            padding: 8px;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
-            font-size: 12px;
-        }
-        
-        .search-result:hover {
-            background: #f5f5f5;
-        }
-        
-        .stored-positions {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .stored-position {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 3px;
-            margin: 5px 0;
-            font-size: 12px;
-            font-family: monospace;
-        }
-        
-        .no-positions {
-            color: #666;
-            font-style: italic;
-        }
-        
-        .mode-switch-info {
-            background: #e3f2fd;
-            border: 1px solid #2196f3;
-            border-radius: 4px;
-            padding: 10px;
-            margin: 10px 0;
-            font-size: 12px;
-        }
+        .marker-section h3 { margin:0 0 10px 0; color:#333; }
+        .search-section input { width:100%; padding:8px; border:1px solid #ddd; border-radius:3px; font-size:14px; box-sizing:border-box; }
+        .coord-display { margin:6px 0; font-family:monospace; font-size:12px; background:#f8f8f8; padding:8px; border-radius:3px; }
+        .python-code-input { width:100%; height:80px; font-family:monospace; font-size:11px; background:#f0f0f0; border:1px solid #ddd; border-radius:3px; padding:8px; box-sizing:border-box; margin-top:8px; resize:none; }
+        .heading-row { display:flex; align-items:center; gap:8px; margin:8px 0; }
+        .heading-row label { font-size:12px; font-weight:600; white-space:nowrap; }
+        .heading-row input[type="number"] { width:80px; padding:4px 6px; border:1px solid #ddd; border-radius:3px; font-family:monospace; font-size:12px; }
+        .heading-row span { font-size:11px; color:#666; }
+        .mode-buttons { display:flex; gap:10px; margin-bottom:16px; }
+        .position-buttons { display:flex; gap:5px; margin-top:10px; }
+        .position-buttons button { flex:1; padding:8px; font-size:12px; }
+        .checkbox-container { display:flex; align-items:center; gap:8px; }
+        .search-results { max-height:150px; overflow-y:auto; border:1px solid #ddd; border-top:none; background:white; display:none; }
+        .search-result { padding:8px; cursor:pointer; border-bottom:1px solid #eee; font-size:12px; }
+        .search-result:hover { background:#f5f5f5; }
+        .stored-position { background:#f8f9fa; padding:10px; border-radius:3px; margin:5px 0; font-size:12px; font-family:monospace; }
+        .no-positions { color:#666; font-style:italic; }
+        .mode-switch-info { background:#e3f2fd; border:1px solid #2196f3; border-radius:4px; padding:10px; margin:10px 0; font-size:12px; }
+        button { padding:10px 15px; border:none; border-radius:3px; cursor:pointer; font-size:14px; }
+        button.active { background:#007cba; color:white; }
+        button:not(.active) { background:#e0e0e0; color:#333; }
+        .btn-success { background:#28a745 !important; color:white !important; }
+        .btn-primary { background:#007cba !important; color:white !important; }
+        .clear-btn { background:#dc3545 !important; color:white !important; width:100%; }
+        .start-marker { color:#28a745; }
+        .goal-marker { color:#dc3545; }
     </style>
 </head>
 <body>
     <div id="map"></div>
-    
     <div class="controls">
         <h2>Map Marker Planner</h2>
-        
+
         <div class="search-section">
             <h3>Search Location</h3>
             <input type="text" id="searchInput" placeholder="Enter location..." />
             <div id="searchResults" class="search-results"></div>
         </div>
-        
+
         <div class="settings-section">
             <h3>Settings</h3>
             <div class="checkbox-container">
@@ -222,469 +60,406 @@
                 <label for="routeToggle">Draw route between markers</label>
             </div>
         </div>
-        
+
         <div class="mode-buttons">
             <button id="startMode" class="active">Start Point</button>
             <button id="goalMode">Goal Point</button>
         </div>
-        
+
         <div class="mode-switch-info">
-            <strong>Auto-Switch:</strong> When you place a start point, the mode automatically switches to "Goal Point" for faster workflow.
+            <strong>Auto-Switch:</strong> Placing a start point switches to Goal mode automatically.
+            Drag the <span style="color:#007bff;font-weight:600;">blue handle</span> around the start marker to set heading.
         </div>
-        
+
         <div class="stored-positions">
             <h3>Stored Positions</h3>
-            <div id="storedPositionsDisplay">
-                <div class="no-positions">No positions stored</div>
-            </div>
+            <div id="storedPositionsDisplay"><div class="no-positions">No positions stored</div></div>
             <div class="position-buttons">
-                <button class="btn-success" onclick="storePositions()">Store Positions</button>
-                <button class="btn-primary" onclick="loadPositions()">Load Positions</button>
-                <button class="clear-btn" onclick="clearStoredPositions()">Clear Stored</button>
+                <button class="btn-success" onclick="storePositions()">Store</button>
+                <button class="btn-primary" onclick="loadPositions()">Load</button>
+                <button class="clear-btn" onclick="clearStoredPositions()">Clear</button>
             </div>
         </div>
-        
+
         <div class="marker-section">
-            <h3 class="start-marker">🟢 Start Position</h3>
-            <div id="startCoords">
-                <div class="coord-display">Click map to place start marker</div>
+            <h3 class="start-marker">&#x1F7E2; Start Position</h3>
+            <div id="startCoords"><div class="coord-display">Click map to place start marker</div></div>
+            <div class="heading-row">
+                <label for="headingInput">Heading (psi):</label>
+                <input type="number" id="headingInput" value="0.000" step="0.01" min="-3.14159" max="3.14159" />
+                <span>rad &nbsp;|&nbsp; <span id="headingDeg">0.0</span>&deg;</span>
             </div>
             <textarea id="startPythonCode" class="python-code-input" readonly placeholder="Click map to generate Python code..."></textarea>
         </div>
-        
+
         <div class="marker-section">
-            <h3 class="goal-marker">🔴 Goal Position</h3>
-            <div id="goalCoords">
-                <div class="coord-display">Click map to place goal marker</div>
-            </div>
+            <h3 class="goal-marker">&#x1F534; Goal Position</h3>
+            <div id="goalCoords"><div class="coord-display">Click map to place goal marker</div></div>
             <textarea id="goalPythonCode" class="python-code-input" readonly placeholder="Click map to generate Python code..."></textarea>
         </div>
-        
+
         <button class="clear-btn" onclick="clearMarkers()">Clear All Markers</button>
+
+        <div class="marker-section" style="margin-top:16px;">
+            <h3 style="margin:0 0 10px 0; color:#333; display:flex; justify-content:space-between; align-items:center;">
+                Lat/Long Code
+                <button onclick="copyCode('summaryLatLong')" class="btn-primary" style="padding:4px 10px; font-size:11px;">Copy</button>
+            </h3>
+            <textarea id="summaryLatLong" class="python-code-input" readonly style="height:60px; background:#e8f4e8;" placeholder="Place markers to generate..."></textarea>
+        </div>
+
+        <div class="marker-section">
+            <h3 style="margin:0 0 10px 0; color:#333; display:flex; justify-content:space-between; align-items:center;">
+                UTM Code
+                <button onclick="copyCode('summaryUtm')" class="btn-primary" style="padding:4px 10px; font-size:11px;">Copy</button>
+            </h3>
+            <textarea id="summaryUtm" class="python-code-input" readonly style="height:60px; background:#e8f4e8;" placeholder="Place markers to generate..."></textarea>
+        </div>
     </div>
 
     <script>
         const map = L.map('map').setView([52.5200, 13.4050], 13);
-        
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
+            attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
-        
-        let startMarker = null;
-        let goalMarker = null;
-        let currentMode = 'start';
+
+        let startMarker   = null;
+        let goalMarker    = null;
+        let headingHandle = null;
+        let headingLine   = null;
+        let currentMode   = 'start';
         let routePolyline = null;
         let searchTimeout = null;
-        let startCoords = null;
-        let goalCoords = null;
-        
-        const startModeBtn = document.getElementById('startMode');
-        const goalModeBtn = document.getElementById('goalMode');
-        const searchInput = document.getElementById('searchInput');
-        const searchResults = document.getElementById('searchResults');
-        const routeToggle = document.getElementById('routeToggle');
-        
-        startModeBtn.addEventListener('click', () => setMode('start'));
-        goalModeBtn.addEventListener('click', () => setMode('goal'));
-        routeToggle.addEventListener('change', updateRoute);
-        
-        window.addEventListener('load', () => {
-            loadStoredPositionsDisplay();
-        });
-        
-        function setMode(mode) {
-            currentMode = mode;
-            startModeBtn.classList.toggle('active', mode === 'start');
-            goalModeBtn.classList.toggle('active', mode === 'goal');
+        let startCoords   = null;
+        let goalCoords    = null;
+        let startPsi      = 0.0;
+
+        const HANDLE_R = 0.0004; // ~44m visual orbit radius
+
+        // ── Icons ──────────────────────────────────────────────────────────────
+
+        function makeStartIcon(psi) {
+            const deg = -(psi * 180 / Math.PI).toFixed(2);
+            const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">'
+                + '<circle cx="20" cy="20" r="11" fill="#28a745" stroke="white" stroke-width="2"/>'
+                + '<g transform="rotate(' + deg + ',20,20)">'
+                + '<line x1="20" y1="20" x2="33" y2="20" stroke="white" stroke-width="2.5" stroke-linecap="round"/>'
+                + '<polygon points="33,16.5 39,20 33,23.5" fill="white"/>'
+                + '</g></svg>';
+            return L.icon({ iconUrl: 'data:image/svg+xml;base64,' + btoa(svg), iconSize: [40,40], iconAnchor: [20,20] });
         }
-        
+
+        function makeGoalIcon() {
+            const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">'
+                + '<circle cx="12" cy="12" r="10" fill="#dc3545" stroke="white" stroke-width="2"/>'
+                + '<text x="12" y="16" text-anchor="middle" fill="white" font-family="Arial" font-size="14" font-weight="bold">G</text>'
+                + '</svg>';
+            return L.icon({ iconUrl: 'data:image/svg+xml;base64,' + btoa(svg), iconSize: [24,24], iconAnchor: [12,12] });
+        }
+
+        function makeHandleIcon() {
+            const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" width="18" height="18">'
+                + '<circle cx="9" cy="9" r="7" fill="#007bff" stroke="white" stroke-width="2"/>'
+                + '</svg>';
+            return L.icon({ iconUrl: 'data:image/svg+xml;base64,' + btoa(svg), iconSize: [18,18], iconAnchor: [9,9] });
+        }
+
+        // ── Heading handle ─────────────────────────────────────────────────────
+
+        function handleLatLng(psi) {
+            const cosLat = Math.cos(startCoords.lat * Math.PI / 180);
+            return L.latLng(
+                startCoords.lat + HANDLE_R * Math.sin(psi),
+                startCoords.lng + HANDLE_R * Math.cos(psi) / cosLat
+            );
+        }
+
+        function createHeadingVisuals() {
+            removeHeadingVisuals();
+            const pos = handleLatLng(startPsi);
+            headingLine = L.polyline(
+                [L.latLng(startCoords.lat, startCoords.lng), pos],
+                { color: '#28a745', weight: 2, dashArray: '5 5', opacity: 0.9 }
+            ).addTo(map);
+            headingHandle = L.marker(pos, { icon: makeHandleIcon(), draggable: true, zIndexOffset: 1000 }).addTo(map);
+            headingHandle.on('drag', onHandleDrag);
+        }
+
+        function removeHeadingVisuals() {
+            if (headingHandle) { map.removeLayer(headingHandle); headingHandle = null; }
+            if (headingLine)   { map.removeLayer(headingLine);   headingLine   = null; }
+        }
+
+        function updateHeadingVisuals() {
+            if (!startCoords || !headingHandle) return;
+            const pos = handleLatLng(startPsi);
+            headingHandle.setLatLng(pos);
+            headingLine.setLatLngs([L.latLng(startCoords.lat, startCoords.lng), pos]);
+        }
+
+        function onHandleDrag(e) {
+            if (!startCoords) return;
+            const h = e.target.getLatLng();
+            const cosLat = Math.cos(startCoords.lat * Math.PI / 180);
+            const dlng = (h.lng - startCoords.lng) * cosLat;
+            const dlat = h.lat - startCoords.lat;
+            startPsi = Math.atan2(dlat, dlng);
+            // snap handle back to orbit radius
+            const snapped = handleLatLng(startPsi);
+            e.target.setLatLng(snapped);
+            headingLine.setLatLngs([L.latLng(startCoords.lat, startCoords.lng), snapped]);
+            startMarker.setIcon(makeStartIcon(startPsi));
+            syncHeadingUI();
+            updatePythonCode();
+        }
+
+        function syncHeadingUI() {
+            document.getElementById('headingInput').value = startPsi.toFixed(3);
+            document.getElementById('headingDeg').textContent = (startPsi * 180 / Math.PI).toFixed(1);
+        }
+
+        document.getElementById('headingInput').addEventListener('input', function () {
+            startPsi = parseFloat(this.value) || 0;
+            document.getElementById('headingDeg').textContent = (startPsi * 180 / Math.PI).toFixed(1);
+            if (startMarker && startCoords) {
+                startMarker.setIcon(makeStartIcon(startPsi));
+                updateHeadingVisuals();
+            }
+            updatePythonCode();
+        });
+
+        // ── Coords / Python ────────────────────────────────────────────────────
+
         function latLngToUtm(lat, lng) {
             const zone = Math.floor((lng + 180) / 6) + 1;
             const hemisphere = lat >= 0 ? 'N' : 'S';
-            
-            const utmProj = `+proj=utm +zone=${zone} +datum=WGS84 +units=m +no_defs`;
-            const wgs84 = '+proj=longlat +datum=WGS84 +no_defs';
-            
-            const [easting, northing] = proj4(wgs84, utmProj, [lng, lat]);
-            
-            return {
-                zone: zone,
-                hemisphere: hemisphere,
-                easting: Math.round(easting),
-                northing: Math.round(northing)
-            };
+            const [e, n] = proj4('+proj=longlat +datum=WGS84 +no_defs',
+                '+proj=utm +zone=' + zone + ' +datum=WGS84 +units=m +no_defs', [lng, lat]);
+            return { zone, hemisphere, easting: Math.round(e), northing: Math.round(n) };
         }
-        
-        function updateCoordinateDisplay(coords, elementId) {
-            const utm = latLngToUtm(coords.lat, coords.lng);
-            
-            document.getElementById(elementId).innerHTML = `
-                <div class="coord-display">
-                    <strong>Lat/Long:</strong><br>
-                    ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}
-                </div>
-                <div class="coord-display">
-                    <strong>UTM:</strong><br>
-                    Zone: ${utm.zone}${utm.hemisphere}<br>
-                    Easting: ${utm.easting.toLocaleString()}m<br>
-                    Northing: ${utm.northing.toLocaleString()}m
-                </div>
-            `;
+
+        function updateCoordDisplay(coords, elId) {
+            const u = latLngToUtm(coords.lat, coords.lng);
+            document.getElementById(elId).innerHTML =
+                '<div class="coord-display"><strong>Lat/Long:</strong><br>' + coords.lat.toFixed(6) + ', ' + coords.lng.toFixed(6) + '</div>'
+                + '<div class="coord-display"><strong>UTM:</strong><br>Zone: ' + u.zone + u.hemisphere
+                + '<br>Easting: ' + u.easting.toLocaleString() + 'm<br>Northing: ' + u.northing.toLocaleString() + 'm</div>';
         }
-        
+
         function updatePythonCode() {
-            const startPythonCode = document.getElementById('startPythonCode');
-            const goalPythonCode = document.getElementById('goalPythonCode');
-            
+            const se = document.getElementById('startPythonCode');
+            const ge = document.getElementById('goalPythonCode');
+            const sl = document.getElementById('summaryLatLong');
+            const su = document.getElementById('summaryUtm');
+
+            let startLl = '', startUt = '', goalLl = '', goalUt = '';
+
             if (startCoords) {
-                const startUtm = latLngToUtm(startCoords.lat, startCoords.lng);
-                const startLatLongCode = `start_position = Position(lat_long=(${startCoords.lat.toFixed(6)}, ${startCoords.lng.toFixed(6)}), psi=0.0)`;
-                const startUtmCode = `start_position = Position(utm=(${startUtm.easting}, ${startUtm.northing}, ${startUtm.zone}, '${startUtm.hemisphere}'), psi=0.0)`;
-                startPythonCode.value = `${startLatLongCode}\n${startUtmCode}`;
-            } else {
-                startPythonCode.value = '';
-            }
-            
+                const u = latLngToUtm(startCoords.lat, startCoords.lng);
+                const p = startPsi.toFixed(3);
+                startLl = 'start_position = Position(lat_long=(' + startCoords.lat.toFixed(6) + ', ' + startCoords.lng.toFixed(6) + '), psi=' + p + ')';
+                startUt = 'start_position = Position(utm=(' + u.easting + ', ' + u.northing + ', ' + u.zone + ', \'' + u.hemisphere + '\'), psi=' + p + ')';
+                se.value = startLl + '\n' + startUt;
+            } else { se.value = ''; }
+
             if (goalCoords) {
-                const goalUtm = latLngToUtm(goalCoords.lat, goalCoords.lng);
-                const goalLatLongCode = `goal_position = Position(lat_long=(${goalCoords.lat.toFixed(6)}, ${goalCoords.lng.toFixed(6)}))`;
-                const goalUtmCode = `goal_position = Position(utm=(${goalUtm.easting}, ${goalUtm.northing}, ${goalUtm.zone}, '${goalUtm.hemisphere}'))`;
-                goalPythonCode.value = `${goalLatLongCode}\n${goalUtmCode}`;
-            } else {
-                goalPythonCode.value = '';
-            }
+                const u = latLngToUtm(goalCoords.lat, goalCoords.lng);
+                goalLl = 'goal_position = Position(lat_long=(' + goalCoords.lat.toFixed(6) + ', ' + goalCoords.lng.toFixed(6) + '))';
+                goalUt = 'goal_position = Position(utm=(' + u.easting + ', ' + u.northing + ', ' + u.zone + ', \'' + u.hemisphere + '\'))';
+                ge.value = goalLl + '\n' + goalUt;
+            } else { ge.value = ''; }
+
+            sl.value = (startLl && goalLl) ? startLl + '\n' + goalLl : (startLl || goalLl);
+            su.value = (startUt && goalUt) ? startUt + '\n' + goalUt : (startUt || goalUt);
         }
-        
-        async function storePositions() {
-            const data = {};
-            
-            if (startCoords) {
-                const startUtm = latLngToUtm(startCoords.lat, startCoords.lng);
-                data.start = {
-                    lat: startCoords.lat,
-                    lng: startCoords.lng,
-                    utm: startUtm
-                };
-            }
-            
-            if (goalCoords) {
-                const goalUtm = latLngToUtm(goalCoords.lat, goalCoords.lng);
-                data.goal = {
-                    lat: goalCoords.lat,
-                    lng: goalCoords.lng,
-                    utm: goalUtm
-                };
-            }
-            
-            try {
-                const response = await fetch('/api/positions/set', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                if (result.success) {
-                    alert('Positions stored successfully!');
-                    loadStoredPositionsDisplay();
-                } else {
-                    alert('Failed to store positions');
-                }
-            } catch (error) {
-                console.error('Error storing positions:', error);
-                alert('Error storing positions');
-            }
+
+        function copyCode(elementId) {
+            const el = document.getElementById(elementId);
+            if (!el.value) return;
+            navigator.clipboard.writeText(el.value).then(function() {
+                const btn = el.previousElementSibling.querySelector('button');
+                const orig = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.style.background = '#28a745';
+                setTimeout(function() { btn.textContent = orig; btn.style.background = ''; }, 1500);
+            }).catch(function() {
+                el.select();
+                document.execCommand('copy');
+            });
         }
-        
-        async function loadPositions() {
-            try {
-                const response = await fetch('/api/positions/get');
-                const positions = await response.json();
-                
-                if (positions.start) {
-                    placeMarker(positions.start, 'start');
-                    startCoords = { lat: positions.start.lat, lng: positions.start.lng };
-                    updateCoordinateDisplay(startCoords, 'startCoords');
-                }
-                
-                if (positions.goal) {
-                    placeMarker(positions.goal, 'goal');
-                    goalCoords = { lat: positions.goal.lat, lng: positions.goal.lng };
-                    updateCoordinateDisplay(goalCoords, 'goalCoords');
-                }
-                
+
+        // ── Map click ──────────────────────────────────────────────────────────
+
+        document.getElementById('startMode').addEventListener('click', () => setMode('start'));
+        document.getElementById('goalMode').addEventListener('click',  () => setMode('goal'));
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('startMode').classList.toggle('active', mode === 'start');
+            document.getElementById('goalMode').classList.toggle('active',  mode === 'goal');
+        }
+
+        map.on('click', function (e) {
+            const c = e.latlng;
+            if (currentMode === 'start') {
+                if (startMarker) map.removeLayer(startMarker);
+                removeHeadingVisuals();
+                startCoords = { lat: c.lat, lng: c.lng };
+                startMarker = L.marker([c.lat, c.lng], { icon: makeStartIcon(startPsi) }).addTo(map);
+                createHeadingVisuals();
+                updateCoordDisplay(startCoords, 'startCoords');
+                syncHeadingUI();
                 updatePythonCode();
                 drawRoute();
-                
-            } catch (error) {
-                console.error('Error loading positions:', error);
-                alert('Error loading positions');
-            }
-        }
-        
-        async function clearStoredPositions() {
-            try {
-                const response = await fetch('/api/positions/clear', { method: 'POST' });
-                const result = await response.json();
-                if (result.success) {
-                    alert('Stored positions cleared!');
-                    loadStoredPositionsDisplay();
-                }
-            } catch (error) {
-                console.error('Error clearing positions:', error);
-            }
-        }
-        
-        async function loadStoredPositionsDisplay() {
-            try {
-                const response = await fetch('/api/positions/get');
-                const positions = await response.json();
-                
-                const display = document.getElementById('storedPositionsDisplay');
-                
-                if (!positions.start && !positions.goal) {
-                    display.innerHTML = '<div class="no-positions">No positions stored</div>';
-                    return;
-                }
-                
-                let html = '';
-                
-                if (positions.start) {
-                    html += `
-                        <div class="stored-position">
-                            <strong>Start:</strong> ${positions.start.lat.toFixed(6)}, ${positions.start.lng.toFixed(6)}
-                        </div>
-                    `;
-                }
-                
-                if (positions.goal) {
-                    html += `
-                        <div class="stored-position">
-                            <strong>Goal:</strong> ${positions.goal.lat.toFixed(6)}, ${positions.goal.lng.toFixed(6)}
-                        </div>
-                    `;
-                }
-                
-                display.innerHTML = html;
-                
-            } catch (error) {
-                console.error('Error loading stored positions display:', error);
-            }
-        }
-        
-        function placeMarker(position, type) {
-            const coords = { lat: position.lat, lng: position.lng };
-            
-            if (type === 'start') {
-                if (startMarker) {
-                    map.removeLayer(startMarker);
-                }
-                
-                startMarker = L.marker([coords.lat, coords.lng], {
-                    icon: L.icon({
-                        iconUrl: 'data:image/svg+xml;base64,' + btoa(`
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-                                <circle cx="12" cy="12" r="10" fill="#28a745" stroke="white" stroke-width="2"/>
-                                <text x="12" y="16" text-anchor="middle" fill="white" font-family="Arial" font-size="14" font-weight="bold">S</text>
-                            </svg>
-                        `),
-                        iconSize: [24, 24],
-                        iconAnchor: [12, 12]
-                    })
-                }).addTo(map);
-                
-            } else if (type === 'goal') {
-                if (goalMarker) {
-                    map.removeLayer(goalMarker);
-                }
-                
-                goalMarker = L.marker([coords.lat, coords.lng], {
-                    icon: L.icon({
-                        iconUrl: 'data:image/svg+xml;base64,' + btoa(`
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-                                <circle cx="12" cy="12" r="10" fill="#dc3545" stroke="white" stroke-width="2"/>
-                                <text x="12" y="16" text-anchor="middle" fill="white" font-family="Arial" font-size="14" font-weight="bold">G</text>
-                            </svg>
-                        `),
-                        iconSize: [24, 24],
-                        iconAnchor: [12, 12]
-                    })
-                }).addTo(map);
-            }
-        }
-        
-        async function searchLocation(query) {
-            try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
-                const results = await response.json();
-                
-                searchResults.innerHTML = '';
-                
-                if (results.length > 0) {
-                    searchResults.style.display = 'block';
-                    results.forEach(result => {
-                        const div = document.createElement('div');
-                        div.className = 'search-result';
-                        div.textContent = result.display_name;
-                        div.onclick = () => {
-                            map.setView([parseFloat(result.lat), parseFloat(result.lon)], 15);
-                            searchResults.style.display = 'none';
-                            searchInput.value = '';
-                        };
-                        searchResults.appendChild(div);
-                    });
-                } else {
-                    searchResults.style.display = 'none';
-                }
-            } catch (error) {
-                console.error('Search error:', error);
-                searchResults.style.display = 'none';
-            }
-        }
-        
-        searchInput.addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            if (e.target.value.length > 2) {
-                searchTimeout = setTimeout(() => {
-                    searchLocation(e.target.value);
-                }, 300);
+                setMode('goal');
             } else {
-                searchResults.style.display = 'none';
+                if (goalMarker) map.removeLayer(goalMarker);
+                goalCoords = { lat: c.lat, lng: c.lng };
+                goalMarker = L.marker([c.lat, c.lng], { icon: makeGoalIcon() }).addTo(map);
+                updateCoordDisplay(goalCoords, 'goalCoords');
+                updatePythonCode();
+                drawRoute();
             }
         });
-        
-        searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                if (e.target.value.length > 2) {
-                    searchLocation(e.target.value);
-                }
-            }
-        });
-        
-        document.addEventListener('click', (e) => {
-            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
-                searchResults.style.display = 'none';
-            }
-        });
-        
+
+        // ── Route ──────────────────────────────────────────────────────────────
+
+        document.getElementById('routeToggle').addEventListener('change', drawRoute);
+
         async function drawRoute() {
-            if (!startMarker || !goalMarker || !routeToggle.checked) {
-                if (routePolyline) {
-                    map.removeLayer(routePolyline);
-                    routePolyline = null;
-                }
+            if (!startMarker || !goalMarker || !document.getElementById('routeToggle').checked) {
+                if (routePolyline) { map.removeLayer(routePolyline); routePolyline = null; }
                 return;
             }
-            
-            const startPos = startMarker.getLatLng();
-            const goalPos = goalMarker.getLatLng();
-            
+            const s = startMarker.getLatLng(), g = goalMarker.getLatLng();
             try {
-                const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${startPos.lng},${startPos.lat};${goalPos.lng},${goalPos.lat}?overview=full&geometries=geojson`);
-                const data = await response.json();
-                
+                const res  = await fetch('https://router.project-osrm.org/route/v1/driving/' + s.lng + ',' + s.lat + ';' + g.lng + ',' + g.lat + '?overview=full&geometries=geojson');
+                const data = await res.json();
                 if (data.routes && data.routes.length > 0) {
-                    const coordinates = data.routes[0].geometry.coordinates;
-                    const latLngs = coordinates.map(coord => [coord[1], coord[0]]);
-                    
-                    if (routePolyline) {
-                        map.removeLayer(routePolyline);
-                    }
-                    
-                    routePolyline = L.polyline(latLngs, {
-                        color: '#007cba',
-                        weight: 4,
-                        opacity: 0.7
-                    }).addTo(map);
+                    const ll = data.routes[0].geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
+                    if (routePolyline) map.removeLayer(routePolyline);
+                    routePolyline = L.polyline(ll, { color:'#007cba', weight:4, opacity:0.7 }).addTo(map);
                 }
-            } catch (error) {
-                console.error('Routing error:', error);
-            }
+            } catch(err) { console.error('Routing error:', err); }
         }
-        
-        function updateRoute() {
-            drawRoute();
+
+        // ── Store / load ───────────────────────────────────────────────────────
+
+        async function storePositions() {
+            const data = {};
+            if (startCoords) data.start = { lat: startCoords.lat, lng: startCoords.lng, psi: startPsi, utm: latLngToUtm(startCoords.lat, startCoords.lng) };
+            if (goalCoords)  data.goal  = { lat: goalCoords.lat,  lng: goalCoords.lng,  utm: latLngToUtm(goalCoords.lat, goalCoords.lng) };
+            try {
+                const res = await fetch('/api/positions/set', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+                const r   = await res.json();
+                if (r.success) { alert('Positions stored!'); loadStoredPositionsDisplay(); }
+                else alert('Failed to store positions');
+            } catch(e) { alert('Error storing positions'); }
         }
-        
-        map.on('click', function(e) {
-            const coords = e.latlng;
-            
-            if (currentMode === 'start') {
-                if (startMarker) {
-                    map.removeLayer(startMarker);
+
+        async function loadPositions() {
+            try {
+                const res = await fetch('/api/positions/get');
+                const pos = await res.json();
+                if (pos.start) {
+                    startCoords = { lat: pos.start.lat, lng: pos.start.lng };
+                    startPsi    = pos.start.psi !== undefined ? pos.start.psi : 0.0;
+                    if (startMarker) map.removeLayer(startMarker);
+                    removeHeadingVisuals();
+                    startMarker = L.marker([startCoords.lat, startCoords.lng], { icon: makeStartIcon(startPsi) }).addTo(map);
+                    createHeadingVisuals();
+                    updateCoordDisplay(startCoords, 'startCoords');
+                    syncHeadingUI();
                 }
-                
-                startMarker = L.marker([coords.lat, coords.lng], {
-                    icon: L.icon({
-                        iconUrl: 'data:image/svg+xml;base64,' + btoa(`
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-                                <circle cx="12" cy="12" r="10" fill="#28a745" stroke="white" stroke-width="2"/>
-                                <text x="12" y="16" text-anchor="middle" fill="white" font-family="Arial" font-size="14" font-weight="bold">S</text>
-                            </svg>
-                        `),
-                        iconSize: [24, 24],
-                        iconAnchor: [12, 12]
-                    })
-                }).addTo(map);
-                
-                startCoords = coords;
-                updateCoordinateDisplay(coords, 'startCoords');
+                if (pos.goal) {
+                    goalCoords = { lat: pos.goal.lat, lng: pos.goal.lng };
+                    if (goalMarker) map.removeLayer(goalMarker);
+                    goalMarker = L.marker([goalCoords.lat, goalCoords.lng], { icon: makeGoalIcon() }).addTo(map);
+                    updateCoordDisplay(goalCoords, 'goalCoords');
+                }
                 updatePythonCode();
                 drawRoute();
-                
-                // Auto-switch to goal mode after placing start point
-                setMode('goal');
-                
-            } else if (currentMode === 'goal') {
-                if (goalMarker) {
-                    map.removeLayer(goalMarker);
+            } catch(e) { alert('Error loading positions'); }
+        }
+
+        async function clearStoredPositions() {
+            try {
+                const res = await fetch('/api/positions/clear', { method:'POST' });
+                const r   = await res.json();
+                if (r.success) { alert('Cleared!'); loadStoredPositionsDisplay(); }
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadStoredPositionsDisplay() {
+            try {
+                const res = await fetch('/api/positions/get');
+                const pos = await res.json();
+                const el  = document.getElementById('storedPositionsDisplay');
+                if (!pos.start && !pos.goal) { el.innerHTML = '<div class="no-positions">No positions stored</div>'; return; }
+                let html = '';
+                if (pos.start) {
+                    const psiPart = pos.start.psi !== undefined ? ' | psi: ' + pos.start.psi.toFixed(3) + ' rad' : '';
+                    html += '<div class="stored-position"><strong>Start:</strong> ' + pos.start.lat.toFixed(6) + ', ' + pos.start.lng.toFixed(6) + psiPart + '</div>';
                 }
-                
-                goalMarker = L.marker([coords.lat, coords.lng], {
-                    icon: L.icon({
-                        iconUrl: 'data:image/svg+xml;base64,' + btoa(`
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-                                <circle cx="12" cy="12" r="10" fill="#dc3545" stroke="white" stroke-width="2"/>
-                                <text x="12" y="16" text-anchor="middle" fill="white" font-family="Arial" font-size="14" font-weight="bold">G</text>
-                            </svg>
-                        `),
-                        iconSize: [24, 24],
-                        iconAnchor: [12, 12]
-                    })
-                }).addTo(map);
-                
-                goalCoords = coords;
-                updateCoordinateDisplay(coords, 'goalCoords');
-                updatePythonCode();
-                drawRoute();
-            }
-        });
-        
+                if (pos.goal) {
+                    html += '<div class="stored-position"><strong>Goal:</strong> ' + pos.goal.lat.toFixed(6) + ', ' + pos.goal.lng.toFixed(6) + '</div>';
+                }
+                el.innerHTML = html;
+            } catch(e) { console.error(e); }
+        }
+
         function clearMarkers() {
-            if (startMarker) {
-                map.removeLayer(startMarker);
-                startMarker = null;
-            }
-            if (goalMarker) {
-                map.removeLayer(goalMarker);
-                goalMarker = null;
-            }
-            if (routePolyline) {
-                map.removeLayer(routePolyline);
-                routePolyline = null;
-            }
-            
-            startCoords = null;
-            goalCoords = null;
-            
+            if (startMarker)   { map.removeLayer(startMarker);   startMarker   = null; }
+            if (goalMarker)    { map.removeLayer(goalMarker);    goalMarker    = null; }
+            if (routePolyline) { map.removeLayer(routePolyline); routePolyline = null; }
+            removeHeadingVisuals();
+            startCoords = null; goalCoords = null; startPsi = 0.0;
             document.getElementById('startCoords').innerHTML = '<div class="coord-display">Click map to place start marker</div>';
-            document.getElementById('goalCoords').innerHTML = '<div class="coord-display">Click map to place goal marker</div>';
+            document.getElementById('goalCoords').innerHTML  = '<div class="coord-display">Click map to place goal marker</div>';
+            document.getElementById('headingInput').value    = '0.000';
+            document.getElementById('headingDeg').textContent = '0.0';
+            document.getElementById('summaryLatLong').value   = '';
+            document.getElementById('summaryUtm').value       = '';
             updatePythonCode();
-            
-            // Reset to start mode when clearing markers
             setMode('start');
         }
+
+        // ── Search ─────────────────────────────────────────────────────────────
+
+        const searchInput   = document.getElementById('searchInput');
+        const searchResults = document.getElementById('searchResults');
+
+        async function searchLocation(q) {
+            try {
+                const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&limit=5');
+                const rs  = await res.json();
+                searchResults.innerHTML = '';
+                if (rs.length > 0) {
+                    searchResults.style.display = 'block';
+                    rs.forEach(function(r) {
+                        const d = document.createElement('div');
+                        d.className = 'search-result';
+                        d.textContent = r.display_name;
+                        d.onclick = function() { map.setView([parseFloat(r.lat), parseFloat(r.lon)], 15); searchResults.style.display = 'none'; searchInput.value = ''; };
+                        searchResults.appendChild(d);
+                    });
+                } else { searchResults.style.display = 'none'; }
+            } catch(e) { searchResults.style.display = 'none'; }
+        }
+
+        searchInput.addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            if (e.target.value.length > 2) searchTimeout = setTimeout(function() { searchLocation(e.target.value); }, 300);
+            else searchResults.style.display = 'none';
+        });
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); if (e.target.value.length > 2) searchLocation(e.target.value); }
+        });
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) searchResults.style.display = 'none';
+        });
+
+        window.addEventListener('load', loadStoredPositionsDisplay);
     </script>
 </body>
 </html>

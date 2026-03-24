@@ -116,5 +116,5 @@ package_adore_ros2_msgs: ## Build & package adore_ros2_msgs
 
 .PHONY: test
 test: ci_test ## Run ADORe Unit Tests
-	cd tools/adore_cli && make test
+	bash .ci test
 

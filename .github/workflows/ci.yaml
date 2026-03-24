@@ -45,6 +45,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # ── Lichtblick ────────────────────────────────────────────────────────────
+      - name: Build Lichtblick
+        run: cd tools/lichtblick && make build
+
+      - name: Push Lichtblick image
+        if: github.event_name != 'pull_request'
+        run: cd tools/lichtblick && make push_lichtblick
+
       # ── ADORe CLI + ADORe ─────────────────────────────────────────────────────
       - name: Build ADORe
         run: make build
@@ -81,14 +89,6 @@ jobs:
       - name: Push ADORe Embedded image
         if: github.event_name != 'pull_request'
         run: cd adore_embedded && make push
-
-      # ── Lichtblick ────────────────────────────────────────────────────────────
-      - name: Build Lichtblick
-        run: cd tools/lichtblick && make build
-
-      - name: Push Lichtblick image
-        if: github.event_name != 'pull_request'
-        run: cd tools/lichtblick && make push_lichtblick
 
       # ── Upload build artifacts ─────────────────────────────────────────────────
       - name: Upload ADORe Embedded packages

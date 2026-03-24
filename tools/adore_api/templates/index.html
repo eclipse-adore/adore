@@ -246,10 +246,26 @@
             </div>
 
             <div id="visualization" class="tab-content">
-                <iframe 
-                    src="http://{{ host.split(':')[0] }}:8080/?ds=foxglove-websocket&ds.url=ws://{{ host.split(':')[0] }}:8765&layout=Default.json"
-                    width="100%" 
-                    height="600" 
+                <div style="margin-bottom:12px;">
+                    <label for="lichtblickUrl" style="display:block; font-weight:600; margin-bottom:6px; font-size:14px;">Lichtblick Connection URL</label>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input
+                            id="lichtblickUrl"
+                            type="text"
+                            value="http://localhost:8080/?ds=rosbridge-websocket&ds.url=ws://localhost:9090&layout=Default.json"
+                            style="flex:1; min-width:0; font-family:monospace; font-size:13px; padding:7px 10px; border:1px solid #ccc; border-radius:4px;"
+                        />
+                        <button
+                            onclick="document.getElementById('lichtblickFrame').src = document.getElementById('lichtblickUrl').value"
+                            style="flex-shrink:0; width:90px; padding:7px 0;"
+                        >Connect</button>
+                    </div>
+                </div>
+                <iframe
+                    id="lichtblickFrame"
+                    src="http://localhost:8080/?ds=rosbridge-websocket&ds.url=ws://localhost:9090&layout=Default.json"
+                    width="100%"
+                    height="600"
                     frameborder="0">
                 </iframe>
             </div>

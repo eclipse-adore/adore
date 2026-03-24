@@ -1302,6 +1302,19 @@ def publish_to_topic():
         return jsonify({"success": False, "message": f"Failed to publish message: {str(e)}"}), 500
 
 
+@app.route('/api/ros2/nodes/running')
+def list_running_nodes():
+    try:
+        result = subprocess.run(
+            ["ros2", "node", "list"],
+            capture_output=True, text=True, timeout=5
+        )
+        nodes = [n.strip() for n in result.stdout.splitlines() if n.strip()]
+        return jsonify({"success": True, "running_nodes": nodes, "count": len(nodes)})
+    except Exception as e:
+        return jsonify({"success": False, "running_nodes": [], "count": 0, "message": str(e)}), 500
+
+
 @app.route('/api/topic/list')
 def list_active_topics():
     try:

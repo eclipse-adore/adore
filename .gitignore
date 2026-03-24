@@ -4,6 +4,7 @@
 build
 **.jpg
 **.log
+**.zip
 deploy.env
 libraries/cmake/ignore/ignore.log
 .log

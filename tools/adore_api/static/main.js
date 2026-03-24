@@ -1053,7 +1053,8 @@ def generate_launch_description():
             let modified = false;
 
             if (positions.start) {
-                const newStartLine = `start_position = Position(lat_long=(${positions.start.lat.toFixed(6)}, ${positions.start.lng.toFixed(6)}), psi=0.0)`;
+                const psi = positions.start.psi !== undefined ? positions.start.psi.toFixed(3) : '0.0';
+                const newStartLine = `start_position = Position(lat_long=(${positions.start.lat.toFixed(6)}, ${positions.start.lng.toFixed(6)}), psi=${psi})`;
 
                 let startFound = false;
                 for (let i = 0; i < lines.length; i++) {
@@ -1133,6 +1134,7 @@ def generate_launch_description():
     
             if (positions.start) {
                 const utm = positions.start.utm;
+                const psi = positions.start.psi !== undefined ? positions.start.psi.toFixed(3) : '0.0';
                 html += `
                     <div class="position-item">
                         <strong>🟢 Start Position:</strong><br>
@@ -1141,10 +1143,10 @@ def generate_launch_description():
                         Zone: ${utm.zone}${utm.hemisphere}<br><br>
                         <strong>Python Code:</strong><br>
                         <code style="font-size: 10px; background: #f4f4f4; padding: 2px; border-radius: 2px; display: block; margin: 2px 0;">
-                        start_position = Position(lat_long=(${positions.start.lat.toFixed(6)}, ${positions.start.lng.toFixed(6)}), psi=0.0)
+                        start_position = Position(lat_long=(${positions.start.lat.toFixed(6)}, ${positions.start.lng.toFixed(6)}), psi=${psi})
                         </code>
                         <code style="font-size: 10px; background: #f4f4f4; padding: 2px; border-radius: 2px; display: block; margin: 2px 0;">
-                        start_position = Position(utm=(${utm.easting.toFixed(1)}, ${utm.northing.toFixed(1)}, ${utm.zone}, '${utm.hemisphere}'), psi=0.0)
+                        start_position = Position(utm=(${utm.easting.toFixed(1)}, ${utm.northing.toFixed(1)}, ${utm.zone}, '${utm.hemisphere}'), psi=${psi})
                         </code>
                     </div>
                 `;
@@ -1302,4 +1304,13 @@ def generate_launch_description():
 
 window.addEventListener('DOMContentLoaded', () => {
     new ScenarioManager();
+
+    const lichtblickUrl = document.getElementById('lichtblickUrl');
+    if (lichtblickUrl) {
+        lichtblickUrl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('lichtblickFrame').src = lichtblickUrl.value;
+            }
+        });
+    }
 });
