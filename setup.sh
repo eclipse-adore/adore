@@ -17,12 +17,8 @@ if [ ! -f /.dockerenv ]; then
     return 1
 fi
 
-if [ -f /tmp/.adore_display ]; then
-    source /tmp/.adore_display
-elif pgrep -f "Xvfb.*:99" > /dev/null 2>&1; then
-    export DISPLAY=:99
-else
-    export DISPLAY=${DISPLAY:-:0}
+if [ -z "${DISPLAY:-}" ]; then
+    [ -f /tmp/.adore_display ] && source /tmp/.adore_display 2>/dev/null || export DISPLAY=:99
 fi
 
 if [[ "$SHELL" == *"bash"* ]]; then
@@ -55,12 +51,7 @@ else
 fi
 source /opt/adore_venv/bin/activate
 
-# Preserve VIRTUAL_DISPLAY across adore.env sourcing — adore.env may use set -a
-# which would auto-export its own VIRTUAL_DISPLAY value and clobber the one
-# injected by adore_cli.mk via docker -e when no host display is available.
-_VIRTUAL_DISPLAY_INJECTED="${VIRTUAL_DISPLAY:-}"
 source "${SCRIPT_DIRECTORY}/adore.env"
-[ -n "$_VIRTUAL_DISPLAY_INJECTED" ] && export VIRTUAL_DISPLAY="$_VIRTUAL_DISPLAY_INJECTED"
 
 source ${SCRIPT_DIRECTORY}/tools/adore_api/adore_api.sh
 PYVER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
