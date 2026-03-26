@@ -57,31 +57,33 @@ RUN echo "/usr/local/lib" >> /etc/ld.so.conf.d/local.conf && ldconfig
 #   docker build --build-context ros2_workspace=../ros2_workspace ...
 FROM base AS workspace-builder
 
-COPY --from=ros2_workspace src     /ros2_workspace/src
-COPY --from=ros2_workspace Makefile /ros2_workspace/Makefile
+COPY --from=ros2_workspace src     /ros2_workspace_dist/src
+COPY --from=ros2_workspace Makefile /ros2_workspace_dist/Makefile
 
 RUN --mount=type=cache,target=/root/.ccache,sharing=locked \
     . /opt/ros/${ROS_DISTRO}/setup.sh && \
-    cd /ros2_workspace && \
+    cd /ros2_workspace_dist && \
     colcon build \
         --parallel-workers $(nproc) \
         --cmake-args -DCMAKE_BUILD_TYPE=Release \
         --event-handlers console_cohesion+ && \
-    rm -rf /ros2_workspace/build /ros2_workspace/log
+    rm -rf /ros2_workspace_dist/log
 
 # ── Runtime image ──────────────────────────────────────────────────────────────
 FROM base AS runtime
 
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> /etc/bash.bashrc && \
-    echo "source /ros2_workspace/install/setup.bash || true" >> /etc/bash.bashrc
+    echo "source /ros2_workspace_dist/install/setup.bash" >> /etc/bash.bashrc && \
+    echo "source /ros2_workspace/install/setup.bash 2>/dev/null || true" >> /etc/bash.bashrc
 
 RUN mkdir -p /home/user && chmod 1777 /home/user
 ENV HOME=/home/user
 
 # Pre-built workspace baked into the image; volume-mount /ros2_workspace at
 # runtime to override with a live workspace for development.
-COPY --from=workspace-builder /ros2_workspace /ros2_workspace_dist
+COPY --from=workspace-builder /ros2_workspace_dist /ros2_workspace_dist
 # adore_scenarios supplied via: --build-context adore_scenarios=../adore_scenarios
 COPY --from=adore_scenarios . /ros2_workspace_dist/adore_scenarios
 
-WORKDIR /ros2_workspace
+WORKDIR /ros2_workspace_dist
+

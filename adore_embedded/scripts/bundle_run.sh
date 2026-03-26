@@ -9,14 +9,14 @@ _run_podman() {
         tar -c -C "${SCRIPT_DIR}/rootfs" . \
             | podman import \
                 --change "ENV ROS_DISTRO=${ROS_DISTRO}" \
-                --change "WORKDIR /ros2_workspace" \
+                --change "WORKDIR /ros2_workspace_dist" \
                 - "adore_bundle_${ROS_DISTRO}"
     fi
     exec podman run --rm -it \
         --network host \
         --env-file "${SCRIPT_DIR}/container.env" \
         -e ROS_DISTRO="${ROS_DISTRO}" \
-        -v "${SCRIPT_DIR}/ros2_workspace:/ros2_workspace:z" \
+        -v "${SCRIPT_DIR}/ros2_workspace_dist:/ros2_workspace_dist:z" \
         "adore_bundle_${ROS_DISTRO}" \
         "$@"
 }
@@ -33,7 +33,7 @@ _run_unshare() {
         "${SCRIPT_DIR}/.bundle_inner.sh" \
         "${SCRIPT_DIR}/rootfs" \
         "${ROS_DISTRO}" \
-        "${SCRIPT_DIR}/ros2_workspace" \
+        "${SCRIPT_DIR}/ros2_workspace_dist" \
         "$@"
 }
 

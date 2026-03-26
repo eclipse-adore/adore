@@ -34,7 +34,7 @@ include utils.mk
 include adore_cli/adore_cli.mk
 include adore_cli/package.mk
 
-$(shell [ -d "$(VENDOR_PATH)/build" ] || { cd vendor && $(MAKE) --no-print-directory build >&2; })
+$(shell [ -d "$(VENDOR_PATH)/build" ] || cd vendor && $(MAKE) --no-print-directory build >&2)
 
 .PHONY: build
 build: docker_host_context_check clean stop_adore_cli build_vendor_libraries build_adore_cli build_ros_workspace build_services ## Build and setup adore cli
@@ -62,7 +62,6 @@ stop_services: docker_host_context_check ## Stop ADORe supporting services
 .PHONY: build_vendor_libraries
 build_vendor_libraries: docker_host_context_check ## Builds vendor libraries located in: ${VENDOR_PATH}
 	cd "${VENDOR_PATH}" && make build
-	@touch $(VENDOR_SENTINEL)
 
 .PHONY: build_documentation
 build_documentation: docker_host_context_check ## Builds ADORe Documentation in: ./documentation

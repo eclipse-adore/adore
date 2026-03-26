@@ -83,9 +83,9 @@ _build: _gather ## Build the image, compile the ROS2 workspace via BuildKit, and
 	@mkdir -p $(BUILD_DIR)
 	@echo "=== Extracting built workspace from image ==="
 	@cid=$$(docker create --platform $(DOCKER_PLATFORM) $(IMAGE) /bin/true); \
-	    docker cp "$$cid":/ros2_workspace_dist/. $(BUILD_DIR)/ros2_workspace/; \
+	    docker cp "$$cid":/ros2_workspace_dist/. $(BUILD_DIR)/ros2_workspace_dist/; \
 	    docker rm "$$cid"
-	@cp -r "$(CONTEXT_DIR)" $(BUILD_DIR)/ros2_workspace/context
+	@cp -r "$(CONTEXT_DIR)" $(BUILD_DIR)/ros2_workspace_dist/context
 	@echo "=== Saving $(IMAGE) → $(IMAGE_ARCHIVE).gz ==="
 	docker save $(IMAGE) | gzip > $(IMAGE_ARCHIVE).gz
 	@$(MAKE) --no-print-directory _write_scripts \
@@ -107,11 +107,15 @@ pull: ## Pull the image from the registry; tag it locally
 
 .PHONY: build
 build: _gather ## Pull from registry if available, otherwise build from source
-	@if docker image inspect "$(IMAGE)" >/dev/null 2>&1; then \
+	@if docker image inspect "$(IMAGE)" >/dev/null 2>&1 && [ -d "$(BUILD_DIR)/ros2_workspace_dist" ]; then \
 	    echo "✓ Image already present: $(IMAGE)"; \
+	elif docker image inspect "$(IMAGE)" >/dev/null 2>&1; then \
+	    echo "Image present but build dir missing, repopulating..."; \
+	    $(MAKE) --no-print-directory _build; \
 	elif docker pull "$(REGISTRY_IMAGE)" 2>/dev/null; then \
 	    echo "✓ Pulled from registry: $(REGISTRY_IMAGE)"; \
 	    docker tag "$(REGISTRY_IMAGE)" "$(IMAGE)"; \
+	    $(MAKE) --no-print-directory _build; \
 	else \
 	    echo "Registry pull failed, building from source..."; \
 	    $(MAKE) --no-print-directory _build; \
@@ -169,8 +173,8 @@ bundle: ## Create a self-contained Docker-free rootfs bundle in packages/
 	@if ! docker image inspect $(IMAGE) >/dev/null 2>&1; then \
 	    echo "ERROR: Image $(IMAGE) not found. Run 'make build' first."; exit 1; \
 	fi
-	@if [ ! -d "$(BUILD_DIR)/ros2_workspace" ]; then \
-	    echo "ERROR: No workspace at $(BUILD_DIR)/ros2_workspace. Run 'make build' first."; exit 1; \
+	@if [ ! -d "$(BUILD_DIR)/ros2_workspace_dist" ]; then \
+	    echo "ERROR: No workspace at $(BUILD_DIR)/ros2_workspace_dist. Run 'make build' first."; exit 1; \
 	fi
 	@mkdir -p $(PACKAGES_DIR)
 	@echo "=== Creating bundle → $(BUNDLE_DIR).tar.gz ==="
@@ -179,24 +183,33 @@ bundle: ## Create a self-contained Docker-free rootfs bundle in packages/
 	@cid=$$(docker create --platform $(DOCKER_PLATFORM) $(IMAGE) /bin/true); \
 	    docker export "$$cid" | tar -x -C $(BUNDLE_DIR)/rootfs; \
 	    docker rm "$$cid"
-	@cp -r $(BUILD_DIR)/ros2_workspace $(BUNDLE_DIR)/ros2_workspace
+	@cp -r $(BUILD_DIR)/ros2_workspace_dist $(BUNDLE_DIR)/ros2_workspace_dist
 	@cp $(ROOT_DIR)/container.env $(BUNDLE_DIR)/container.env
 	@printf 'ROS_DISTRO=%s\nDOCKER_PLATFORM=%s\n' "$(ROS_DISTRO)" "$(DOCKER_PLATFORM)" \
 	    > $(BUNDLE_DIR)/bundle.env
-	@cp $(ROOT_DIR)/scripts/bundle_run.sh   $(BUNDLE_DIR)/run.sh   && chmod +x $(BUNDLE_DIR)/run.sh
-	@cp $(ROOT_DIR)/scripts/bundle_shell.sh $(BUNDLE_DIR)/shell.sh && chmod +x $(BUNDLE_DIR)/shell.sh
+	@cp $(ROOT_DIR)/scripts/bundle_run.sh        $(BUNDLE_DIR)/start.sh        && chmod +x $(BUNDLE_DIR)/start.sh
+	@cp $(ROOT_DIR)/scripts/bundle_shell_dev.sh  $(BUNDLE_DIR)/shell_dev.sh    && chmod +x $(BUNDLE_DIR)/shell_dev.sh
+	@cp $(ROOT_DIR)/scripts/bundle_shell_dist.sh $(BUNDLE_DIR)/shell_dist.sh   && chmod +x $(BUNDLE_DIR)/shell_dist.sh
 	@cp $(ROOT_DIR)/scripts/bundle_inner.sh $(BUNDLE_DIR)/.bundle_inner.sh && chmod +x $(BUNDLE_DIR)/.bundle_inner.sh
 	@echo "  Compressing..."
 	@tar -czf $(BUNDLE_DIR).tar.gz -C $(PACKAGES_DIR) $(BUNDLE_NAME)
 	@rm -rf $(BUNDLE_DIR)
 	@echo "=== Bundle: $(BUNDLE_DIR).tar.gz ==="
 
-.PHONY: run
-run: start ## Start the container detached (alias for start)
+.PHONY: shell_debug
+shell_debug: start ## Attach an interactive shell to the running container (dev workspace) as root
+	docker exec -u root -it --workdir /ros2_workspace $(CONTAINER_NAME) /bin/bash
 
-.PHONY: shell
-shell: start ## Attach an interactive shell to the running container
+.PHONY: shell_dev
+shell_dev: start ## Attach an interactive shell to the running container (dev workspace)
 	docker exec -it --workdir /ros2_workspace $(CONTAINER_NAME) /bin/bash
+
+.PHONY: shell_dist
+shell_dist: start ## Attach an interactive shell scoped to the dist scenarios workspace
+	docker exec -it \
+	    --workdir /ros2_workspace_dist/adore_scenarios/simulation_scenarios \
+	    $(CONTAINER_NAME) \
+	    /bin/bash --init-file /ros2_workspace_dist/install/setup.bash
 
 .PHONY: clean
 clean: ## Remove image, build output, and build context
@@ -220,14 +233,16 @@ _write_scripts:
 	    "$(_IMAGE)" "$(_IMAGE_TAG)" "$(_IMAGE_ARCHIVE_NAME)" "$(_CONTAINER_NAME)" \
 	    "$(DOCKER_PLATFORM)" "$(ROS_DISTRO)" \
 	    > $(_BUILD_DIR)/adore.env
-	@cp $(ROOT_DIR)/scripts/load.sh  $(_BUILD_DIR)/load.sh  && chmod +x $(_BUILD_DIR)/load.sh
-	@cp $(ROOT_DIR)/scripts/shell.sh $(_BUILD_DIR)/shell.sh && chmod +x $(_BUILD_DIR)/shell.sh
-	@cp $(ROOT_DIR)/scripts/run.sh   $(_BUILD_DIR)/run.sh   && chmod +x $(_BUILD_DIR)/run.sh
-	@cp $(ROOT_DIR)/scripts/stop.sh  $(_BUILD_DIR)/stop.sh  && chmod +x $(_BUILD_DIR)/stop.sh
+	@cp $(ROOT_DIR)/scripts/load.sh           $(_BUILD_DIR)/load.sh           && chmod +x $(_BUILD_DIR)/load.sh
+	@cp $(ROOT_DIR)/scripts/start.sh          $(_BUILD_DIR)/start.sh          && chmod +x $(_BUILD_DIR)/start.sh
+	@cp $(ROOT_DIR)/scripts/shell_dev.sh      $(_BUILD_DIR)/shell_dev.sh      && chmod +x $(_BUILD_DIR)/shell_dev.sh
+	@cp $(ROOT_DIR)/scripts/shell_dist.sh     $(_BUILD_DIR)/shell_dist.sh     && chmod +x $(_BUILD_DIR)/shell_dist.sh
+	@cp $(ROOT_DIR)/scripts/stop.sh           $(_BUILD_DIR)/stop.sh           && chmod +x $(_BUILD_DIR)/stop.sh
 	@cp $(ROOT_DIR)/scripts/build_ros_workspace.sh $(_BUILD_DIR)/build_ros_workspace.sh && chmod +x $(_BUILD_DIR)/build_ros_workspace.sh
-	@cp $(ROOT_DIR)/scripts/bundle_run.sh   $(_BUILD_DIR)/bundle_run.sh   && chmod +x $(_BUILD_DIR)/bundle_run.sh
-	@cp $(ROOT_DIR)/scripts/bundle_shell.sh $(_BUILD_DIR)/bundle_shell.sh && chmod +x $(_BUILD_DIR)/bundle_shell.sh
-	@cp $(ROOT_DIR)/scripts/bundle_inner.sh $(_BUILD_DIR)/.bundle_inner.sh && chmod +x $(_BUILD_DIR)/.bundle_inner.sh
+	@cp $(ROOT_DIR)/scripts/bundle_run.sh          $(_BUILD_DIR)/bundle_run.sh          && chmod +x $(_BUILD_DIR)/bundle_run.sh
+	@cp $(ROOT_DIR)/scripts/bundle_shell_dev.sh    $(_BUILD_DIR)/bundle_shell_dev.sh    && chmod +x $(_BUILD_DIR)/bundle_shell_dev.sh
+	@cp $(ROOT_DIR)/scripts/bundle_shell_dist.sh   $(_BUILD_DIR)/bundle_shell_dist.sh   && chmod +x $(_BUILD_DIR)/bundle_shell_dist.sh
+	@cp $(ROOT_DIR)/scripts/bundle_inner.sh        $(_BUILD_DIR)/.bundle_inner.sh       && chmod +x $(_BUILD_DIR)/.bundle_inner.sh
 	@cp $(ROOT_DIR)/scripts/start_lichtblick.sh $(_BUILD_DIR)/start_lichtblick.sh && chmod +x $(_BUILD_DIR)/start_lichtblick.sh
 	@cp $(ROOT_DIR)/scripts/stop_lichtblick.sh  $(_BUILD_DIR)/stop_lichtblick.sh  && chmod +x $(_BUILD_DIR)/stop_lichtblick.sh
 	@cp $(ROOT_DIR)/container.env $(_BUILD_DIR)/container.env

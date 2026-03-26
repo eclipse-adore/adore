@@ -1,0 +1,6 @@
+# Python package requirements for adore_embedded.
+# One pip package name (with optional version specifier) per line.
+# These are installed into the Docker image at build time via install_requirements.sh.
+# Add any Python packages required by the embedded runtime that are not declared
+# in a ROS package's own requirements.pip3 file.
+# Environment variables (e.g. ${ROS_DISTRO}) are expanded at build time via envsubst.

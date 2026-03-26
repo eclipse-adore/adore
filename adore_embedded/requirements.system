@@ -1,0 +1,8 @@
+# System package requirements for adore_embedded.
+# One apt package name per line. These are installed into the Docker image at build time
+# via install_requirements.sh. Add any apt packages required by the embedded runtime
+# that are not declared in a ROS package's own requirements.system file.
+# Environment variables (e.g. ${ROS_DISTRO}) are expanded at build time via envsubst.
+ros-${ROS_DISTRO}-rosbridge-suite
+ros-${ROS_DISTRO}-rosapi 
+ros-${ROS_DISTRO}-rosapi-msgs
