@@ -1,5 +1,5 @@
 name: ADORe CI
-run-name: "${{ github.workflow }} #${{ github.run_number }}: ${{ github.event.head_commit.message }} pushed by ${{ github.actor }} —  Commit ${{ github.sha }}"
+run-name: "ADORe CI #${{ github.run_number }}: ${{ github.event.head_commit.message }} by ${{ github.actor }}"
 
 on:
   push:
@@ -78,19 +78,16 @@ jobs:
         if: github.event_name != 'pull_request'
         run: cd adore_embedded && make push
 
-      # ── Upload build artifacts ─────────────────────────────────────────────────
-      - name: Fix log permissions
-        if: always()
-        run: ls -la && sudo chown -R $USER:$USER .log/
- 
-      # ── Upload build artifacts ─────────────────────────────────────────────────
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: logs-${{ matrix.arch }}
-          path: .log/
-          if-no-files-found: error
+          path: |
+            .log
+            ros2_workspace/log
+          if-no-files-found: ignore
+ 
 
       - name: Generate ADORe Embedded Release
         uses: actions/upload-artifact@v4
