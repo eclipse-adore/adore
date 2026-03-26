@@ -24,7 +24,7 @@ build: clean ## Build all ROS2 packages
 	$(call patch_parallel_workers)
 	@echo "Detected RAM: $(RAM_KB) kB ($(RAM_GB) GB)"
 	@echo "Parallel workers: $(PARALLEL_WORKERS)"
-	source /opt/ros/${ROS_DISTRO}/setup.bash && colcon --defaults-file $(COLCON_DEFAULTS) build
+	source /opt/ros/${ROS_DISTRO}/setup.bash && COLCON_DEFAULTS_FILE=$(COLCON_DEFAULTS) colcon build
 	@echo "✅ ROS workspace build complete"
 	touch build/build.success
 
@@ -33,12 +33,19 @@ build_release: ## Build all ROS2 packages in Release mode
 	$(call patch_parallel_workers)
 	@echo "Detected RAM: $(RAM_KB) kB ($(RAM_GB) GB)"
 	@echo "Parallel workers: $(PARALLEL_WORKERS)"
-	source /opt/ros/${ROS_DISTRO}/setup.bash && colcon --defaults-file $(COLCON_DEFAULTS) build && source install/local_setup.sh
+	source /opt/ros/${ROS_DISTRO}/setup.bash && COLCON_DEFAULTS_FILE=$(COLCON_DEFAULTS) colcon build && source install/local_setup.sh
 
 .PHONY: build_single_core
 build_single_core: ## Build all ROS2 packages, force single-threaded build regardless of RAM
 	@echo "Executor mode: --executor sequential"
 	source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build --executor sequential
+
+.PHONY: build_user_libraries
+build_user_libraries:
+	cd ../libraries && make build && cd ../ros2_workspace
+
+.PHONY: build_libraries_and_nodes
+build_libraries_and_nodes: build_user_libraries build_release ## Build user libraries then all ROS2 packages
 
 .PHONY: clean_build
 clean_build: clean build ## Clean and build all ROS2 packages
@@ -78,6 +85,11 @@ package_adore_ros2_msgs: ## Package adore_ros2_msgs as a Debian package
 	bash tools/ros2_debian_packager.sh "adore_ros2_msgs"
 	@echo "✅ adore_ros2_msgs packaging complete"
 	touch build/adore_ros2_msgs.package.success
+
+.PHONY: integration_tests
+integration_tests: ## Run pytest inside adore_scenarios
+	@base_dir="../adore_scenarios"; \
+	PYTHONPATH="$$PYTHONPATH:$$base_dir" pytest "$$base_dir"
 
 .PHONY: force_kill_ros2
 force_kill_ros2: ## Forcefully kill all ROS 2 processes
