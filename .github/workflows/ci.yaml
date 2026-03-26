@@ -1,5 +1,5 @@
 name: ADORe CI
-run-name: "${{ github.workflow }} #${{ github.run_number }}: Commit ${{ github.sha }} pushed by ${{ github.actor }} — ${{ github.event.head_commit.message }}"
+run-name: "${{ github.workflow }} #${{ github.run_number }}: ${{ github.event.head_commit.message }} pushed by ${{ github.actor }} —  Commit ${{ github.sha }}"
 
 on:
   push:
@@ -83,15 +83,6 @@ jobs:
         if: always()
         run: ls -la && sudo chown -R $USER:$USER .log/
  
-      - name: Upload logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: logs-${{ matrix.arch }}
-          path: .log/
-          if-no-files-found: error
-
-
       # ── Upload build artifacts ─────────────────────────────────────────────────
       - name: Upload logs
         if: always()
