@@ -13,6 +13,7 @@ endif
 
 $(shell git config core.hooksPath .githooks >&2 || true)
 
+
 include ${MAKE_GADGETS_DIR}/make_gadgets.mk
 
 .EXPORT_ALL_VARIABLES:
@@ -24,6 +25,7 @@ ADORE_LIBRARY_PATH:=${ROOT_DIR}/libraries
 DOCKER_BUILDKIT?=1
 DOCKER_CONFIG?=
 
+
 # Branch information
 BRANCH:=$(shell bash ${MAKE_GADGETS_DIR}/tools/branch_name.sh)
 
@@ -31,6 +33,8 @@ include ${SUBMODULES_PATH}/adore_cli/ci_teststand/ci_teststand.mk
 include utils.mk
 include adore_cli/adore_cli.mk
 include adore_cli/package.mk
+
+$(shell [ -d "$(VENDOR_PATH)/build" ] || { cd vendor && $(MAKE) --no-print-directory build >&2; })
 
 .PHONY: build
 build: docker_host_context_check clean stop_adore_cli build_vendor_libraries build_adore_cli build_ros_workspace build_services ## Build and setup adore cli
@@ -58,6 +62,7 @@ stop_services: docker_host_context_check ## Stop ADORe supporting services
 .PHONY: build_vendor_libraries
 build_vendor_libraries: docker_host_context_check ## Builds vendor libraries located in: ${VENDOR_PATH}
 	cd "${VENDOR_PATH}" && make build
+	@touch $(VENDOR_SENTINEL)
 
 .PHONY: build_documentation
 build_documentation: docker_host_context_check ## Builds ADORe Documentation in: ./documentation
@@ -115,6 +120,6 @@ package_adore_ros2_msgs: ## Build & package adore_ros2_msgs
 	fi
 
 .PHONY: test
-test: ci_test ## Run ADORe Unit Tests
+test: ## Run ADORe Unit Tests
 	bash .ci test
 

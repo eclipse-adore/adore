@@ -1759,7 +1759,7 @@ def main():
 
     print(f"\n🚀 Starting ADORe API server on http://0.0.0.0:{PORT}")
     print(f"📊 API status available at: http://localhost:{PORT}/api/status")
-    app.run(debug=True, host='0.0.0.0', port=PORT)
+    app.run(debug=False, use_reloader=False, host='0.0.0.0', port=PORT)
 
 
 if __name__ == '__main__':

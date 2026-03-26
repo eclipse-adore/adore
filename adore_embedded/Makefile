@@ -7,6 +7,10 @@ ROOT_DIR := $(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
 HOST_UID := $(shell id -u)
 HOST_GID := $(shell id -g)
 
+ifndef _GATHERING
+$(shell $(MAKE) --no-print-directory _gather _GATHERING=1 >/dev/null 2>&1)
+endif
+
 DOCKER_BUILDKIT ?= 1
 ROS_DISTRO      ?= jazzy
 OS_CODE_NAME    ?= noble
@@ -44,6 +48,10 @@ CONTEXT_DIR        := $(ROOT_DIR)/context
 IMAGE_ARCHIVE_NAME := $(IMAGE_NAME)_$(IMAGE_TAG).tar
 IMAGE_ARCHIVE      := $(BUILD_DIR)/$(IMAGE_ARCHIVE_NAME)
 
+LICHTBLICK_DIR          := $(ROOT_DIR)/../tools/lichtblick
+LICHTBLICK_IMAGE        := $(shell cd $(LICHTBLICK_DIR) && $(MAKE) --no-print-directory lichtblick_image 2>/dev/null)
+LICHTBLICK_ARCHIVE_NAME := $(subst :,_,$(LICHTBLICK_IMAGE)).tar.gz
+
 .PHONY: help
 help: ## Show this help
 	@printf "\n\033[1mTargets:\033[0m\n"
@@ -55,6 +63,10 @@ help: ## Show this help
 _build: _gather ## Build the image, compile the ROS2 workspace via BuildKit, and save to build/<tag>/
 	@echo "=== Building $(IMAGE) ==="
 	cd ${VENDOR_PATH} && make build
+	cd $(LICHTBLICK_DIR) && make build
+	@echo "=== Saving lichtblick image → $(BUILD_DIR)/lichtblick/$(LICHTBLICK_ARCHIVE_NAME) ==="
+	@mkdir -p $(BUILD_DIR)/lichtblick
+	docker save $(LICHTBLICK_IMAGE) | gzip > $(BUILD_DIR)/lichtblick/$(LICHTBLICK_ARCHIVE_NAME)
 	docker build \
 	    --platform $(DOCKER_PLATFORM) \
 	    --build-arg ROS_DISTRO=$(ROS_DISTRO) \
@@ -81,7 +93,9 @@ _build: _gather ## Build the image, compile the ROS2 workspace via BuildKit, and
 	    _IMAGE=$(IMAGE) \
 	    _IMAGE_TAG=$(IMAGE_TAG) \
 	    _IMAGE_ARCHIVE_NAME=$(IMAGE_ARCHIVE_NAME) \
-	    _CONTAINER_NAME=$(CONTAINER_NAME)
+	    _CONTAINER_NAME=$(CONTAINER_NAME) \
+	    _LICHTBLICK_IMAGE=$(LICHTBLICK_IMAGE) \
+	    _LICHTBLICK_ARCHIVE_NAME=$(LICHTBLICK_ARCHIVE_NAME)
 	@echo "=== Done: $(BUILD_DIR) ==="
 
 .PHONY: pull
@@ -214,7 +228,14 @@ _write_scripts:
 	@cp $(ROOT_DIR)/scripts/bundle_run.sh   $(_BUILD_DIR)/bundle_run.sh   && chmod +x $(_BUILD_DIR)/bundle_run.sh
 	@cp $(ROOT_DIR)/scripts/bundle_shell.sh $(_BUILD_DIR)/bundle_shell.sh && chmod +x $(_BUILD_DIR)/bundle_shell.sh
 	@cp $(ROOT_DIR)/scripts/bundle_inner.sh $(_BUILD_DIR)/.bundle_inner.sh && chmod +x $(_BUILD_DIR)/.bundle_inner.sh
+	@cp $(ROOT_DIR)/scripts/start_lichtblick.sh $(_BUILD_DIR)/start_lichtblick.sh && chmod +x $(_BUILD_DIR)/start_lichtblick.sh
+	@cp $(ROOT_DIR)/scripts/stop_lichtblick.sh  $(_BUILD_DIR)/stop_lichtblick.sh  && chmod +x $(_BUILD_DIR)/stop_lichtblick.sh
 	@cp $(ROOT_DIR)/container.env $(_BUILD_DIR)/container.env
+	@printf 'LICHTBLICK_IMAGE=%s\nLICHTBLICK_ARCHIVE_NAME=%s\n' \
+	    "$(_LICHTBLICK_IMAGE)" "$(_LICHTBLICK_ARCHIVE_NAME)" \
+	    > $(_BUILD_DIR)/lichtblick.env
+	@mkdir -p $(_BUILD_DIR)/lichtblick
+	@cp -r $(LICHTBLICK_DIR)/. $(_BUILD_DIR)/lichtblick/
 
 .PHONY: _gather
 _gather:
@@ -254,3 +275,7 @@ _gather:
 	@echo "  ppa    : $$(wc -l < $(CONTEXT_DIR)/requirements.ppa)"
 	@echo "  debs   : $$(find $(CONTEXT_DIR)/vendor -name '*.deb' | wc -l)"
 	@echo "=== Gather complete ==="
+
+.PHONY: image
+image: ## Prints the current docker image tag
+	@echo ${IMAGE}

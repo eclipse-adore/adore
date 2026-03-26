@@ -1,4 +1,4 @@
-name: adore CI
+name: ADORe CI
 
 on:
   push:
@@ -26,10 +26,6 @@ jobs:
     runs-on: ${{ matrix.runner }}
 
     env:
-      # Ensure all image pushes go to the current repo's registry namespace
-      # where GITHUB_TOKEN has write permission. Without this, push_core_image
-      # and push_base_image derive ADORE_CLI_REPO from the adore_cli submodule
-      # remote (eclipse-adore/adore_cli) and fail with permission_denied.
       ADORE_CLI_REPO: ${{ github.repository }}
 
     steps:
@@ -70,15 +66,6 @@ jobs:
         if: github.event_name != 'pull_request'
         run: make push_user_image
 
-      #- name: Build Vendor Libraries
-      #  run: make build_vendor_libraries
-
-      #- name: Build ADORe CLI
-      #run: make build_adore_cli
-
-      #- name: Build ADORe ROS2 Workspace
-      #run: make build_ros_workspace
-
       # ── ADORe Embedded ────────────────────────────────────────────────────────
       - name: Build ADORe Embedded 
         run: cd adore_embedded && make build
@@ -91,7 +78,7 @@ jobs:
         run: cd adore_embedded && make push
 
       # ── Upload build artifacts ─────────────────────────────────────────────────
-      - name: Upload ADORe Embedded packages
+      - name: Generate ADORe Embedded Release
         uses: actions/upload-artifact@v4
         with:
           name: adore-embedded-packages-${{ matrix.arch }}
@@ -117,7 +104,7 @@ jobs:
           name: adore-embedded-packages-aarch64
           path: dist/
 
-      - name: Publish release assets
+      - name: Generate ADORe Embedded Release
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*
