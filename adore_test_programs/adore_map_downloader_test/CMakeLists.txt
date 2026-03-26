@@ -9,6 +9,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Dependencies
 find_package(adore_map REQUIRED)
+find_package(caches REQUIRED)
 
 set(basic_map_loading_from_wfs_test_SRCS
    basic_map_loading_from_wfs_test.cpp
@@ -25,6 +26,7 @@ target_include_directories(basic_map_loading_from_wfs_test
 target_link_libraries(basic_map_loading_from_wfs_test
   PUBLIC
      adore_map::adore_map
+     caches::caches
 )
 
 install(TARGETS basic_map_loading_from_wfs_test
