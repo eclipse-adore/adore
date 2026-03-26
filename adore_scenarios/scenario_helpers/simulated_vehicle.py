@@ -105,6 +105,7 @@ def _build_composable_components(
                 {"vehicle_model_file": model_file},
                 {"v2x_id": v2x_id},
                 topic_params=topic_params,
+                
             ),
         ),
         ComposableNode(
@@ -187,6 +188,33 @@ def _build_standalone_nodes(
                 {"planner_settings_values": list(planner_params.values())},
                 {"vehicle_model_file": model_file},
                 {"v2x_id": v2x_id},
+                
+                # Parameters for path shift behavior (example values, adjust as needed)
+                {"path_shift.min_object_ahead": 4.0},
+                {"path_shift.max_object_ahead": 35.0},
+                {"path_shift.max_object_speed": 0.5},
+                {"path_shift.static_clearance": 0.6},
+                {"path_shift.front_clearance": 1.0},
+                {"path_shift.rear_clearance": 1.0},
+                {"path_shift.approach_length": 15.0},
+                {"path_shift.return_length": 6.0},
+                {"path_shift.target_speed": 3.0},
+                {"path_shift.lookahead_length": 50.0},
+                {"path_shift.max_shift_left": 2.0},
+                {"path_shift.route_overlap_slack": 0.5},
+                {"path_shift.oncoming_front_buffer": 20.0},
+                {"path_shift.oncoming_rear_buffer": 5.0},
+                {"path_shift.min_oncoming_angle_diff": 2.0},
+                
+                {"path_shift.prediction_time_step": 0.1},
+                {"path_shift.prediction_time_horizon": 6.0},
+                {"path_shift.min_ego_prediction_speed": 1.5},
+                {"path_shift.min_oncoming_route_speed": 0.5},
+                {"path_shift.oncoming_vehicle_s_margin": 1.0},
+                {"path_shift.max_stationary_conflict_route_speed": 0.2},
+                {"path_shift.static_oncoming_s_margin": 1.0},
+                {"path_shift.ego_vehicle_s_margin": 1.0},
+
                 topic_params=topic_params,
             ),
         ),
