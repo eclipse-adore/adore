@@ -84,7 +84,7 @@ jobs:
         with:
           name: logs-${{ matrix.arch }}
           path: .log/
-          if-no-files-found: ignore
+          if-no-files-found: error
 
       - name: Generate ADORe Embedded Release
         uses: actions/upload-artifact@v4
@@ -96,7 +96,7 @@ jobs:
   # ── Release ───────────────────────────────────────────────────────────────────
   release:
     needs: build-test-push-publish
-    if: github.event_name == 'release' && github.event.action == 'published'
+    if: always() && needs.build-test-push-publish.result == 'success' && github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
 
     steps:

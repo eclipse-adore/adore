@@ -58,15 +58,13 @@ RUN echo "/usr/local/lib" >> /etc/ld.so.conf.d/local.conf && ldconfig
 FROM base AS workspace-builder
 
 COPY --from=ros2_workspace src     /ros2_workspace_dist/src
-COPY --from=ros2_workspace Makefile /ros2_workspace_dist/Makefile
+COPY --from=ros2_workspace Makefile              /ros2_workspace_dist/Makefile
+COPY --from=ros2_workspace colcon_defaults.yaml /ros2_workspace_dist/colcon_defaults.yaml
 
 RUN --mount=type=cache,target=/root/.ccache,sharing=locked \
     . /opt/ros/${ROS_DISTRO}/setup.sh && \
     cd /ros2_workspace_dist && \
-    colcon build \
-        --parallel-workers $(nproc) \
-        --cmake-args -DCMAKE_BUILD_TYPE=Release \
-        --event-handlers console_cohesion+ && \
+    make build && \
     rm -rf /ros2_workspace_dist/log
 
 # ── Runtime image ──────────────────────────────────────────────────────────────
@@ -86,4 +84,3 @@ COPY --from=workspace-builder /ros2_workspace_dist /ros2_workspace_dist
 COPY --from=adore_scenarios . /ros2_workspace_dist/adore_scenarios
 
 WORKDIR /ros2_workspace_dist
-

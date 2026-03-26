@@ -22,6 +22,8 @@ adore_embedded/build/
 **__pycache__**
 *.pyc
 
+ros2_workspace/colcon_defaults.yaml
+
 ### C++ ###
 # Prerequisites
 *.d
