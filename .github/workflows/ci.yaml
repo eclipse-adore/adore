@@ -78,6 +78,20 @@ jobs:
         run: cd adore_embedded && make push
 
       # ── Upload build artifacts ─────────────────────────────────────────────────
+      - name: Fix log permissions
+        if: always()
+        run: ls -la && sudo chown -R $USER:$USER .log/
+ 
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ matrix.arch }}
+          path: .log/
+          if-no-files-found: error
+
+
+      # ── Upload build artifacts ─────────────────────────────────────────────────
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v4
