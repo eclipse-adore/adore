@@ -84,12 +84,21 @@ start: stop
 	@echo "Lichtblick started, navigate to http://localhost:$(PORT) for the web ui"
 	@echo "http://localhost:8080/?ds=rosbridge-websocket&ds.url=ws://localhost:9090&ds=foxglove-websocket&layout=Default.json"
 
+.PHONY: up
+up: start
+
+.PHONY: run
+run: start
+
 .PHONY: stop
 stop:
 	@echo "=== Stopping Lichtblick container ==="
 	@docker stop $(LICHTBLICK_CONTAINER_NAME) 2>/dev/null || true
 	@docker ps --filter "name=lichtblick_" --format "{{.Names}}" | xargs -r docker stop
 	@echo "✓ Container stopped"
+
+.PHONY: down
+down: stop
 
 .PHONY: info
 info:

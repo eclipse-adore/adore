@@ -66,9 +66,9 @@ jobs:
         run: make test 
 
       # ── Push images (only after tests pass) ───────────────────────────────────
-      - name: Push ADORe CLI images
+      - name: Push ADORe CLI user image
         if: github.event_name != 'pull_request'
-        run: make push_images
+        run: make push_user_image
 
       #- name: Build Vendor Libraries
       #  run: make build_vendor_libraries
