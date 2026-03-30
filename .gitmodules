@@ -15,7 +15,7 @@
 	url = git@github.com:eclipse-adore/adore_decision_maker.git
 [submodule "nodes/adore_trajectory_tracker"]
 	path = adore_ros2_nodes/trajectory_tracker
-	url = git@github.com:eclipse-adore/adore_trajectory_tracker.git
+	url = git@github.com:kschw26/adore_trajectory_tracker.git
 [submodule "adore_scenarios/adore_simulation_scenarios"]
 	path = adore_scenarios/simulation_scenarios
 	url = git@github.com:eclipse-adore/adore_simulation_scenarios.git
