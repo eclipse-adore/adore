@@ -16,6 +16,7 @@
 [submodule "nodes/adore_trajectory_tracker"]
 	path = adore_ros2_nodes/trajectory_tracker
 	url = git@github.com:kschw26/adore_trajectory_tracker.git
+	branch = time
 [submodule "adore_scenarios/adore_simulation_scenarios"]
 	path = adore_scenarios/simulation_scenarios
 	url = git@github.com:eclipse-adore/adore_simulation_scenarios.git
