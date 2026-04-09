@@ -1,9 +1,9 @@
 build:
   symlink-install: true
   continue-on-error: false
-  parallel-workers: 11
+  parallel-workers: 12
   cmake-args:
-  # - -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+    - -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
     - -DCMAKE_POSITION_INDEPENDENT_CODE=ON
     - -DCMAKE_BUILD_TYPE=Release
   event-handlers:

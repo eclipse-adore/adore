@@ -28,6 +28,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         cmake \
         gettext-base \
         git \
+        ccache \
         make \
         python3-pip \
         python3-colcon-common-extensions
