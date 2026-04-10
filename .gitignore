@@ -13,6 +13,8 @@ plugins/*
 adore_embedded/context/
 adore_embedded/packages/
 adore_embedded/build/
+**.rej
+**.orig
 
 **.vscode
 .colcon_workspace/build

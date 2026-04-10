@@ -27,7 +27,8 @@ REQUIREMENTS_HASH := $(shell \
         ! -path "*/context/*" 2>/dev/null; \
       find $(ROS2_SRC) -type f \( -name "*.system" -o -name "*.pip3" -o -name "*.ppa" \) \
         2>/dev/null; } \
-    | LC_ALL=C sort | xargs -r sha256sum 2>/dev/null | sha256sum | cut -c1-7 || echo "0000000")
+    | LC_ALL=C sort | xargs -r grep -hv '^\s*#' | grep -v '^\s*$$' \
+    | LC_ALL=C sort -u | sha256sum | cut -c1-7 || echo "0000000")
 
 IMAGE_NAME     := adore_embedded
 IMAGE_TAG      := $(ARCH)_$(SHORT_HASH)_RH$(REQUIREMENTS_HASH)
