@@ -84,6 +84,7 @@ check_adore_binaries: ## Checks for ADORe binaries
 clean: docker_host_context_check stop clean_adore_cli clean_tag_history ## Clean ADORe build artifacts 
 	cd vendor && make clean
 	cd ros2_workspace && make clean
+	cd adore_embedded && make clean
 	rm -rf build
 
 .PHONY: lint_nodes
