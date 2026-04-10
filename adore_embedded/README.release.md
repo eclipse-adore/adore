@@ -32,6 +32,62 @@ The image archive (`*.tar.gz`) inside the directory is loaded separately on firs
 ./stop.sh              # stop container
 ```
 
+## Running a scenario
+
+`shell_dist.sh` drops directly into the simulation scenarios directory with the workspace pre-sourced.
+
+```bash
+./shell_dist.sh
+```
+
+Inside the shell, launch any scenario by name:
+
+```bash
+ros2 launch simulation_test.launch.py
+```
+
+Other available scenarios in the same directory:
+
+```bash
+ros2 launch template.launch.py
+ros2 launch dlr_campus.launch.py
+ros2 launch saad_maad.launch.py
+```
+
+## Visualizing with Lichtblick
+
+Lichtblick connects to the running scenario over rosbridge (WebSocket on port 9090) and renders a pre-configured layout shipped with the release.
+
+**1. Start Lichtblick** (in a separate terminal, before or after launching a scenario):
+
+```bash
+./start_lichtblick.sh
+```
+
+**2. Launch a scenario** (in another terminal):
+
+```bash
+./shell_dist.sh
+ros2 launch simulation_test.launch.py
+```
+
+**3. Open Lichtblick** in a Chromium-based browser:
+
+```
+http://localhost:8080/?ds=rosbridge-websocket&ds.url=ws://localhost:9090
+```
+
+The default layout loads automatically. To load the shipped layout explicitly, open it from `ros2_workspace_dist/context/` inside the container, or from the `adore_scenarios/assets/lichtblick_layouts/Default.json` path in the release directory.
+
+> **Note:** Lichtblick requires a Chromium-based browser (Chrome, Chromium, Edge). Firefox is not supported.
+
+**4. Stop when done:**
+
+```bash
+./stop_lichtblick.sh
+./stop.sh
+```
+
 ## Dev vs dist workspace
 
 | | Dev (`shell_dev.sh`) | Dist (`shell_dist.sh`) |
