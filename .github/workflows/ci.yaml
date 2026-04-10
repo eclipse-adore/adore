@@ -103,6 +103,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
       - name: Download ADORe Embedded packages (x86_64)
         uses: actions/download-artifact@v4
         with:
@@ -115,8 +120,17 @@ jobs:
           name: adore-embedded-packages-aarch64
           path: dist/
 
-      - name: Generate ADORe Embedded Release
+      - name: Create source archive
+        run: |
+          git archive --format=tar.gz             --prefix=adore_embedded/             --output=dist/adore_embedded_source_${{ github.ref_name }}.tar.gz             HEAD:adore_embedded
+
+      - name: Stage README
+        run: cp adore_embedded/README.release.md dist/README.md
+
+      - name: Publish GitHub release assets
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*
+          files: |
+            dist/adore_embedded_*.tar.gz
+            dist/README.md
           fail_on_unmatched_files: true

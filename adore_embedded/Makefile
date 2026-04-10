@@ -109,6 +109,14 @@ pull: ## Pull the image from the registry; tag it locally
 build: _gather ## Pull from registry if available, otherwise build from source
 	@if docker image inspect "$(IMAGE)" >/dev/null 2>&1 && [ -d "$(BUILD_DIR)/ros2_workspace_dist" ]; then \
 	    echo "✓ Image already present: $(IMAGE)"; \
+	    $(MAKE) --no-print-directory _write_scripts \
+	        _BUILD_DIR=$(BUILD_DIR) \
+	        _IMAGE=$(IMAGE) \
+	        _IMAGE_TAG=$(IMAGE_TAG) \
+	        _IMAGE_ARCHIVE_NAME=$(IMAGE_ARCHIVE_NAME) \
+	        _CONTAINER_NAME=$(CONTAINER_NAME) \
+	        _LICHTBLICK_IMAGE=$(LICHTBLICK_IMAGE) \
+	        _LICHTBLICK_ARCHIVE_NAME=$(LICHTBLICK_ARCHIVE_NAME); \
 	elif docker image inspect "$(IMAGE)" >/dev/null 2>&1; then \
 	    echo "Image present but build dir missing, repopulating..."; \
 	    $(MAKE) --no-print-directory _build; \
@@ -251,6 +259,7 @@ _write_scripts:
 	    > $(_BUILD_DIR)/lichtblick.env
 	@mkdir -p $(_BUILD_DIR)/lichtblick
 	@cp -r $(LICHTBLICK_DIR)/. $(_BUILD_DIR)/lichtblick/
+	@cp $(ROOT_DIR)/README.release.md $(_BUILD_DIR)/README.md
 
 .PHONY: _gather
 _gather:
