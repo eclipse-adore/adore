@@ -126,9 +126,10 @@ jobs:
 
       - name: Create source archive
         run: |
+          ref_slug="${{ github.ref_name }}"
           git archive --format=tar.gz \
             --prefix=adore_embedded/ \
-            --output=dist/adore_embedded_source_${{ github.ref_name }}.tar.gz \
+            --output="dist/adore_embedded_source_${ref_slug//\//-}.tar.gz" \
             HEAD:adore_embedded
 
       - name: Stage README
