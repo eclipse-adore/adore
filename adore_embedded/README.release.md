@@ -5,6 +5,7 @@
 **Docker (recommended)**
 - Docker Engine 24+ — [install guide](https://docs.docker.com/engine/install/)
 - `x86_64` or `aarch64` host matching the image architecture in the filename
+- GNU Make
 
 **Docker-free bundle**
 - `podman` — [install guide](https://podman.io/docs/installation), **or**

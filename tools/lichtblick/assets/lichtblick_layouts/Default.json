@@ -2,8 +2,8 @@
   "configById": {
     "map!4k2dseo": {
       "center": {
-        "lat": 52.314365578294215,
-        "lon": 10.56270119619368
+        "lat": 52.314522990288516,
+        "lon": 10.563832842306658
       },
       "customTileUrl": "",
       "disabledTopics": [],
@@ -12,6 +12,22 @@
       "topicColors": {},
       "zoomLevel": 17,
       "maxNativeZoom": 18
+    },
+    "RawMessages!1kwomtm": {
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "topicPath": "/ego_vehicle/vehicle_info.speed",
+      "fontSize": 72,
+      "expansion": "none"
+    },
+    "Indicator!1830l1n": {
+      "path": "",
+      "style": "background",
+      "fallbackColor": "#000000",
+      "fallbackLabel": "km/h",
+      "rules": []
     },
     "RawMessages!3d7sltj": {
       "diffEnabled": false,
@@ -22,41 +38,16 @@
       "expansion": "none",
       "fontSize": 30
     },
-    "Gauge!2dr017d": {
-      "colorMap": "red-yellow-green",
-      "colorMode": "colormap",
-      "gradient": [
-        "#0000ff",
-        "#ff00ff"
-      ],
-      "maxValue": 13.6,
-      "minValue": 0,
-      "path": "/ego_vehicle/vehicle_state_dynamic.vx",
-      "reverse": false,
-      "lichtblickPanelTitle": "Acceleration"
-    },
-    "Gauge!4heymaz": {
-      "colorMap": "red-yellow-green",
-      "colorMode": "colormap",
-      "gradient": [
-        "#0000ff",
-        "#ff00ff"
-      ],
-      "maxValue": 3.14,
-      "minValue": -3.14,
-      "path": "/ego_vehicle/vehicle_state_dynamic.steering_angle",
-      "reverse": false
-    },
     "3D!3unykn2": {
       "cameraState": {
         "perspective": true,
-        "distance": 33.40365140229238,
-        "phi": 63.6401524172415,
-        "thetaOffset": 90.11431293165322,
+        "distance": 33.403651402291565,
+        "phi": 63.640152417241445,
+        "thetaOffset": 90.11431293165384,
         "targetOffset": [
-          10.812372786094656,
-          -0.1309830077938935,
-          -0.25096348272435515
+          10.41337337702692,
+          0.8975072406216155,
+          -0.25096348272435526
         ],
         "target": [
           0,
@@ -389,19 +380,22 @@
             "first": {
               "first": "map!4k2dseo",
               "second": {
-                "first": "RawMessages!3d7sltj",
+                "first": "RawMessages!1kwomtm",
                 "second": {
-                  "first": "Gauge!2dr017d",
-                  "second": "Gauge!4heymaz",
-                  "direction": "row"
+                  "first": "Indicator!1830l1n",
+                  "second": "RawMessages!3d7sltj",
+                  "direction": "row",
+                  "splitPercentage": 16.18357487922705
                 },
-                "direction": "column"
+                "direction": "row",
+                "splitPercentage": 25.086940541151858
               },
-              "direction": "column"
+              "direction": "column",
+              "splitPercentage": 82.83450704225352
             },
             "second": "3D!3unykn2",
             "direction": "row",
-            "splitPercentage": 33.19530710835058
+            "splitPercentage": 42.45723546005642
           }
         },
         {
@@ -422,29 +416,6 @@
           }
         }
       ]
-    },
-    "RawMessages!2t3j6sy": {
-      "diffEnabled": false,
-      "diffMethod": "custom",
-      "diffTopicPath": "",
-      "showFullMessageForDiff": false,
-      "topicPath": "/ego_vehicle/vehicle_state_dynamic",
-      "expansion": "none"
-    },
-    "RawMessages!2q0gped": {
-      "diffEnabled": false,
-      "diffMethod": "custom",
-      "diffTopicPath": "",
-      "showFullMessageForDiff": false,
-      "topicPath": "/ego_vehicle/trajectory_decision",
-      "expansion": "none"
-    },
-    "RawMessages!3o2yovj": {
-      "diffEnabled": false,
-      "diffMethod": "custom",
-      "diffTopicPath": "",
-      "showFullMessageForDiff": false,
-      "topicPath": ""
     }
   },
   "globalVariables": {},
@@ -452,19 +423,5 @@
   "playbackConfig": {
     "speed": 1
   },
-  "layout": {
-    "first": "Tab!2cablzg",
-    "second": {
-      "first": "RawMessages!2t3j6sy",
-      "second": {
-        "first": "RawMessages!2q0gped",
-        "second": "RawMessages!3o2yovj",
-        "direction": "row"
-      },
-      "direction": "row",
-      "splitPercentage": 32.16011042097999
-    },
-    "direction": "column",
-    "splitPercentage": 64.88833746898263
-  }
+  "layout": "Tab!2cablzg"
 }
