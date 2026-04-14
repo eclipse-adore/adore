@@ -127,10 +127,22 @@ jobs:
 
       - name: Create source archive
         run: |
-          ref_slug="${{ github.ref_name }}"
+          ref="${{ github.ref_name }}"
+          ref_slug="${ref//\//-}"
+          if [[ "$ref" == "develop" ]]; then
+            release_tag="release"
+            release_name="release"
+          else
+            release_tag="dev-${ref_slug}"
+            release_name="development snapshot for ${ref}"
+          fi
+          echo "RELEASE_TAG=${release_tag}"     >> "$GITHUB_ENV"
+          echo "RELEASE_NAME=${release_name}"   >> "$GITHUB_ENV"
+          echo "REF_SLUG=${ref_slug}"           >> "$GITHUB_ENV"
+          mkdir -p dist
           git archive --format=tar.gz \
             --prefix=adore_embedded/ \
-            --output="dist/adore_embedded_source_${ref_slug//\//-}.tar.gz" \
+            --output="dist/adore_embedded_source_${ref_slug}.tar.gz" \
             HEAD:adore_embedded
 
       - name: Stage README
@@ -139,7 +151,8 @@ jobs:
       - name: Publish GitHub release assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name == 'develop' && 'release' || format('development snapshot for {0}', github.ref_name) }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_NAME }}
           prerelease: ${{ github.ref_name != 'develop' }}
           files: |
             dist/adore_embedded_*.tar.gz
