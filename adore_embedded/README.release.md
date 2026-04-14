@@ -11,13 +11,46 @@
 - `podman` — [install guide](https://podman.io/docs/installation), **or**
 - `util-linux` with `unshare`, `chroot`, and `mount` (standard on most Linux distributions)
 
-## Unpack
+## Fetch
 
-The release is distributed as a `.tar.gz` archive. Extract it anywhere on the target system:
+https://github.com/eclipse-adore/adore/releases/
+
+Release: [<release_url>](<release_url>)
+
+**Docker image**
 
 ```bash
-tar -xzf adore_embedded_<tag>.tar.gz
-cd adore_embedded_<tag>
+# x86_64
+curl -L -o <filename_x86_64> https://github.com/eclipse-adore/adore/releases/download/<release_tag>/<filename_x86_64>
+wget https://github.com/eclipse-adore/adore/releases/download/<release_tag>/<filename_x86_64>
+
+# aarch64
+curl -L -o <filename_aarch64> https://github.com/eclipse-adore/adore/releases/download/<release_tag>/<filename_aarch64>
+wget https://github.com/eclipse-adore/adore/releases/download/<release_tag>/<filename_aarch64>
+```
+
+**Docker-free bundle**
+
+```bash
+# x86_64
+curl -L -o <filename_x86_64_bundle> https://github.com/eclipse-adore/adore/releases/download/<release_tag>/<filename_x86_64_bundle>
+wget https://github.com/eclipse-adore/adore/releases/download/<release_tag>/<filename_x86_64_bundle>
+
+# aarch64
+curl -L -o <filename_aarch64_bundle> https://github.com/eclipse-adore/adore/releases/download/<release_tag>/<filename_aarch64_bundle>
+wget https://github.com/eclipse-adore/adore/releases/download/<release_tag>/<filename_aarch64_bundle>
+```
+
+## Unpack
+
+```bash
+# x86_64
+tar -xzf <filename_x86_64>
+cd <dirname_x86_64>
+
+# aarch64
+tar -xzf <filename_aarch64>
+cd <dirname_aarch64>
 ```
 
 The image archive (`*.tar.gz`) inside the directory is loaded separately on first run — no manual extraction needed.

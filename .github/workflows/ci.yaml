@@ -146,15 +146,42 @@ jobs:
             HEAD:adore_embedded
 
       - name: Stage README
-        run: cp adore_embedded/README.release.md dist/README.md
+        run: |
+          release_url="https://github.com/${{ github.repository }}/releases/tag/${{ env.RELEASE_TAG }}"
+          x86_file=$(basename "$(ls dist/adore_embedded_x86_64_*.tar.gz | grep -v bundle | head -1)")
+          aarch64_file=$(basename "$(ls dist/adore_embedded_aarch64_*.tar.gz | grep -v bundle | head -1)")
+          x86_bundle=$(basename "$(ls dist/adore_embedded_x86_64_*_bundle.tar.gz | head -1)")
+          aarch64_bundle=$(basename "$(ls dist/adore_embedded_aarch64_*_bundle.tar.gz | head -1)")
+          awk \
+            -v release_tag="${{ env.RELEASE_TAG }}" \
+            -v release_url="$release_url" \
+            -v x86_file="$x86_file" \
+            -v aarch64_file="$aarch64_file" \
+            -v x86_bundle="$x86_bundle" \
+            -v aarch64_bundle="$aarch64_bundle" \
+            -v x86_dir="${x86_file%.tar.gz}" \
+            -v aarch64_dir="${aarch64_file%.tar.gz}" \
+            '{
+               gsub(/<release_tag>/, release_tag)
+               gsub(/<release_url>/, release_url)
+               gsub(/<filename_x86_64_bundle>/, x86_bundle)
+               gsub(/<filename_aarch64_bundle>/, aarch64_bundle)
+               gsub(/<filename_x86_64>/, x86_file)
+               gsub(/<filename_aarch64>/, aarch64_file)
+               gsub(/<dirname_x86_64>/, x86_dir)
+               gsub(/<dirname_aarch64>/, aarch64_dir)
+               print
+             }' \
+            adore_embedded/README.release.md > dist/README.md
 
       - name: Publish GitHub release assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
           name: ${{ env.RELEASE_NAME }}
+          target_commitish: ${{ github.sha }}
+          body_path: dist/README.md
           prerelease: ${{ github.ref_name != 'develop' }}
           files: |
             dist/adore_embedded_*.tar.gz
-            dist/README.md
           fail_on_unmatched_files: true

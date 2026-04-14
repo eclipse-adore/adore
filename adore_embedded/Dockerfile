@@ -19,7 +19,8 @@ LABEL org.adore.image-type="embedded" \
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     rm -f /etc/apt/apt.conf.d/docker-clean && \
-    apt-get update
+    apt-get update && \
+    apt-get upgrade -y --no-install-recommends
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
@@ -58,8 +59,8 @@ RUN echo "/usr/local/lib" >> /etc/ld.so.conf.d/local.conf && ldconfig
 #   docker build --build-context ros2_workspace=../ros2_workspace ...
 FROM base AS workspace-builder
 
-COPY --from=ros2_workspace src     /ros2_workspace_dist/src
-COPY --from=ros2_workspace Makefile              /ros2_workspace_dist/Makefile
+COPY --from=ros2_workspace src                  /ros2_workspace_dist/src
+COPY --from=ros2_workspace Makefile             /ros2_workspace_dist/Makefile
 COPY --from=ros2_workspace colcon_defaults.yaml /ros2_workspace_dist/colcon_defaults.yaml
 
 RUN --mount=type=cache,target=/root/.ccache,sharing=locked \
@@ -83,5 +84,6 @@ ENV HOME=/home/user
 COPY --from=workspace-builder /ros2_workspace_dist /ros2_workspace_dist
 # adore_scenarios supplied via: --build-context adore_scenarios=../adore_scenarios
 COPY --from=adore_scenarios . /ros2_workspace_dist/adore_scenarios
+COPY context                  /ros2_workspace_dist/context
 
 WORKDIR /ros2_workspace_dist
