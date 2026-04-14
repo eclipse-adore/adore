@@ -103,7 +103,8 @@ jobs:
     if: >-
       always() &&
       needs.build-test-push-publish.result == 'success' &&
-      github.event_name != 'pull_request'
+      github.event_name == 'push' &&
+      github.repository == 'eclipse-adore/adore'
     runs-on: ubuntu-latest
 
     steps:
@@ -138,8 +139,8 @@ jobs:
       - name: Publish GitHub release assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || (github.ref_name == 'develop' && 'latest' || 'dev') }}
-          prerelease: ${{ !startsWith(github.ref, 'refs/tags/') && github.ref_name != 'develop' }}
+          tag_name: ${{ github.ref_name == 'develop' && 'release' || format('development snapshot for {0}', github.ref_name) }}
+          prerelease: ${{ github.ref_name != 'develop' }}
           files: |
             dist/adore_embedded_*.tar.gz
             dist/README.md
