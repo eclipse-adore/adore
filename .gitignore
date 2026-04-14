@@ -1,4 +1,5 @@
-.zsh_history
+ros2_workspace/colcon_defaults.yaml
+**.zsh_history
 **/build
 **/.tmp
 build

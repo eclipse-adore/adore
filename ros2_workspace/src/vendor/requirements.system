@@ -3,3 +3,8 @@ libeigen3-dev
 
 ## Required by libOpenDRIVE
 libpugixml-dev
+
+# required for ros-carla-msgs 
+ros-${ROS_DISTRO}-diagnostic-msgs
+ros-${ROS_DISTRO}-geometry-msgs
+ros-${ROS_DISTRO}-std-msgs
