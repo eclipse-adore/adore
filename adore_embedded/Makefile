@@ -43,6 +43,10 @@ endif
 REGISTRY       := ghcr.io/$(REPO)
 REGISTRY_IMAGE := $(REGISTRY)/$(IMAGE)
 
+PATCHES          := $(sort $(wildcard $(ROOT_DIR)/patches/*.patch))
+DOCKERFILE       := $(ROOT_DIR)/Dockerfile
+BUILD_DOCKERFILE := $(if $(PATCHES),$(DOCKERFILE).patched,$(DOCKERFILE))
+
 BUILD_DIR          := $(ROOT_DIR)/build/$(IMAGE_TAG)
 PACKAGES_DIR       := $(ROOT_DIR)/packages
 CONTEXT_DIR        := $(ROOT_DIR)/context
@@ -60,8 +64,18 @@ help: ## Show this help
 	    | awk 'BEGIN {FS = ":.*##"}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@printf "\n"
 
+.PHONY: patch
+patch:
+ifneq ($(PATCHES),)
+	@cp $(DOCKERFILE) $(DOCKERFILE).patched
+	@for p in $(PATCHES); do \
+	    echo "Applying patch: $$(basename $$p)"; \
+	    patch -p1 $(DOCKERFILE).patched < "$$p" || exit 1; \
+	done
+endif
+
 .PHONY: _build
-_build: _gather ## Build the image, compile the ROS2 workspace via BuildKit, and save to build/<tag>/
+_build: patch _gather ## Build the image, compile the ROS2 workspace via BuildKit, and save to build/<tag>/
 	@echo "=== Building $(IMAGE) ==="
 	cd ${VENDOR_PATH} && make build
 	cd $(LICHTBLICK_DIR) && make build
@@ -79,7 +93,7 @@ _build: _gather ## Build the image, compile the ROS2 workspace via BuildKit, and
 	    --build-context adore_scenarios=$(ROOT_DIR)/../adore_scenarios \
 	    --target runtime \
 	    -t $(IMAGE) \
-	    -f $(ROOT_DIR)/Dockerfile \
+	    -f $(BUILD_DOCKERFILE) \
 	    $(ROOT_DIR)
 	@mkdir -p $(BUILD_DIR)
 	@echo "=== Extracting built workspace from image ==="
@@ -224,6 +238,7 @@ shell_dist: start ## Attach an interactive shell scoped to the dist scenarios wo
 clean: ## Remove image, build output, and build context
 	docker rmi $(IMAGE) 2>/dev/null || true
 	rm -rf $(ROOT_DIR)/build $(CONTEXT_DIR)
+	@rm -f $(DOCKERFILE).patched
 
 .PHONY: _ensure_loaded
 _ensure_loaded:

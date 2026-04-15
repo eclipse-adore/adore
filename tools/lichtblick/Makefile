@@ -38,7 +38,7 @@ build_force:
 	@echo "Tag: $(LICHTBLICK_TAG)"
 	@echo "Hash: $(LICHTBLICK_HASH)"
 	mkdir -p $(BUILD_DIR)
-	docker build -f Dockerfile.lichtblick -t $(LICHTBLICK_IMAGE) .
+	docker build --no-cache -f Dockerfile.lichtblick -t $(LICHTBLICK_IMAGE) .
 	@echo "✓ Build complete: $(LICHTBLICK_IMAGE)"
 
 .PHONY: _try_pull_lichtblick

@@ -1,9 +1,8 @@
 SHELL := /bin/bash
 MAKEFLAGS += --no-print-directory
-
 ROOT_DIR        := $(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
-COLCON_DEFAULTS := $(ROOT_DIR)/colcon_defaults.yaml
-
+COLCON_DEFAULTS          := $(ROOT_DIR)/colcon_defaults.yaml
+COLCON_DEFAULTS_TEMPLATE := $(ROOT_DIR)/colcon_defaults.yaml.template
 RAM_KB          := $(shell awk '/MemAvailable/{print $$2}' /proc/meminfo)
 RAM_GB          := $(shell awk '/MemAvailable/{print int($$2/1024/1024)}' /proc/meminfo)
 PARALLEL_WORKERS := $(shell \
@@ -15,12 +14,19 @@ define patch_parallel_workers
 	@sed -i 's/^\(\s*parallel-workers:\s*\).*/\1$(PARALLEL_WORKERS)/' $(COLCON_DEFAULTS)
 endef
 
+define ensure_colcon_defaults
+	@if [ ! -f $(COLCON_DEFAULTS) ]; then \
+		cp $(COLCON_DEFAULTS_TEMPLATE) $(COLCON_DEFAULTS); \
+	fi
+endef
+
 .PHONY: help
 help:
 	@printf "Usage: make \033[36m<target>\033[0m\n%s\n" "$$(awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST) | sort | uniq)"
 
 .PHONY: build
-build: clean ## Build all ROS2 packages
+build: ## Build all ROS2 packages
+	$(call ensure_colcon_defaults)
 	$(call patch_parallel_workers)
 	@echo "Detected RAM: $(RAM_KB) kB ($(RAM_GB) GB)"
 	@echo "Parallel workers: $(PARALLEL_WORKERS)"
@@ -30,6 +36,7 @@ build: clean ## Build all ROS2 packages
 
 .PHONY: build_release
 build_release: ## Build all ROS2 packages in Release mode
+	$(call ensure_colcon_defaults)
 	$(call patch_parallel_workers)
 	@echo "Detected RAM: $(RAM_KB) kB ($(RAM_GB) GB)"
 	@echo "Parallel workers: $(PARALLEL_WORKERS)"
@@ -98,4 +105,4 @@ force_kill_ros2: ## Forcefully kill all ROS 2 processes
 	@pkill -9 -f rclpy  || echo "No Python-based ROS 2 nodes found."
 	@pkill -9 -f launch || echo "No ROS 2 launch processes found."
 	@pkill -9 -f colcon || echo "No lingering colcon processes found."
-	@echo "All done!"
+	@echo "All done!!

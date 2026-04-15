@@ -1,5 +1,5 @@
 # Build stage
-FROM node:17 AS build
+FROM node:24 AS build
 
 # Install git and git-lfs
 RUN apt-get update && apt-get install -y git && \

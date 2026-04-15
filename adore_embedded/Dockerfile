@@ -16,15 +16,11 @@ LABEL org.adore.image-type="embedded" \
       org.adore.commit="${SHORT_HASH}" \
       org.adore.requirements-hash="${REQUIREMENTS_HASH}"
 
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
-    rm -f /etc/apt/apt.conf.d/docker-clean && \
+RUN rm -f /etc/apt/apt.conf.d/docker-clean && \
     apt-get update && \
     apt-get upgrade -y --no-install-recommends
 
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
-    apt-get install -y --no-install-recommends \
+RUN  apt-get install -y --no-install-recommends \
         build-essential \
         cmake \
         gettext-base \
@@ -36,12 +32,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 COPY context /tmp/context
 
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
-    bash /tmp/context/install_requirements.sh
-
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+RUN bash /tmp/context/install_requirements.sh && \
     bash /tmp/context/install_packages.sh && \
     rm -rf /tmp/context
 
@@ -66,7 +57,7 @@ COPY --from=ros2_workspace colcon_defaults.yaml /ros2_workspace_dist/colcon_defa
 RUN --mount=type=cache,target=/root/.ccache,sharing=locked \
     . /opt/ros/${ROS_DISTRO}/setup.sh && \
     cd /ros2_workspace_dist && \
-    make build && \
+    make clean build && \
     rm -rf /ros2_workspace_dist/log
 
 # ── Runtime image ──────────────────────────────────────────────────────────────
