@@ -52,7 +52,7 @@ FROM base AS workspace-builder
 
 COPY --from=ros2_workspace src                  /ros2_workspace_dist/src
 COPY --from=ros2_workspace Makefile             /ros2_workspace_dist/Makefile
-COPY --from=ros2_workspace colcon_defaults.yaml /ros2_workspace_dist/colcon_defaults.yaml
+COPY --from=ros2_workspace colcon_defaults.yaml.template /ros2_workspace_dist/colcon_defaults.yaml
 
 RUN --mount=type=cache,target=/root/.ccache,sharing=locked \
     . /opt/ros/${ROS_DISTRO}/setup.sh && \
