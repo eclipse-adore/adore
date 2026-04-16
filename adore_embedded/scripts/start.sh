@@ -3,6 +3,22 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/adore.env"
 
+WORKSPACE="${SCRIPT_DIR}/ros2_workspace"
+if [ ! -d "${WORKSPACE}" ]; then
+    mkdir -p "${WORKSPACE}"
+fi
+if [ ! -d "${WORKSPACE}/src" ] && [ -d "${SCRIPT_DIR}/src" ]; then
+    cp -r "${SCRIPT_DIR}/src" "${WORKSPACE}/src"
+fi
+for f in Makefile colcon_defaults.yaml colcon_defaults.yaml.template; do
+    if [ -f "${SCRIPT_DIR}/${f}" ] && [ ! -f "${WORKSPACE}/${f}" ]; then
+        cp "${SCRIPT_DIR}/${f}" "${WORKSPACE}/${f}"
+    fi
+done
+if [ ! -d "${WORKSPACE}/adore_scenarios" ] && [ -d "${SCRIPT_DIR}/adore_scenarios" ]; then
+    cp -r "${SCRIPT_DIR}/adore_scenarios" "${WORKSPACE}/adore_scenarios"
+fi
+
 if ! docker image inspect "${IMAGE}" >/dev/null 2>&1; then
     "${SCRIPT_DIR}/load.sh"
 fi

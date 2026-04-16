@@ -186,7 +186,7 @@ package: ## Save the current build output as a tar.gz in packages/
 	@mkdir -p $(PACKAGES_DIR)
 	@PKG=$(PACKAGES_DIR)/$(IMAGE_NAME)_$(IMAGE_TAG).tar.gz; \
 	echo "=== Packaging $(BUILD_DIR) → $$PKG ==="; \
-	tar -czf "$$PKG" -C "$(ROOT_DIR)/build" "$(IMAGE_TAG)"; \
+	tar -czf "$$PKG" --transform "s|^$(IMAGE_TAG)|$(IMAGE_NAME)_$(IMAGE_TAG)|" -C "$(ROOT_DIR)/build" "$(IMAGE_TAG)"; \
 	echo "=== Saved: $$PKG ==="
 
 .PHONY: bundle
