@@ -460,7 +460,7 @@ class ScenarioManager:
             return {"success": False, "message": f"Error saving scenario: {str(e)}"}
 
     def start_model_check_then_scenario(self, scenario_input, is_file=True, model_check_enabled=True, model_check_config="config/default.yaml"):
-        """Start model checking first, then scenario after 5 second delay"""
+        """Start scenario first, wait for ROS nodes to publish, then start model checker"""
         if self.current_process and self.current_process.poll() is None:
             return {"success": False, "message": "Scenario already running"}
 
@@ -469,11 +469,21 @@ class ScenarioManager:
                 self.waiting_for_model_check = False
                 self.current_model_check_run_id = None
 
-            # Step 1: Start model checking if enabled
+            # Step 1: Start the scenario
+            print("Starting scenario...")
+            scenario_result = self.start_scenario(scenario_input, is_file)
+            if not scenario_result["success"]:
+                return scenario_result
+
             if model_check_enabled and model_check_blueprint is not None:
-                print("Starting model checking first...")
-                model_check_result = self._start_model_check(
-                    model_check_config)
+                # Wait for ROS nodes to come up and begin publishing before
+                # the model checker opens its monitoring window
+                print("Waiting 5 seconds for ROS nodes to publish...")
+                time.sleep(5)
+
+                # Step 2: Start model checking
+                print("Starting model checking...")
+                model_check_result = self._start_model_check(model_check_config)
                 print(f"Model check start result: {model_check_result}")
 
                 if model_check_result["success"]:
@@ -482,19 +492,16 @@ class ScenarioManager:
                         with self.model_check_lock:
                             self.current_model_check_run_id = run_id
                             self.waiting_for_model_check = True
-                        print(
-                            f"Model checking started with run ID: {self.current_model_check_run_id}")
+                        print(f"Model checking started with run ID: {self.current_model_check_run_id}")
                     else:
-                        print(
-                            "Error: Model check start succeeded but no run ID returned")
+                        print("Error: Model check start succeeded but no run ID returned")
                         return {
                             "success": False,
                             "message": "Model check start succeeded but no run ID returned",
                             "debug_info": model_check_result
                         }
                 else:
-                    error_msg = model_check_result.get(
-                        'message', 'Unknown error')
+                    error_msg = model_check_result.get('message', 'Unknown error')
                     print(f"Failed to start model checking: {error_msg}")
                     return {
                         "success": False,
@@ -502,19 +509,13 @@ class ScenarioManager:
                         "debug_info": model_check_result
                     }
 
-                # Wait 5 seconds before starting scenario
-                print("Waiting 5 seconds before starting scenario...")
-                time.sleep(5)
+                scenario_result['model_check_result'] = model_check_result
             else:
                 if not model_check_enabled:
                     print("Model checking disabled")
                 if model_check_blueprint is None:
                     print("Model check blueprint not available")
 
-            # Step 2: Start the scenario
-            print("Starting scenario...")
-            scenario_result = self.start_scenario(scenario_input, is_file)
-            scenario_result['model_check_result'] = model_check_result
             return scenario_result
 
         except Exception as e:

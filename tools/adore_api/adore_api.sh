@@ -46,8 +46,19 @@ start_adore_api() {
     fi
     
     echo "Starting ADORe API with log directory: ${LOG_DIRECTORY}..."
-    nohup bash -c "cd '${APP_WORKING_DIRECTORY}' && python3 '$APP_NAME' --log-directory='${LOG_DIRECTORY}'" \
-        > "$LOG_FILE" 2>&1 &
+    local _ros_setup="/opt/ros/${ROS_DISTRO}/setup.bash"
+    local _ws_setup="${WORKSPACE_ROOT}/ros2_workspace/install/local_setup.bash"
+    local _pyver
+    _pyver=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+    local _pythonpath="/opt/adore_venv/lib/python${_pyver}/site-packages:/usr/lib/python3/dist-packages:${PYTHONPATH}"
+    local _cmd="source '${_ros_setup}' 2>/dev/null"
+    _cmd="${_cmd} && { [ -f '${_ws_setup}' ] && source '${_ws_setup}' 2>/dev/null || true; }"
+    _cmd="${_cmd} && PYTHONPATH='${_pythonpath}' python3 '${APP_WORKING_DIRECTORY}/$APP_NAME' --log-directory='${LOG_DIRECTORY}'"
+    if [ "$(id -u)" = "0" ] && [ -n "${USER:-}" ] && [ "${USER}" != "root" ]; then
+        nohup sudo -u "${USER}" bash -c "${_cmd}" > "$LOG_FILE" 2>&1 &
+    else
+        nohup bash -c "${_cmd}" > "$LOG_FILE" 2>&1 &
+    fi
     local app_pid=$!
     
     echo "$app_pid" > "$PID_FILE"
