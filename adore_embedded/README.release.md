@@ -10,6 +10,7 @@
 **Docker-free bundle**
 - `podman` — [install guide](https://podman.io/docs/installation), **or**
 - `util-linux` with `unshare`, `chroot`, and `mount` (standard on most Linux distributions)
+- Lichtblick visualisation in the bundle requires `podman`
 
 ## Fetch
 
@@ -132,15 +133,92 @@ The default layout loads automatically. To load the shipped layout explicitly, o
 
 Use `shell_dev.sh` during development. Use `shell_dist.sh` to run scenarios against the shipped build without any host dependencies.
 
-## Docker-free (bundle)
+## Docker-free bundle
 
-No Docker required. Uses `podman` if available, otherwise falls back to `unshare`/`chroot`:
+No Docker required. The bundle ships a complete Linux rootfs extracted from the Docker image alongside the pre-built ROS2 workspace and the Lichtblick image archive.
+
+### How it works
+
+`start.sh` uses `podman` if available, otherwise falls back to `unshare`/`chroot` from `util-linux`. Both paths mount the `ros2_workspace_dist/` directory from the bundle into the rootfs at runtime, so scenarios always run against the shipped build without copying it into the container.
+
+The `unshare` path creates an unprivileged user namespace with a private mount and PID namespace, then calls `chroot` into the rootfs. No root access is required with either backend.
+
+Lichtblick in the bundle requires `podman`. The Lichtblick container image is included in the bundle as `lichtblick/<archive>.tar.gz` and is imported into podman on first use.
+
+### Unpack
 
 ```bash
-./bundle_run.sh
-./bundle_shell_dist.sh   # dist workspace shell
-./bundle_shell_dev.sh    # dev workspace shell
+tar -xzf <filename_bundle>
+cd <dirname_bundle>
 ```
+
+### Workflow
+
+```bash
+./shell_dist.sh          # enter the dist workspace shell
+./shell_dev.sh           # enter the dev workspace shell
+./stop.sh                # remove the imported podman image (podman only; no-op for unshare)
+./start_lichtblick.sh    # start the Lichtblick visualiser (requires podman)
+./stop_lichtblick.sh     # stop the Lichtblick visualiser
+```
+
+### Running a scenario (bundle)
+
+Open two terminals in the bundle directory.
+
+**Terminal 1 — start the environment and launch a scenario:**
+
+```bash
+./shell_dist.sh
+ros2 launch simulation_test.launch.py
+```
+
+**Terminal 2 — start Lichtblick:**
+
+```bash
+./start_lichtblick.sh
+```
+
+Then open in a Chromium-based browser:
+
+```
+http://localhost:8080/?ds=rosbridge-websocket&ds.url=ws://localhost:9090
+```
+
+**When done:**
+
+```bash
+./stop_lichtblick.sh
+./stop.sh
+```
+
+`stop.sh` removes the imported podman image (`adore_bundle_<ros_distro>`). Re-running `start.sh` or any shell script will re-import it from the rootfs directory on the next invocation. When using the `unshare` backend, `stop.sh` prints a notice and exits cleanly — there is no persistent state to remove.
+
+### Backend selection
+
+| Backend | Selected when | Persistent state |
+|---|---|---|
+| `podman` | `podman` is on `PATH` | Podman image `adore_bundle_<ros_distro>` imported on first run; removed by `stop.sh` |
+| `unshare`/`chroot` | `podman` not found | None — namespace torn down when the shell exits |
+
+### Bundle contents
+
+| Path | Description |
+|---|---|
+| `rootfs/` | Complete Linux rootfs with all ROS2 and ADORe dependencies |
+| `ros2_workspace_dist/` | Pre-built ROS2 workspace mounted into the rootfs at runtime |
+| `lichtblick/<archive>.tar.gz` | Lichtblick container image archive, imported into podman on first use |
+| `bundle.env` | `ROS_DISTRO` and `DOCKER_PLATFORM` consumed by the bundle scripts |
+| `lichtblick.env` | `LICHTBLICK_IMAGE` and `LICHTBLICK_ARCHIVE_NAME` consumed by `start_lichtblick.sh` |
+| `container.env` | Runtime environment variables passed into the environment |
+| `start.sh` | Start an interactive session via podman or unshare/chroot |
+| `stop.sh` | Remove the imported podman image; no-op for unshare |
+| `shell_dist.sh` | Shell into the pre-built dist workspace |
+| `shell_dev.sh` | Shell into the dev workspace |
+| `start_lichtblick.sh` | Start Lichtblick via podman (loads archive on first use) |
+| `stop_lichtblick.sh` | Stop the Lichtblick podman container |
+| `.bundle_inner.sh` | Internal helper — mounts filesystems and execs into the chroot (not called directly) |
+| `README.md` | This file |
 
 ## Rebuild ROS2 workspace
 
@@ -155,7 +233,7 @@ Or non-interactively:
 ./build_ros_workspace.sh
 ```
 
-## Contents
+## Contents (Docker release)
 
 | Path | Description |
 |---|---|
@@ -171,4 +249,5 @@ Or non-interactively:
 | `bundle_run.sh` | Run without Docker via podman or `unshare` |
 | `bundle_shell_dev.sh` / `bundle_shell_dist.sh` | Shells for the Docker-free bundle |
 | `ros2_workspace_dist/` | Pre-built ROS2 workspace |
+| `lichtblick/` | Lichtblick image archive and supporting files |
 | `*.tar.gz` | Docker image archive |

@@ -210,10 +210,20 @@ bundle: ## Create a self-contained Docker-free rootfs bundle in packages/
 	@cp $(ROOT_DIR)/container.env $(BUNDLE_DIR)/container.env
 	@printf 'ROS_DISTRO=%s\nDOCKER_PLATFORM=%s\n' "$(ROS_DISTRO)" "$(DOCKER_PLATFORM)" \
 	    > $(BUNDLE_DIR)/bundle.env
-	@cp $(ROOT_DIR)/scripts/bundle_run.sh        $(BUNDLE_DIR)/start.sh        && chmod +x $(BUNDLE_DIR)/start.sh
-	@cp $(ROOT_DIR)/scripts/bundle_shell_dev.sh  $(BUNDLE_DIR)/shell_dev.sh    && chmod +x $(BUNDLE_DIR)/shell_dev.sh
-	@cp $(ROOT_DIR)/scripts/bundle_shell_dist.sh $(BUNDLE_DIR)/shell_dist.sh   && chmod +x $(BUNDLE_DIR)/shell_dist.sh
-	@cp $(ROOT_DIR)/scripts/bundle_inner.sh $(BUNDLE_DIR)/.bundle_inner.sh && chmod +x $(BUNDLE_DIR)/.bundle_inner.sh
+	@printf 'LICHTBLICK_IMAGE=%s\nLICHTBLICK_ARCHIVE_NAME=%s\n' \
+	    "$(LICHTBLICK_IMAGE)" "$(LICHTBLICK_ARCHIVE_NAME)" \
+	    > $(BUNDLE_DIR)/lichtblick.env
+	@cp $(ROOT_DIR)/scripts/bundle_run.sh              $(BUNDLE_DIR)/start.sh              && chmod +x $(BUNDLE_DIR)/start.sh
+	@cp $(ROOT_DIR)/scripts/bundle_stop.sh             $(BUNDLE_DIR)/stop.sh               && chmod +x $(BUNDLE_DIR)/stop.sh
+	@cp $(ROOT_DIR)/scripts/bundle_shell_dev.sh        $(BUNDLE_DIR)/shell_dev.sh          && chmod +x $(BUNDLE_DIR)/shell_dev.sh
+	@cp $(ROOT_DIR)/scripts/bundle_shell_dist.sh       $(BUNDLE_DIR)/shell_dist.sh         && chmod +x $(BUNDLE_DIR)/shell_dist.sh
+	@cp $(ROOT_DIR)/scripts/bundle_start_lichtblick.sh $(BUNDLE_DIR)/start_lichtblick.sh   && chmod +x $(BUNDLE_DIR)/start_lichtblick.sh
+	@cp $(ROOT_DIR)/scripts/bundle_stop_lichtblick.sh  $(BUNDLE_DIR)/stop_lichtblick.sh    && chmod +x $(BUNDLE_DIR)/stop_lichtblick.sh
+	@cp $(ROOT_DIR)/scripts/bundle_inner.sh            $(BUNDLE_DIR)/.bundle_inner.sh      && chmod +x $(BUNDLE_DIR)/.bundle_inner.sh
+	@echo "  Saving Lichtblick image → $(BUNDLE_DIR)/lichtblick/$(LICHTBLICK_ARCHIVE_NAME)"
+	@mkdir -p $(BUNDLE_DIR)/lichtblick
+	@docker save $(LICHTBLICK_IMAGE) | gzip > $(BUNDLE_DIR)/lichtblick/$(LICHTBLICK_ARCHIVE_NAME)
+	@cp $(ROOT_DIR)/README.release.md $(BUNDLE_DIR)/README.md
 	@echo "  Compressing..."
 	@tar -czf $(BUNDLE_DIR).tar.gz -C $(PACKAGES_DIR) $(BUNDLE_NAME)
 	@rm -rf $(BUNDLE_DIR)
