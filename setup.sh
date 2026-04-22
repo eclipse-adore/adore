@@ -52,10 +52,7 @@ fi
 source /opt/adore_venv/bin/activate
 
 source "${SCRIPT_DIRECTORY}/adore.env"
-
-source ${SCRIPT_DIRECTORY}/tools/adore_api/adore_api.sh
 PYVER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-# Include system dist-packages so .deb-installed packages (e.g. adore_model_checker)
-# are visible to the activated venv Python, which doesn't include system packages
-# by default.
 export PYTHONPATH="/opt/adore_venv/lib/python${PYVER}/site-packages:/usr/lib/python3/dist-packages:${PYTHONPATH}"
+
+bash ${SCRIPT_DIRECTORY}/tools/adore_api/adore_api.sh

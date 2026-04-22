@@ -1,10 +1,31 @@
 SHELL := /bin/bash
 MAKEFLAGS += --no-print-directory
-ROOT_DIR        := $(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
+
+# --- Dependency Checks ---
+.PHONY: check_ros2
+check_ros2:
+	@command -v ros2 >/dev/null 2>&1 || { \
+		echo "ERROR: 'ros2' command not found. Call this inside the ADORe CLI docker context to avoid this error."; \
+		exit 1; \
+	}
+
+.PHONY: check_colcon
+check_colcon:
+	@command -v colcon >/dev/null 2>&1 || { \
+		echo "ERROR: 'colcon' command not found. Call this inside the ADORe CLI docker context to avoid this error."; \
+		exit 1; \
+	}
+
+# A combined target for convenience
+.PHONY: check_deps
+check_deps: check_ros2 check_colcon
+
+
+ROOT_DIR                 := $(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
 COLCON_DEFAULTS          := $(ROOT_DIR)/colcon_defaults.yaml
 COLCON_DEFAULTS_TEMPLATE := $(ROOT_DIR)/colcon_defaults.yaml.template
-RAM_KB          := $(shell awk '/MemAvailable/{print $$2}' /proc/meminfo)
-RAM_GB          := $(shell awk '/MemAvailable/{print int($$2/1024/1024)}' /proc/meminfo)
+RAM_KB                   := $(shell awk '/MemAvailable/{print $$2}' /proc/meminfo)
+RAM_GB                   := $(shell awk '/MemAvailable/{print int($$2/1024/1024)}' /proc/meminfo)
 PARALLEL_WORKERS := $(shell \
     mem_workers=$$(awk '/MemAvailable/{print int($$2/1024/1024/2)}' /proc/meminfo); \
     cpu_workers=$$(nproc); \
@@ -25,7 +46,7 @@ help:
 	@printf "Usage: make \033[36m<target>\033[0m\n%s\n" "$$(awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST) | sort | uniq)"
 
 .PHONY: build
-build: ## Build all ROS2 packages
+build: check_deps ## Build all ROS2 packages
 	$(call ensure_colcon_defaults)
 	$(call patch_parallel_workers)
 	@echo "Detected RAM: $(RAM_KB) kB ($(RAM_GB) GB)"
@@ -35,7 +56,7 @@ build: ## Build all ROS2 packages
 	touch build/build.success
 
 .PHONY: build_release
-build_release: ## Build all ROS2 packages in Release mode
+build_release: check_deps ## Build all ROS2 packages in Release mode
 	$(call ensure_colcon_defaults)
 	$(call patch_parallel_workers)
 	@echo "Detected RAM: $(RAM_KB) kB ($(RAM_GB) GB)"
@@ -43,19 +64,9 @@ build_release: ## Build all ROS2 packages in Release mode
 	source /opt/ros/${ROS_DISTRO}/setup.bash && COLCON_DEFAULTS_FILE=$(COLCON_DEFAULTS) colcon build && source install/local_setup.sh
 
 .PHONY: build_single_core
-build_single_core: ## Build all ROS2 packages, force single-threaded build regardless of RAM
+build_single_core: check_deps ## Build all ROS2 packages, force single-threaded build regardless of RAM
 	@echo "Executor mode: --executor sequential"
 	source /opt/ros/${ROS_DISTRO}/setup.bash && colcon build --executor sequential
-
-.PHONY: build_user_libraries
-build_user_libraries:
-	cd ../libraries && make build && cd ../ros2_workspace
-
-.PHONY: build_libraries_and_nodes
-build_libraries_and_nodes: build_user_libraries build_release ## Build user libraries then all ROS2 packages
-
-.PHONY: clean_build
-clean_build: clean build ## Clean and build all ROS2 packages
 
 .PHONY: clean
 clean: ## Clean the ROS2 workspace
@@ -63,8 +74,13 @@ clean: ## Clean the ROS2 workspace
 	rm -rf log/*
 	rm -rf install/*
 
+
+
+.PHONY: clean_build
+clean_build: clean build ## Clean and build all ROS2 packages
+
 .PHONY: test
-test: ## Run ROS2 package tests
+test: check_colcon ## Run ROS2 package tests
 	colcon test --pytest-args "-m 'not linter'" --event-handlers console_direct+
 
 .PHONY: ccache_stats
@@ -105,4 +121,4 @@ force_kill_ros2: ## Forcefully kill all ROS 2 processes
 	@pkill -9 -f rclpy  || echo "No Python-based ROS 2 nodes found."
 	@pkill -9 -f launch || echo "No ROS 2 launch processes found."
 	@pkill -9 -f colcon || echo "No lingering colcon processes found."
-	@echo "All done!!
+	@echo "All done!!"

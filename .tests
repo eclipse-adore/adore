@@ -10,7 +10,7 @@ LOG_DIRECTORY="${LOG_DIRECTORY:-.log}"
 # Global timeout for API readiness check (in seconds)
 API_READINESS_TIMEOUT=60
 
-SIMULATION_TEST_SCENARIO_RUNTIME=60
+SIMULATION_TEST_SCENARIO_RUNTIME=45
 SIMULATION_TEST_SCENARIO_REQUEST_TIMEOUT=120
 
 
@@ -180,6 +180,27 @@ wait_for_api_ready() {
 
   # Clean up temp files
   rm -f /tmp/status_response /tmp/scenario_response
+  exit 0
+}
+
+00_ros2_build_check_test() {
+  local name="ROS2 Build Check"
+  local description="Verifies that the ROS2 workspace has been successfully built before running simulation tests."
+  local build_success_file="ros2_workspace/build/build.success"
+
+  printf "\n"
+  printf "  Test: %s\n" "${name}"
+  printf "    Description: %s\n" "${description}"
+  printf "    Checking for ROS2 build artifact...\n"
+
+  if [ ! -f "${build_success_file}" ]; then
+    printf "    Status: $(bold $(red "FAILED")) - Build success marker not found: %s\n" "${build_success_file}"
+    printf "    Run 'make build' or build the ROS2 workspace before executing simulation tests.\n"
+    exit 1
+  fi
+
+  printf "    Build success marker found: %s\n" "${build_success_file}"
+  printf "    %-77s %s\n" "Status:" "$(bold $(green "PASSED"))"
   exit 0
 }
 

@@ -16,6 +16,7 @@ import subprocess
 import threading
 import time
 import json
+import hashlib
 from datetime import datetime, timezone
 from collections import deque, defaultdict
 from flask import Flask, render_template, request, jsonify
@@ -660,6 +661,15 @@ class ScenarioManager:
                 cwd=cwd,
             )
 
+            time.sleep(0.5)
+            if self.current_process.poll() is not None:
+                self.status = "failed"
+                output = self.current_process.stdout.read()
+                return {
+                    "success": False,
+                    "message": f"Scenario process exited immediately (rc={self.current_process.returncode}): {output}",
+                }
+
             self.status = "running"
             self.scenario_start_time = time.time()
             self.output_buffer.clear()
@@ -997,6 +1007,205 @@ class ScenarioManager:
             time.sleep(1)
 
 
+class WorkspaceMonitor:
+    """
+    Watches ros2_workspace/build for changes and re-sources
+    ros2_workspace/install/setup.bash whenever the build directory is mutated.
+
+    The environment snapshot produced by sourcing setup.bash is injected into
+    os.environ so that all subsequent subprocess calls (ros2 launch, ros2 bag,
+    etc.) inherit the updated ROS environment without restarting the API.
+    """
+
+    POLL_INTERVAL = 2.0
+
+    def __init__(self, workspace_root: str):
+        self.workspace_root = workspace_root
+        self.build_dir = os.path.join(workspace_root, "ros2_workspace", "build")
+        self.install_dir = os.path.join(workspace_root, "ros2_workspace", "install")
+        self.setup_script = os.path.join(self.install_dir, "setup.bash")
+
+        self._lock = threading.Lock()
+        self._last_snapshot: str | None = None
+        self._sourced_at: float | None = None
+        self._thread: threading.Thread | None = None
+        self._running = False
+
+    # ------------------------------------------------------------------
+    # Public interface
+    # ------------------------------------------------------------------
+
+    def start(self):
+        self._running = True
+        self._thread = threading.Thread(target=self._poll_loop, daemon=True, name="workspace-monitor")
+        self._thread.start()
+        print(f"✓ Workspace monitor watching: {self.build_dir}")
+
+    def stop(self):
+        self._running = False
+
+    def check_build_ready(self) -> dict | None:
+        """
+        Returns an error dict (suitable for jsonify) when the build directory
+        is absent or empty, or None when everything looks fine.
+        """
+        if not os.path.isdir(self.build_dir):
+            return {
+                "success": False,
+                "error": "workspace_not_built",
+                "message": (
+                    f"ROS 2 workspace build directory not found: {self.build_dir}. "
+                    "Run `colcon build` inside ros2_workspace to fix this."
+                ),
+            }
+
+        entries = [e for e in os.scandir(self.build_dir) if not e.name.startswith(".")]
+        if not entries:
+            return {
+                "success": False,
+                "error": "workspace_not_built",
+                "message": (
+                    f"ROS 2 workspace build directory is empty: {self.build_dir}. "
+                    "Run `colcon build` inside ros2_workspace to fix this."
+                ),
+            }
+
+        return None
+
+    def get_status(self) -> dict:
+        with self._lock:
+            return {
+                "build_dir": self.build_dir,
+                "build_dir_exists": os.path.isdir(self.build_dir),
+                "install_dir_exists": os.path.isdir(self.install_dir),
+                "setup_script_exists": os.path.isfile(self.setup_script),
+                "last_sourced_at": self._sourced_at,
+                "monitoring": self._running,
+            }
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _snapshot(self) -> str:
+        """
+        Produce a fingerprint of the build directory based on the mtimes and
+        sizes of all regular files.  Lightweight enough to run every few seconds.
+        """
+        if not os.path.isdir(self.build_dir):
+            return ""
+
+        hasher = hashlib.md5()
+        for root, dirs, files in os.walk(self.build_dir):
+            dirs.sort()
+            for fname in sorted(files):
+                path = os.path.join(root, fname)
+                try:
+                    st = os.stat(path)
+                    hasher.update(f"{path}:{st.st_mtime}:{st.st_size}".encode())
+                except OSError:
+                    pass
+        return hasher.hexdigest()
+
+    def _source_setup(self):
+        if not os.path.isfile(self.setup_script):
+            print(f"⚠  Workspace setup script not found: {self.setup_script}")
+            return
+
+        try:
+            result = subprocess.run(
+                ["bash", "-c", f"source '{self.setup_script}' && env -0"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            if result.returncode != 0:
+                print(f"⚠  Failed to source workspace setup: {result.stderr.strip()}")
+                return
+
+            new_env = {}
+            for entry in result.stdout.split("\0"):
+                if "=" in entry:
+                    k, _, v = entry.partition("=")
+                    new_env[k] = v
+
+            os.environ.update(new_env)
+
+            with self._lock:
+                self._sourced_at = time.time()
+
+            print(f"✓ Workspace re-sourced: {self.setup_script}")
+        except subprocess.TimeoutExpired:
+            print("⚠  Timeout sourcing workspace setup script")
+        except Exception as e:
+            print(f"⚠  Error sourcing workspace setup script: {e}")
+
+    def _poll_loop(self):
+        # Source immediately on startup if the workspace already exists
+        initial = self._snapshot()
+        if initial:
+            self._source_setup()
+
+        with self._lock:
+            self._last_snapshot = initial
+
+        while self._running:
+            time.sleep(self.POLL_INTERVAL)
+            try:
+                current = self._snapshot()
+                with self._lock:
+                    changed = current != self._last_snapshot
+                    self._last_snapshot = current
+
+                if changed and current:
+                    print("Workspace build directory changed, re-sourcing install/setup.bash...")
+                    self._source_setup()
+            except Exception as e:
+                print(f"⚠  Workspace monitor error: {e}")
+
+
+workspace_monitor: WorkspaceMonitor | None = None
+
+
+def _workspace_guard():
+    """
+    Return a 503-ready error dict if the workspace build dir is absent or
+    empty, or None when ready.  Works even before WorkspaceMonitor is started
+    by falling back to a direct filesystem check using WORKSPACE_ROOT.
+    """
+    if workspace_monitor is not None:
+        return workspace_monitor.check_build_ready()
+
+    workspace_root = os.environ.get(
+        'WORKSPACE_ROOT',
+        os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    )
+    build_dir = os.path.join(workspace_root, 'ros2_workspace', 'build')
+
+    if not os.path.isdir(build_dir):
+        return {
+            "success": False,
+            "error": "workspace_not_built",
+            "message": (
+                f"ROS 2 workspace build directory not found: {build_dir}. "
+                "Run `colcon build` inside ros2_workspace to fix this."
+            ),
+        }
+
+    entries = [e for e in os.scandir(build_dir) if not e.name.startswith('.')]
+    if not entries:
+        return {
+            "success": False,
+            "error": "workspace_not_built",
+            "message": (
+                f"ROS 2 workspace build directory is empty: {build_dir}. "
+                "Run `colcon build` inside ros2_workspace to fix this."
+            ),
+        }
+
+    return None
+
+
 scenario_manager = ScenarioManager()
 bag_manager = None
 
@@ -1026,17 +1235,36 @@ def goal_picker():
 
 @app.route('/api/status')
 def api_status():
+    ws_status = workspace_monitor.get_status() if workspace_monitor else None
+    build_error = _workspace_guard()
     return jsonify({
         "adore_api": "running",
         "model_checker_available": model_check_blueprint is not None,
         "ros_marshaller_available": ROSMarshaller is not None,
-        "bag_recording_available": bag_manager is not None
+        "bag_recording_available": bag_manager is not None,
+        "workspace": ws_status,
+        "workspace_ready": build_error is None,
     })
+
+
+@app.route('/api/workspace/status')
+def workspace_status():
+    if workspace_monitor is None:
+        return jsonify({"monitoring": False, "message": "Workspace monitor not initialised"}), 503
+    status = workspace_monitor.get_status()
+    build_error = workspace_monitor.check_build_ready()
+    status["ready"] = build_error is None
+    if build_error:
+        status["error"] = build_error["message"]
+    return jsonify(status)
 
 
 @app.route('/api/scenario/start', methods=['POST'])
 def start_scenario_route():
-    # Be tolerant if client sends no/invalid JSON
+    err = _workspace_guard()
+    if err:
+        return jsonify(err), 503
+
     data = request.get_json(silent=True) or {}
 
     scenario_input = data.get(
@@ -1050,9 +1278,6 @@ def start_scenario_route():
 
     if not scenario_input:
         return jsonify({"success": False, "message": "No scenario provided"}), 400
-
-    # Currently you’re explicitly disabling model checking here
-    model_check_enabled = False
 
     if model_check_enabled:
         result = scenario_manager.start_model_check_then_scenario(
@@ -1075,6 +1300,9 @@ def stop_scenario():
 
 @app.route('/api/scenario/restart', methods=['POST'])
 def restart_scenario():
+    err = _workspace_guard()
+    if err:
+        return jsonify(err), 503
     result = scenario_manager.restart_scenario()
     return jsonify(result)
 
@@ -1706,18 +1934,28 @@ def debug_model_check():
 
 
 def main():
-    global LOG_DIRECTORY, bag_manager, model_check_blueprint
+    global LOG_DIRECTORY, bag_manager, model_check_blueprint, workspace_monitor
 
     parser = argparse.ArgumentParser(description='ADORe API Server')
     parser.add_argument('--log-directory', type=str,
                         help='Directory for logs and bag recordings')
     parser.add_argument('--port', type=str,
                         help='TCP listining port. DEFAULT: 8888')
+    parser.add_argument('--workspace-root', type=str,
+                        help='Repository root containing ros2_workspace/. Defaults to two levels above this script.')
 
     args = parser.parse_args()
 
     LOG_DIRECTORY = args.log_directory or os.environ.get('LOG_DIRECTORY')
     PORT = args.port or 8888
+
+    workspace_root = (
+        args.workspace_root
+        or os.environ.get('WORKSPACE_ROOT')
+        or os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    )
+    workspace_monitor = WorkspaceMonitor(workspace_root)
+    workspace_monitor.start()
 
     if LOG_DIRECTORY:
         os.makedirs(LOG_DIRECTORY, exist_ok=True)
@@ -1760,6 +1998,7 @@ def main():
 
     print(f"\n🚀 Starting ADORe API server on http://0.0.0.0:{PORT}")
     print(f"📊 API status available at: http://localhost:{PORT}/api/status")
+    print(f"🔧 Workspace status at: http://localhost:{PORT}/api/workspace/status")
     app.run(debug=False, use_reloader=False, host='0.0.0.0', port=PORT)
 
 

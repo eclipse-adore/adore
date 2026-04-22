@@ -38,7 +38,7 @@ $(shell [ -d "$(VENDOR_PATH)/build" ] || (cd vendor && $(MAKE) --no-print-direct
 
 .PHONY: build
 build: docker_host_context_check stop_adore_cli build_vendor_libraries build_adore_cli build_ros_workspace build_services ## Build and setup adore cli
-	make clean_tag_history
+	@make clean_tag_history
 
 .PHONY: build_adore_embedded
 build_adore_embedded: docker_host_context_check # Build ADORe Embedded docker image

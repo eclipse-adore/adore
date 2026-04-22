@@ -46,19 +46,10 @@ start_adore_api() {
     fi
     
     echo "Starting ADORe API with log directory: ${LOG_DIRECTORY}..."
-    local _ros_setup="/opt/ros/${ROS_DISTRO}/setup.bash"
-    local _ws_setup="${WORKSPACE_ROOT}/ros2_workspace/install/local_setup.bash"
-    local _pyver
-    _pyver=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-    local _pythonpath="/opt/adore_venv/lib/python${_pyver}/site-packages:/usr/lib/python3/dist-packages:${PYTHONPATH}"
-    local _cmd="source '${_ros_setup}' 2>/dev/null"
-    _cmd="${_cmd} && { [ -f '${_ws_setup}' ] && source '${_ws_setup}' 2>/dev/null || true; }"
-    _cmd="${_cmd} && PYTHONPATH='${_pythonpath}' python3 '${APP_WORKING_DIRECTORY}/$APP_NAME' --log-directory='${LOG_DIRECTORY}'"
-    if [ "$(id -u)" = "0" ] && [ -n "${USER:-}" ] && [ "${USER}" != "root" ]; then
-        nohup sudo -u "${USER}" bash -c "${_cmd}" > "$LOG_FILE" 2>&1 &
-    else
-        nohup bash -c "${_cmd}" > "$LOG_FILE" 2>&1 &
-    fi
+    nohup bash -c "python3 '${APP_WORKING_DIRECTORY}/${APP_NAME}' \
+        --log-directory='${LOG_DIRECTORY}' \
+        --workspace-root='${WORKSPACE_ROOT}' \
+        --port='${APP_PORT}'" > "$LOG_FILE" 2>&1 &
     local app_pid=$!
     
     echo "$app_pid" > "$PID_FILE"
@@ -107,8 +98,44 @@ status_adore_api() {
         echo "Log directory: ${LOG_DIRECTORY}"
         echo "Bag recordings directory: ${LOG_DIRECTORY}/bag_file_recordings/"
         lsof -i :"$APP_PORT" 2>/dev/null | grep LISTEN || true
+        echo ""
+        workspace_status_adore_api
     else
         echo "ADORe API is not running"
+    fi
+}
+
+workspace_status_adore_api() {
+    local APP_PORT="${ADORE_API_PORT}"
+    local BUILD_DIR="${WORKSPACE_ROOT}/ros2_workspace/build"
+
+    echo "--- Workspace ---"
+    if command -v curl > /dev/null 2>&1; then
+        curl -sf "http://localhost:${APP_PORT}/api/workspace/status" 2>/dev/null \
+            | python3 -c "
+import sys, json
+try:
+    d = json.load(sys.stdin)
+    print('  ready          :', d.get('ready'))
+    print('  build_dir      :', d.get('build_dir'))
+    print('  build_exists   :', d.get('build_dir_exists'))
+    print('  install_exists :', d.get('install_dir_exists'))
+    print('  setup_exists   :', d.get('setup_script_exists'))
+    ts = d.get('last_sourced_at')
+    if ts:
+        import datetime
+        print('  last_sourced   :', datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S'))
+    if 'error' in d:
+        print('  error          :', d['error'])
+except Exception as e:
+    print('  (could not parse workspace status:', e, ')')
+" 2>/dev/null || echo "  (API not reachable on port $APP_PORT)"
+    else
+        if [ -d "${BUILD_DIR}" ] && [ -n "$(ls -A "${BUILD_DIR}" 2>/dev/null)" ]; then
+            echo "  build directory: present (${BUILD_DIR})"
+        else
+            echo "  build directory: EMPTY or missing -- run colcon build inside ros2_workspace"
+        fi
     fi
 }
 

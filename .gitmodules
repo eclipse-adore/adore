@@ -84,9 +84,6 @@
 	path = vendor/mathematics_toolbox
 	url = git@github.com:dlr-ts/mathematics_toolbox.git
 
-[submodule "vendor/adore_model_checker"]
-	path = vendor/adore_model_checker
-	url = git@github.com:dlr-ts/adore_model_checker.git
 [submodule "vendor/ros2_observer"]
 	path = vendor/ros2_observer
 	url = git@github.com:dlr-ts/ros2_observer.git
@@ -117,3 +114,9 @@
 [submodule "ros2_workspace/src/vendor/osqp_build/osqp"]
 	path = ros2_workspace/src/vendor/osqp_build/osqp
 	url = https://github.com/osqp/osqp.git
+[submodule "vendor/adore_model_checker"]
+	path = vendor/adore_model_checker
+	url = git@github.com:DLR-TS/adore_model_checker.git
+[submodule "ros2_workspace/src/adore_ros2_nodes/operational_design_domain"]
+	path = ros2_workspace/src/adore_ros2_nodes/operational_design_domain
+	url = git@github.com:DLR-TS/operational_design_domain.git
