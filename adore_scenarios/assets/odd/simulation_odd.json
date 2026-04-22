@@ -1,0 +1,6 @@
+{
+  "max_speed": 70,
+  "minimum_road_width": 2.0,
+  "valid_hours_of_the_day": [0, 24],
+  "max_wind_intensity": 4
+}
