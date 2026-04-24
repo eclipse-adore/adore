@@ -24,6 +24,9 @@ adore_embedded/build/
 .colcon_workspace/src/
 **__pycache__**
 *.pyc
+**.tar.gz
+**.orj
+**.rej
 
 ros2_workspace/colcon_defaults.yaml
 

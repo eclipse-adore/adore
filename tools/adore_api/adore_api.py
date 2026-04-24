@@ -17,14 +17,84 @@ import threading
 import time
 import json
 import hashlib
+import logging
+import queue
 from datetime import datetime, timezone
 from collections import deque, defaultdict
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, Response
 from flask_cors import CORS
 import signal
 import psutil
 import argparse
 from flask import send_from_directory
+
+
+# ── Log broadcaster for the model checker log tab ────────────────────────────
+class _LogBroadcaster:
+    def __init__(self, maxlen=5000):
+        self._lock = threading.Lock()
+        self._clients = []
+        self._buffer = []
+        self._maxlen = maxlen
+
+    def write(self, text, stream='stdout'):
+        msg = json.dumps({
+            'text': text.rstrip(),
+            'stream': stream,
+            'time': datetime.now().strftime('%H:%M:%S'),
+        })
+        with self._lock:
+            self._buffer.append(msg)
+            if len(self._buffer) > self._maxlen:
+                self._buffer.pop(0)
+            for q in list(self._clients):
+                try:
+                    q.put_nowait(msg)
+                except Exception:
+                    pass
+
+    def subscribe(self):
+        q = queue.Queue(maxsize=500)
+        with self._lock:
+            for line in self._buffer[-200:]:
+                try:
+                    q.put_nowait(line)
+                except Exception:
+                    pass
+            self._clients.append(q)
+        return q
+
+    def unsubscribe(self, q):
+        with self._lock:
+            try:
+                self._clients.remove(q)
+            except ValueError:
+                pass
+
+
+_adore_log_broadcaster = _LogBroadcaster()
+
+
+class _BroadcastLogHandler(logging.Handler):
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            stream = 'stderr' if record.levelno >= logging.WARNING else 'stdout'
+            _adore_log_broadcaster.write(msg, stream)
+        except Exception:
+            pass
+
+
+def _install_adore_log_handler():
+    handler = _BroadcastLogHandler()
+    handler.setFormatter(logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s',
+                                           datefmt='%H:%M:%S'))
+    root = logging.getLogger()
+    if not any(isinstance(h, _BroadcastLogHandler) for h in root.handlers):
+        root.addHandler(handler)
+
+
+_install_adore_log_handler()
 
 
 model_check_blueprint = None
@@ -35,10 +105,10 @@ try:
     from adore_model_checker.model_checker_api import get_model_check_blueprint, stop_model_check_worker as _stop_model_check_worker
     stop_model_check_worker = _stop_model_check_worker
     print("✓ ADORe Model Checker library found")
-except ImportError as e:
-    print(f"⚠ Warning: ADORe Model Checker library not found: {e}")
+except (ImportError, RuntimeError) as e:
+    print(f"⚠ Warning: ADORe Model Checker library not available: {e}")
     print("⚠ Model checking functionality will be disabled")
-    print("⚠ To enable model checking, please install the adore_model_checker library")
+    print("⚠ Ensure ROS is sourced and adore_model_checker is installed to enable model checking")
 
 try:
     from ros2tools.ros2api import *
@@ -342,6 +412,11 @@ class TopicManager:
                         'data': json.loads(json_data) if isinstance(json_data, str) else json_data
                     }
                     messages_queue.append(message_data)
+                    for listener in self.subscribers.get(topic, {}).get('listeners', []):
+                        try:
+                            listener(json_data, topic_name, datatype)
+                        except Exception:
+                            pass
                 except Exception as e:
                     print(f"Error processing message for topic {topic}: {e}")
 
@@ -633,17 +708,19 @@ class ScenarioManager:
                     f"{full_path} (base_directory='{self.base_directory}')"
                 )
             else:
-                # Custom launch content passed directly
-                temp_file = os.path.join(
-                    self.base_directory, "temp_custom_scenario.launch.py"
-                )
+                # Always write the temp file into simulation_scenarios/ so
+                # that sys.path.append(os.path.dirname(__file__)) inside the
+                # launch file resolves position.py, simulated_vehicle.py etc.
+                scenario_dir = os.path.join(self.base_directory, "simulation_scenarios")
+                os.makedirs(scenario_dir, exist_ok=True)
+                temp_file = os.path.join(scenario_dir, "temp_custom_scenario.launch.py")
                 full_path = os.path.abspath(temp_file)
 
                 with open(full_path, "w") as f:
                     f.write(scenario_input)
 
                 self.current_scenario_content = scenario_input
-                self.current_scenario = "temp_custom_scenario.launch.py"
+                self.current_scenario = os.path.relpath(full_path, self.base_directory)
 
                 cmd = ["ros2", "launch", full_path]
                 cwd = None
@@ -652,6 +729,7 @@ class ScenarioManager:
                     f"[ScenarioManager] Starting custom scenario from temp file: {full_path}"
                 )
 
+            scenario_env = _source_workspace_env()
             self.current_process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
@@ -659,6 +737,7 @@ class ScenarioManager:
                 universal_newlines=True,
                 bufsize=1,
                 cwd=cwd,
+                env=scenario_env,
             )
 
             time.sleep(0.5)
@@ -1165,6 +1244,53 @@ class WorkspaceMonitor:
 
 
 workspace_monitor: WorkspaceMonitor | None = None
+
+
+def _source_workspace_env() -> dict:
+    """
+    Source ros2_workspace/install/setup.bash (falling back to setup.sh) and
+    return a copy of the environment with the workspace overlaid.  Called
+    immediately before every scenario Popen so the child always inherits a
+    current workspace environment regardless of when the monitor last ran.
+    """
+    workspace_root = os.environ.get(
+        'WORKSPACE_ROOT',
+        os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    )
+    install_dir = os.path.join(workspace_root, 'ros2_workspace', 'install')
+
+    for candidate in ('setup.bash', 'setup.sh'):
+        script = os.path.join(install_dir, candidate)
+        if os.path.isfile(script):
+            break
+    else:
+        print('⚠  Workspace setup script not found — launching with current environment')
+        return dict(os.environ)
+
+    try:
+        result = subprocess.run(
+            ['bash', '-c', f"source '{script}' && env -0"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if result.returncode != 0:
+            print(f'⚠  Failed to source workspace setup: {result.stderr.strip()}')
+            return dict(os.environ)
+
+        env = dict(os.environ)
+        for entry in result.stdout.split('\0'):
+            if '=' in entry:
+                k, _, v = entry.partition('=')
+                env[k] = v
+        print(f'✓ Workspace sourced for scenario: {script}')
+        return env
+    except subprocess.TimeoutExpired:
+        print('⚠  Timeout sourcing workspace setup script')
+        return dict(os.environ)
+    except Exception as e:
+        print(f'⚠  Error sourcing workspace setup script: {e}')
+        return dict(os.environ)
 
 
 def _workspace_guard():
@@ -1891,6 +2017,662 @@ def start_scenario_model_checked():
         })
 
 
+@app.route('/model-checker/dashboard')
+def model_check_dashboard():
+    here = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        # Dev layout: tools/adore_api/../../vendor/adore_model_checker/
+        os.path.normpath(os.path.join(here, '..', '..', 'vendor', 'adore_model_checker', 'adore_model_checker_dashboard.html')),
+        # Dev layout: inside the package subdir
+        os.path.normpath(os.path.join(here, '..', '..', 'vendor', 'adore_model_checker', 'adore_model_checker', 'adore_model_checker_dashboard.html')),
+        os.path.join(here, 'adore_model_checker_dashboard.html'),
+    ]
+    html = None
+    for path in candidates:
+        if os.path.exists(path):
+            with open(path, 'r') as fh:
+                html = fh.read()
+            break
+
+    if html is None:
+        try:
+            from importlib.resources import files
+            resource = files('adore_model_checker').joinpath('adore_model_checker_dashboard.html')
+            if resource.is_file():
+                html = resource.read_text(encoding='utf-8')
+        except Exception:
+            pass
+
+    if html is None:
+        return "Model Checker dashboard not found", 404
+
+    inject = (
+        "<script>"
+        "window.ADORE_API_BASE = window.location.protocol + '//' + window.location.host + '/api/model_checker';"
+        "</script>"
+    )
+    html = html.replace('</head>', inject + '\n</head>', 1)
+    return Response(html, mimetype='text/html')
+
+
+_mc_continuous_disabled = {'props': set()}
+
+
+@app.route('/api/model_checker/continuous/disabled', methods=['POST'])
+def mc_set_disabled():
+    data = request.get_json(silent=True) or {}
+    _mc_continuous_disabled['props'] = set(data.get('disabled_propositions', []))
+    return jsonify({'ok': True})
+
+
+@app.route('/api/model_checker/continuous/violations/filtered')
+def mc_filtered_violations():
+    from flask import current_app
+    fn = current_app.view_functions.get('model_check_blueprint.continuous_violations')
+    if fn is None:
+        return jsonify({'error': 'Continuous monitoring not available'}), 404
+    try:
+        resp = fn()
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    disabled = _mc_continuous_disabled['props']
+    if not disabled:
+        return resp
+
+    import json as _json
+    try:
+        body = _json.loads(resp.get_data(as_text=True))
+        body['violations'] = [v for v in body.get('violations', [])
+                              if v.get('proposition') not in disabled]
+        body['count'] = len(body['violations'])
+        return jsonify(body)
+    except Exception:
+        return resp
+
+
+@app.route('/api/model_checker/continuous/<path:subpath>', methods=['GET', 'POST', 'OPTIONS'])
+def proxy_continuous(subpath):
+    from flask import current_app
+    parts = subpath.split('/')
+    base = parts[0]
+    endpoint = f'model_check_blueprint.continuous_{base}'
+    fn = current_app.view_functions.get(endpoint)
+    if fn is None:
+        return jsonify({'error': f'Unknown endpoint: /continuous/{subpath}'}), 404
+    try:
+        return fn(*parts[1:]) if len(parts) > 1 else fn()
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/model_checker/result/<int:run_id>')
+def proxy_result(run_id):
+    from flask import current_app
+    fn = current_app.view_functions.get('model_check_blueprint.get_result')
+    if fn is None:
+        return jsonify({'error': 'Result endpoint not available'}), 404
+    try:
+        return fn(run_id)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+def _mc_config_dir():
+    candidates = [
+        os.environ.get('ADORE_CONFIG_DIR'),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                     '..', '..', 'vendor', 'adore_model_checker', 'config'),
+    ]
+    for path in candidates:
+        if path:
+            os.makedirs(path, exist_ok=True)
+            _mc_seed_default(path)
+            return path
+    raise RuntimeError("Cannot determine model checker config directory")
+
+
+def _mc_seed_default(config_dir):
+    """Copy the canonical package default.yaml into config_dir if not already present."""
+    dest = os.path.join(config_dir, 'default.yaml')
+    if os.path.exists(dest):
+        return
+
+    content = _mc_load_package_default_yaml()
+    if content:
+        with open(dest, 'w') as f:
+            f.write(content)
+        return
+
+    raise RuntimeError(
+        "Cannot locate adore_model_checker/config/default.yaml — "
+        "ensure the package is installed correctly."
+    )
+
+
+def _mc_load_package_default_yaml():
+    """Return the canonical default.yaml content from the package, or None on failure."""
+    try:
+        from importlib.resources import files
+        resource = files('adore_model_checker').joinpath('config/default.yaml')
+        if resource.is_file():
+            return resource.read_text(encoding='utf-8')
+    except Exception:
+        pass
+
+    here = os.path.dirname(os.path.abspath(__file__))
+    for candidate in [
+        os.path.normpath(os.path.join(here, '..', '..', 'vendor', 'adore_model_checker', 'adore_model_checker', 'config', 'default.yaml')),
+        os.path.normpath(os.path.join(here, '..', '..', 'vendor', 'adore_model_checker', 'config', 'default.yaml')),
+    ]:
+        if os.path.exists(candidate):
+            with open(candidate, 'r') as f:
+                return f.read()
+
+    return None
+
+
+# ── ROS Workspace Build Management ──────────────────────────────────────────
+
+_workspace_build_procs: dict = {}
+_workspace_build_broadcaster = _LogBroadcaster(maxlen=5000)
+
+
+def _get_ros2_workspace_dir():
+    workspace_root = os.environ.get(
+        'WORKSPACE_ROOT',
+        os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    )
+    return os.path.join(workspace_root, 'ros2_workspace')
+
+
+@app.route('/api/ros_workspace/status')
+def ros_workspace_status():
+    ws_dir = _get_ros2_workspace_dir()
+    build_dir = os.path.join(ws_dir, 'build')
+    install_dir = os.path.join(ws_dir, 'install')
+    src_dir = os.path.join(ws_dir, 'src')
+    makefile_exists = os.path.isfile(os.path.join(ws_dir, 'Makefile'))
+    running = {k: (p.poll() is None) for k, p in _workspace_build_procs.items()}
+
+    # Quick package counts without full mtime scan
+    total_pkgs = 0
+    built_pkgs = 0
+    if os.path.isdir(src_dir):
+        for pkg_path in _find_packages(src_dir):
+            total_pkgs += 1
+            if os.path.isdir(os.path.join(build_dir, os.path.basename(pkg_path))):
+                built_pkgs += 1
+
+    return jsonify({
+        'workspace_dir': ws_dir,
+        'workspace_exists': os.path.isdir(ws_dir),
+        'makefile_exists': makefile_exists,
+        'build_dir_exists': os.path.isdir(build_dir),
+        'install_dir_exists': os.path.isdir(install_dir),
+        'running': running,
+        'total_packages': total_pkgs,
+        'built_packages': built_pkgs,
+    })
+
+
+# Extensions and directories to skip when scanning source mtimes
+_SRC_SKIP_DIRS = frozenset({'.git', '__pycache__', '.cache', 'node_modules', '.eggs', 'dist', 'build', 'install', 'log'})
+_SRC_SKIP_EXTS = frozenset({'.pyc', '.pyo'})
+
+# Track packages colcon has reported as unknown so we can exclude them from auto-rebuild
+_colcon_unknown_packages: set = set()
+
+
+def _max_mtime(root: str, skip_dirs: frozenset) -> float:
+    best = 0.0
+    try:
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames
+                           if d not in skip_dirs and not d.endswith('.egg-info')]
+            for fname in filenames:
+                if os.path.splitext(fname)[1] in _SRC_SKIP_EXTS:
+                    continue
+                try:
+                    mt = os.stat(os.path.join(dirpath, fname)).st_mtime
+                    if mt > best:
+                        best = mt
+                except OSError:
+                    pass
+    except OSError:
+        pass
+    return best
+
+
+def _find_packages(src_dir: str) -> list:
+    """Recursively find all directories containing package.xml under src_dir."""
+    found = []
+    try:
+        for dirpath, dirnames, filenames in os.walk(src_dir):
+            # Don't descend into hidden dirs or known non-source dirs
+            dirnames[:] = sorted(d for d in dirnames
+                                 if not d.startswith('.') and d not in ('build', 'install', 'log', '__pycache__'))
+            if 'package.xml' in filenames:
+                found.append(dirpath)
+                # Don't recurse into a package — packages don't nest inside packages
+                dirnames.clear()
+    except OSError:
+        pass
+    return found
+
+
+def _package_info(name: str, src_path: str, build_dir: str) -> dict:
+    pkg_build_dir = os.path.join(build_dir, name)
+    built = os.path.isdir(pkg_build_dir)
+    stale = False
+    if built:
+        src_mtime = _max_mtime(src_path, _SRC_SKIP_DIRS)
+        build_mtime = _max_mtime(pkg_build_dir, frozenset())
+        stale = src_mtime > build_mtime and src_mtime > 0
+    return {
+        'name': name,
+        'path': src_path,
+        'built': built,
+        'stale': stale,
+        'colcon_unknown': name in _colcon_unknown_packages,
+    }
+
+
+@app.route('/api/ros_workspace/packages')
+def ros_workspace_packages():
+    ws_dir = _get_ros2_workspace_dir()
+    src_dir = os.path.join(ws_dir, 'src')
+    build_dir = os.path.join(ws_dir, 'build')
+
+    packages = []
+    if os.path.isdir(src_dir):
+        for pkg_path in _find_packages(src_dir):
+            name = os.path.basename(pkg_path)
+            packages.append(_package_info(name, pkg_path, build_dir))
+        packages.sort(key=lambda p: p['name'])
+
+    built_count = sum(1 for p in packages if p['built'])
+    return jsonify({'packages': packages, 'total': len(packages), 'built_count': built_count})
+
+
+@app.route('/api/ros_workspace/build_package', methods=['POST'])
+def ros_workspace_build_package():
+    data = request.get_json(silent=True) or {}
+    package = data.get('package', '').strip()
+    if not package or '/' in package or package.startswith('.'):
+        return jsonify({'success': False, 'message': 'Invalid package name'}), 400
+    return jsonify(_run_workspace_make(f'__pkg__{package}'))
+
+
+def _run_workspace_make(target: str):
+    ws_dir = _get_ros2_workspace_dir()
+    if not os.path.isdir(ws_dir):
+        return {'success': False, 'message': f'Workspace directory not found: {ws_dir}'}
+    existing = _workspace_build_procs.get(target)
+    if existing and existing.poll() is None:
+        return {'success': False, 'message': f'{target} already running'}
+
+    # __pkg__<name> targets use colcon instead of make
+    if target.startswith('__pkg__'):
+        package = target[len('__pkg__'):]
+        cmd = ['colcon', 'build', '--packages-select', package]
+        label = f'colcon build --packages-select {package}'
+    else:
+        cmd = ['make', target]
+        label = f'make {target}'
+
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=ws_dir,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            bufsize=1,
+        )
+        _workspace_build_procs[target] = proc
+
+        def _stream():
+            _workspace_build_broadcaster.write(f'=== {label} started ===', 'stdout')
+            unknown_warned = False
+            for line in iter(proc.stdout.readline, ''):
+                if line:
+                    stripped = line.rstrip()
+                    _workspace_build_broadcaster.write(stripped, 'stdout')
+                    # Detect colcon "ignoring unknown package '<name>'" and record it
+                    if 'ignoring unknown package' in stripped and target.startswith('__pkg__'):
+                        pkg_name = target[len('__pkg__'):]
+                        _colcon_unknown_packages.add(pkg_name)
+                        unknown_warned = True
+            rc = proc.wait()
+            _workspace_build_broadcaster.write(
+                f'=== {label} exited (rc={rc}) ===',
+                'stdout' if rc == 0 else 'stderr'
+            )
+
+        threading.Thread(target=_stream, daemon=True).start()
+        return {'success': True, 'message': f'{label} started'}
+    except Exception as e:
+        return {'success': False, 'message': str(e)}
+
+
+@app.route('/api/ros_workspace/clean', methods=['POST'])
+def ros_workspace_clean():
+    return jsonify(_run_workspace_make('clean'))
+
+
+@app.route('/api/ros_workspace/build', methods=['POST'])
+def ros_workspace_build():
+    return jsonify(_run_workspace_make('build'))
+
+
+@app.route('/api/ros_workspace/log/stream')
+def ros_workspace_log_stream():
+    def generate():
+        q = _workspace_build_broadcaster.subscribe()
+        try:
+            yield 'retry: 3000\n\n'
+            while True:
+                try:
+                    msg = q.get(timeout=20)
+                    yield f'data: {msg}\n\n'
+                except queue.Empty:
+                    yield ': keepalive\n\n'
+        except GeneratorExit:
+            pass
+        finally:
+            _workspace_build_broadcaster.unsubscribe(q)
+
+    return Response(
+        generate(),
+        mimetype='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'},
+    )
+
+
+# ── ROS Topics extended API ──────────────────────────────────────────────────
+
+@app.route('/api/topic/hz', methods=['POST'])
+def topic_hz():
+    data = request.get_json(silent=True) or {}
+    topic = data.get('topic', '').strip()
+    if not topic:
+        return jsonify({'success': False, 'message': 'topic required'}), 400
+    try:
+        import select as _select
+        proc = subprocess.Popen(
+            ['ros2', 'topic', 'hz', '-w', '10', topic],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            bufsize=1,
+        )
+        lines = []
+        deadline = time.time() + 12
+        while time.time() < deadline and len(lines) < 6:
+            r, _, _ = _select.select([proc.stdout], [], [], 0.5)
+            if r:
+                line = proc.stdout.readline()
+                if line:
+                    lines.append(line.rstrip())
+                elif proc.poll() is not None:
+                    break
+        try:
+            proc.terminate()
+        except Exception:
+            pass
+        return jsonify({'success': True, 'topic': topic, 'output': '\n'.join(lines)})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/topic/echo', methods=['POST'])
+def topic_echo_once():
+    data = request.get_json(silent=True) or {}
+    topic = data.get('topic', '').strip()
+    if not topic:
+        return jsonify({'success': False, 'message': 'topic required'}), 400
+    try:
+        result = subprocess.run(
+            ['ros2', 'topic', 'echo', '--once', topic],
+            capture_output=True, text=True, timeout=10
+        )
+        raw = result.stdout.strip() or result.stderr.strip()
+        return jsonify({'success': True, 'topic': topic, 'raw': raw})
+    except subprocess.TimeoutExpired:
+        return jsonify({'success': False, 'message': 'Timeout waiting for message'}), 504
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/topic/stream')
+def topic_stream():
+    topic = request.args.get('topic', '').strip()
+    try:
+        max_hz = min(float(request.args.get('max_hz', 10)), 20.0)
+    except ValueError:
+        max_hz = 10.0
+    min_interval = 1.0 / max_hz if max_hz > 0 else 0.1
+
+    if not topic:
+        return Response('data: {"error":"topic required"}\n\n', mimetype='text/event-stream')
+
+    if not ROSMarshaller:
+        return Response('data: {"error":"ROSMarshaller not available"}\n\n', mimetype='text/event-stream')
+
+    def generate():
+        # Per-client queue; callback posts here, generator drains and throttles.
+        client_q = queue.Queue(maxsize=200)
+
+        def _callback(json_data, _topic_name, _datatype):
+            try:
+                parsed = json.loads(json_data) if isinstance(json_data, str) else json_data
+                # Drop oldest rather than blocking if client is slow
+                if client_q.full():
+                    try:
+                        client_q.get_nowait()
+                    except queue.Empty:
+                        pass
+                client_q.put_nowait(parsed)
+            except Exception:
+                pass
+
+        # Reuse the shared TopicManager subscriber so ROSMarshaller only
+        # spawns one ros2 topic echo process per topic regardless of how
+        # many SSE clients are connected.  We register our callback on top
+        # of the existing deque-based subscriber.
+        with topic_manager.lock:
+            topic_manager.get_or_create_subscriber(topic)
+            topic_manager.subscribers[topic]['last_access'] = time.time()
+            listeners = topic_manager.subscribers[topic].setdefault('listeners', [])
+            listeners.append(_callback)
+
+        try:
+            yield 'retry: 3000\n\n'
+
+            pending = None
+            dropped = 0
+            last_emit = 0.0
+
+            while True:
+                # Non-blocking drain — keep only the latest message
+                while True:
+                    try:
+                        item = client_q.get_nowait()
+                        if pending is not None:
+                            dropped += 1
+                        pending = item
+                    except queue.Empty:
+                        break
+
+                now = time.monotonic()
+                if pending is not None and now - last_emit >= min_interval:
+                    payload = json.dumps({
+                        'msg': pending,
+                        'time': datetime.now().strftime('%H:%M:%S'),
+                        'dropped': dropped,
+                    })
+                    pending = None
+                    dropped = 0
+                    last_emit = now
+                    yield f'data: {payload}\n\n'
+                else:
+                    try:
+                        item = client_q.get(timeout=20)
+                        if pending is not None:
+                            dropped += 1
+                        pending = item
+                    except queue.Empty:
+                        yield ': keepalive\n\n'
+
+        except GeneratorExit:
+            pass
+        finally:
+            with topic_manager.lock:
+                if topic in topic_manager.subscribers:
+                    listeners = topic_manager.subscribers[topic].get('listeners', [])
+                    try:
+                        listeners.remove(_callback)
+                    except ValueError:
+                        pass
+
+    return Response(
+        generate(),
+        mimetype='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'},
+    )
+
+
+def _mc_safe_name(name):
+    return (name and os.sep not in name and not name.startswith('.')
+            and name.lower().endswith(('.yaml', '.yml')))
+
+
+@app.route('/api/model_checker/configs', methods=['GET'])
+def mc_configs_list():
+    try:
+        cdir = _mc_config_dir()
+        configs = []
+        for fname in sorted(os.listdir(cdir)):
+            if not fname.lower().endswith(('.yaml', '.yml')):
+                continue
+            fpath = os.path.join(cdir, fname)
+            stat = os.stat(fpath)
+            configs.append({
+                'name': fname,
+                'size': stat.st_size,
+                'modified': datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+            })
+        return jsonify({'configs': configs})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/model_checker/configs/<path:name>', methods=['GET'])
+def mc_config_get(name):
+    if not _mc_safe_name(name):
+        return jsonify({'error': 'Invalid filename'}), 400
+    path = os.path.join(_mc_config_dir(), name)
+    if not os.path.exists(path):
+        return jsonify({'error': 'Not found'}), 404
+    with open(path) as f:
+        return jsonify({'name': name, 'content': f.read()})
+
+
+@app.route('/api/model_checker/configs', methods=['POST'])
+def mc_config_save():
+    data = request.get_json(silent=True) or {}
+    name = data.get('name', '').strip()
+    content = data.get('content', '')
+    if not _mc_safe_name(name):
+        return jsonify({'error': 'Invalid filename'}), 400
+    with open(os.path.join(_mc_config_dir(), name), 'w') as f:
+        f.write(content)
+    return jsonify({'success': True, 'name': name})
+
+
+@app.route('/api/model_checker/configs/<path:name>', methods=['DELETE'])
+def mc_config_delete(name):
+    if not _mc_safe_name(name):
+        return jsonify({'error': 'Invalid filename'}), 400
+    path = os.path.join(_mc_config_dir(), name)
+    if not os.path.exists(path):
+        return jsonify({'error': 'Not found'}), 404
+    os.remove(path)
+    return jsonify({'success': True})
+
+
+def _mc_history_dir():
+    candidates = [
+        os.environ.get('ADORE_HISTORY_DIR'),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                     '..', '..', 'vendor', 'adore_model_checker', 'history'),
+    ]
+    for path in candidates:
+        if path:
+            os.makedirs(path, exist_ok=True)
+            return path
+    raise RuntimeError("Cannot determine history directory")
+
+
+@app.route('/api/model_checker/history')
+def mc_history_list():
+    try:
+        hdir = _mc_history_dir()
+        runs = []
+        for fname in sorted(os.listdir(hdir), reverse=True):
+            if not fname.startswith('run_') or not fname.endswith('.json'):
+                continue
+            try:
+                with open(os.path.join(hdir, fname)) as f:
+                    d = json.load(f)
+                runs.append({
+                    'run_id': d.get('run_id'),
+                    'status': d.get('status'),
+                    'overall_result': (d.get('results') or {}).get('SUMMARY', {}).get('overall_result'),
+                    'config_file': d.get('config_file'),
+                    'completed_at': d.get('completed_at'),
+                })
+            except Exception:
+                pass
+        return jsonify({'runs': runs})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/model_checker/history/<int:run_id>/log')
+def mc_history_log(run_id):
+    log_path = os.path.join(_mc_history_dir(), f'run_{run_id}.log')
+    if not os.path.exists(log_path):
+        return jsonify({'log': None})
+    with open(log_path) as f:
+        return jsonify({'log': f.read()})
+
+
+@app.route('/api/model_checker/logs/stream')
+def mc_logs_stream():
+    def generate():
+        q = _adore_log_broadcaster.subscribe()
+        try:
+            yield 'retry: 3000\n\n'
+            while True:
+                try:
+                    msg = q.get(timeout=20)
+                    yield f'data: {msg}\n\n'
+                except queue.Empty:
+                    yield ': keepalive\n\n'
+        except GeneratorExit:
+            pass
+        finally:
+            _adore_log_broadcaster.unsubscribe(q)
+
+    return Response(
+        generate(),
+        mimetype='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'},
+    )
+
+
 @app.route('/api/model_check/debug', methods=['GET'])
 def debug_model_check():
     """Debug endpoint to check model checker status"""
@@ -1966,10 +2748,21 @@ def main():
 
     # Register model checker blueprint
     try:
-        from adore_model_checker.model_checker_api import get_model_check_blueprint
+        from adore_model_checker.model_checker_api import get_model_check_blueprint, _get_api
         model_check_blueprint = get_model_check_blueprint()
         app.register_blueprint(model_check_blueprint)
         print("✓ Model checker API blueprint registered successfully")
+
+        # Patch the installed model_checker module so ContinuousMonitorEngine
+        # never tries to create a history directory inside the read-only package tree.
+        try:
+            import adore_model_checker.model_checker as _mc_mod
+            _mc_history_path = os.path.join(_get_api().log_directory, 'continuous')
+            os.makedirs(_mc_history_path, exist_ok=True)
+            _mc_mod._history_dir = lambda: _mc_history_path
+            print(f"✓ Model checker history dir set to: {_mc_history_path}")
+        except Exception as _patch_err:
+            print(f"⚠ Could not patch model checker history dir: {_patch_err}")
 
         # Test the API is working
         with app.test_client() as client:

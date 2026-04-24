@@ -34,6 +34,13 @@ include utils.mk
 include adore_cli/adore_cli.mk
 include adore_cli/package.mk
 
+.PHONY: clean
+clean: stop docker_host_context_check stop clean_adore_cli clean_tag_history ## Clean ADORe build artifacts 
+	cd vendor && make clean
+	cd ros2_workspace && make clean
+	cd adore_embedded && make clean
+	rm -rf build
+
 $(shell [ -d "$(VENDOR_PATH)/build" ] || (cd vendor && $(MAKE) --no-print-directory build >&2))
 
 .PHONY: build
@@ -79,13 +86,6 @@ build_ros_workspace:  ## Builds ROS2 workspace located in: ${ROS_NODE_PATH}
 .PHONY: check_adore_binaries
 check_adore_binaries: ## Checks for ADORe binaries
 	bash tools/check_adore_binaries.sh
-
-.PHONY: clean
-clean: docker_host_context_check stop clean_adore_cli clean_tag_history ## Clean ADORe build artifacts 
-	cd vendor && make clean
-	cd ros2_workspace && make clean
-	cd adore_embedded && make clean
-	rm -rf build
 
 .PHONY: lint_nodes
 lint_nodes:

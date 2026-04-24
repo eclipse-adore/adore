@@ -14,8 +14,19 @@ LOG_DIRECTORY="${LOG_DIRECTORY:-${WORKSPACE_ROOT}/.log}"
 # Default API port (can be overridden via env ADORE_API_PORT)
 : "${ADORE_API_PORT:=8888}"
 
+
+
 start_adore_api() {
     local APP_NAME="adore_api.py"
+
+    # Source ROS environment so rclpy is available when running via `make run`
+    local ros_distro="${ROS_DISTRO:-humble}"
+    local ros_setup="/opt/ros/${ros_distro}/setup.bash"
+    if [ -f "$ros_setup" ] && [ -z "${AMENT_PREFIX_PATH:-}" ]; then
+        set +u
+        source "$ros_setup" 2>/dev/null || true
+        set -u
+    fi
     local APP_PORT="${ADORE_API_PORT}"
     local LOG_FILE="${LOG_DIRECTORY}/adore_api.log"
     local PID_FILE="${LOG_DIRECTORY}/adore_api.pid"
@@ -33,7 +44,7 @@ start_adore_api() {
         echo "ADORe API port $APP_PORT is already in use"
         return 0
     fi
-    
+    whoami > adore_api_log.log
     if [ -f "$PID_FILE" ]; then
         local old_pid
         old_pid=$(cat "$PID_FILE")
@@ -58,7 +69,8 @@ start_adore_api() {
     if kill -0 "$app_pid" 2>/dev/null; then
         echo "ADORe API started successfully (PID: $app_pid), access at: http://localhost:$APP_PORT"
         echo "    Logs: $LOG_FILE"
-        echo "    Bag recordings will be stored in: ${LOG_DIRECTORY}/bag_file_recordings/"
+        echo "    Bag recordings directory: ${LOG_DIRECTORY}/bag_file_recordings/"
+        echo "    Model checking log directory: ${LOG_DIRECTORY}/model_checker/"
     else
         echo "Failed to start ADORe API, review the API log for more info: ${LOG_FILE}"
         rm -f "$PID_FILE"
@@ -97,6 +109,7 @@ status_adore_api() {
         echo "Access at: http://localhost:$APP_PORT"
         echo "Log directory: ${LOG_DIRECTORY}"
         echo "Bag recordings directory: ${LOG_DIRECTORY}/bag_file_recordings/"
+        echo "Model checking log directory: ${LOG_DIRECTORY}/model_checker/"
         lsof -i :"$APP_PORT" 2>/dev/null | grep LISTEN || true
         echo ""
         workspace_status_adore_api
