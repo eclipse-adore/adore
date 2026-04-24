@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>zenoh_message_bridge</name>
+  <version>1.0.0</version>
+  <description>Bridge between ROS 2 and Zenoh</description>
+  <maintainer email="you@example.com">Eclipse ADORe</maintainer>
+  <license>Apache-2.0</license>
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>rosidl_runtime_py</depend>
+  <python_depend>yq</python_depend>
+  <python_depend>eclipse-zenoh</python_depend>
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
