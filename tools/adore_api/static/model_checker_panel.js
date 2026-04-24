@@ -16,7 +16,7 @@
         const btn = document.getElementById('sidePanelToggle');
         if (panel) panel.classList.toggle('side-panel-open', open);
         if (main) main.classList.toggle('with-side-panel', open);
-        if (btn) btn.textContent = open ? '⬛ Results ✕' : '⬛ Results';
+        if (btn) btn.textContent = open ? '🗎  Model Checker Results ✕' : '🗎  Model Checker Results';
         localStorage.setItem('mcPanelOpen', open ? '1' : '0');
     }
 

@@ -35,7 +35,7 @@
             </div>
             <div class="header-right">
                 <button class="mc-panel-toggle-btn" id="sidePanelToggle" title="Toggle Model Checker Results">
-                    ⬛ Results
+                    🗎 Model Checker Results
                 </button>
                 <div class="header-status">
                     <span class="status-indicator" id="globalStatusIndicator"></span>
@@ -232,15 +232,17 @@
                         <button class="log-tab active" data-logtab="ros-topics-observe">Observe</button>
                         <button class="log-tab" data-logtab="ros-topics-hz">Hz / Rate</button>
                         <button class="log-tab" data-logtab="ros-topics-echo">Single Message</button>
+                        <button class="log-tab" data-logtab="ros-topics-publish">Publish</button>
                     </div>
 
                     <!-- Observe sub-tab -->
                     <div id="ros-topics-observe" class="log-tab-content active">
                         <div class="control-panel" style="border-radius:0 8px 8px 8px;">
                             <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;">
-                                <div class="field-group" style="flex:1;margin:0;">
+                                <div class="field-group" style="flex:1;margin:0;position:relative;">
                                     <label>Topic</label>
-                                    <input type="text" id="rosTopicObserveInput" placeholder="/your/topic">
+                                    <input type="text" id="rosTopicObserveInput" placeholder="/your/topic" autocomplete="off">
+                                    <div class="topic-dropdown" id="rosObserveDropdown"></div>
                                 </div>
                                 <div class="field-group" style="width:80px;margin:0;">
                                     <label>Max Hz</label>
@@ -251,11 +253,17 @@
                             </div>
                             <div class="log-header">
                                 <span>Live Output</span>
-                                <label class="toggle-label small">
-                                    <input type="checkbox" id="rosObserveAutoScroll" checked> Auto-scroll
-                                </label>
+                                <div style="display:flex;gap:8px;align-items:center;">
+                                    <label class="toggle-label small">
+                                        <input type="checkbox" id="rosObserveAutoScroll" checked> Auto-scroll
+                                    </label>
+                                    <div style="display:flex;gap:4px;align-items:center;">
+                                        <input type="number" id="rosExportCount" value="10" min="1" max="10000" style="width:60px;padding:3px 6px;font-size:12px;" title="Messages to export">
+                                        <button id="rosExportJsonlBtn" class="btn-info btn-sm" title="Export captured messages as JSONL">⬇ JSONL</button>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="log-container" id="rosTopicObserveLog" style="height:calc(100vh - 340px);"></div>
+                            <div class="log-container" id="rosTopicObserveLog" style="height:calc(100vh - 360px);"></div>
                         </div>
                     </div>
 
@@ -263,9 +271,10 @@
                     <div id="ros-topics-hz" class="log-tab-content">
                         <div class="control-panel" style="border-radius:0 8px 8px 8px;">
                             <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;">
-                                <div class="field-group" style="flex:1;margin:0;">
+                                <div class="field-group" style="flex:1;margin:0;position:relative;">
                                     <label>Topic</label>
-                                    <input type="text" id="rosTopicHzInput" placeholder="/your/topic">
+                                    <input type="text" id="rosTopicHzInput" placeholder="/your/topic" autocomplete="off">
+                                    <div class="topic-dropdown" id="rosHzDropdown"></div>
                                 </div>
                                 <button id="rosTopicHzBtn" class="btn-info">📡 Measure Hz</button>
                             </div>
@@ -279,15 +288,74 @@
                     <div id="ros-topics-echo" class="log-tab-content">
                         <div class="control-panel" style="border-radius:0 8px 8px 8px;">
                             <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;">
-                                <div class="field-group" style="flex:1;margin:0;">
+                                <div class="field-group" style="flex:1;margin:0;position:relative;">
                                     <label>Topic</label>
-                                    <input type="text" id="rosTopicEchoInput" placeholder="/your/topic">
+                                    <input type="text" id="rosTopicEchoInput" placeholder="/your/topic" autocomplete="off">
+                                    <div class="topic-dropdown" id="rosEchoDropdown"></div>
                                 </div>
                                 <button id="rosTopicEchoBtn" class="btn-info">📨 Get Message</button>
                             </div>
                             <div class="info-box info-box-loop">Receives one message from the topic and displays it as formatted JSON.</div>
                             <div class="log-header" style="margin-top:10px;"><span>Message</span></div>
                             <div class="json-viewer" id="rosTopicJsonViewer"><span style="color:#6e7681;">Select a topic and click Get Message</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Publish sub-tab -->
+                    <div id="ros-topics-publish" class="log-tab-content">
+                        <div class="control-panel" style="border-radius:0 8px 8px 8px;flex:1;display:flex;flex-direction:column;overflow:auto;">
+                            <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;flex-wrap:wrap;">
+                                <div class="field-group" style="flex:2;min-width:180px;margin:0;position:relative;">
+                                    <label>Topic</label>
+                                    <input type="text" id="rosPublishTopicInput" placeholder="/your/topic" autocomplete="off">
+                                    <div class="topic-dropdown" id="rosPublishTopicDropdown"></div>
+                                </div>
+                                <div class="field-group" style="flex:2;min-width:180px;margin:0;position:relative;">
+                                    <label>Datatype</label>
+                                    <input type="text" id="rosPublishDatatypeInput" placeholder="e.g. std_msgs/msg/String" autocomplete="off">
+                                    <div class="topic-dropdown" id="rosPublishDatatypeDropdown"></div>
+                                </div>
+                                <button id="rosPublishLoadProtoBtn" class="btn-info" title="Load empty message template for datatype">⬇ Load Template</button>
+                            </div>
+                            <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;flex-wrap:wrap;">
+                                <div class="field-group" style="width:120px;margin:0;">
+                                    <label>Frequency (Hz)</label>
+                                    <input type="number" id="rosPublishFreqInput" value="0" min="0" max="100" step="0.5" placeholder="0 = once">
+                                </div>
+                                <button id="rosPublishOnceBtn" class="btn-success">▶ Publish Once</button>
+                                <button id="rosPublishStartBtn" class="btn-success">⟳ Start Loop</button>
+                                <button id="rosPublishStopBtn" class="btn-danger" disabled>⏹ Stop Loop</button>
+                                <label class="btn-info" style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:6px;font-size:13px;white-space:nowrap;" title="Import JSONL file to republish">
+                                    📂 Import JSONL
+                                    <input type="file" id="rosPublishImportFile" accept=".jsonl,.json" style="display:none;">
+                                </label>
+                            </div>
+                            <div style="display:flex;gap:8px;min-height:0;flex:1;">
+                                <div style="flex:1;display:flex;flex-direction:column;min-height:0;">
+                                    <div class="log-header"><span>Message Editor (JSON)</span></div>
+                                    <div id="rosPublishEditorContainer" style="flex:1;min-height:220px;border:1px solid #30363d;border-radius:6px;overflow:hidden;"></div>
+                                    <div id="rosPublishEditorError" style="color:#f85149;font-size:11px;margin-top:4px;min-height:16px;"></div>
+                                    <div id="rosPublishImportList" style="display:none;margin-top:6px;">
+                                        <div class="log-header">
+                                            <span>Imported Messages (<span id="rosPublishImportCount">0</span>)</span>
+                                            <div style="display:flex;gap:6px;align-items:center;">
+                                                <button id="rosPublishImportPrevBtn" class="btn-info btn-sm">◀</button>
+                                                <span id="rosPublishImportIdx" style="font-size:12px;color:#8b949e;">1</span>
+                                                <button id="rosPublishImportNextBtn" class="btn-info btn-sm">▶</button>
+                                                <button id="rosPublishImportClearBtn" class="btn-danger btn-sm">✕ Clear</button>
+                                                <button id="rosPublishImportReplayBtn" class="btn-success btn-sm">⟳ Replay All</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="flex:1;display:flex;flex-direction:column;min-height:0;">
+                                    <div class="log-header">
+                                        <span>Publish Log</span>
+                                        <button id="rosPublishClearLogBtn" class="btn-info btn-sm">✕ Clear</button>
+                                    </div>
+                                    <div class="log-container" id="rosPublishLog" style="min-height:220px;height:calc(100vh - 440px);"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -455,6 +523,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
 <script src="/static/tabs.js"></script>
 <script src="/static/fuzzy.js"></script>
 <script src="/static/scenario_manager.js"></script>

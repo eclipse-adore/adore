@@ -112,10 +112,12 @@ except (ImportError, RuntimeError) as e:
 
 try:
     from ros2tools.ros2api import *
+    from ros2tools import ROS2Tools
     print("✓ ros2tools library found")
 except ImportError as e:
     print(f"⚠ Warning: ros2tools library not found: {e}")
     print("⚠ ros2tools will be disabled")
+    ROS2Tools = None
 
 try:
     import sys
@@ -127,7 +129,10 @@ except ImportError as e:
     print("⚠ ROS topic functionality will be limited")
     ROSMarshaller = None
 
-app = Flask(__name__)
+_HERE = os.path.dirname(os.path.abspath(__file__))
+app = Flask(__name__,
+            template_folder=os.path.join(_HERE, 'templates'),
+            static_folder=os.path.join(_HERE, 'static'))
 CORS(app)
 
 LOG_DIRECTORY = None
@@ -1341,10 +1346,6 @@ def index():
     return render_template('index.html', host=request.host)
 
 
-@app.route('/static/<path:filename>')
-def serve_static(filename):
-    return send_from_directory('static', filename)
-
 
 @app.route('/api_reference.md')
 def serve_api_reference():
@@ -1660,11 +1661,7 @@ def publish_to_topic():
 @app.route('/api/ros2/nodes/running')
 def list_running_nodes():
     try:
-        result = subprocess.run(
-            ["ros2", "node", "list"],
-            capture_output=True, text=True, timeout=5
-        )
-        nodes = [n.strip() for n in result.stdout.splitlines() if n.strip()]
+        nodes = ROS2Tools.get_nodes() if ROS2Tools else []
         return jsonify({"success": True, "running_nodes": nodes, "count": len(nodes)})
     except Exception as e:
         return jsonify({"success": False, "running_nodes": [], "count": 0, "message": str(e)}), 500
@@ -1674,20 +1671,38 @@ def list_running_nodes():
 def list_active_topics():
     try:
         stats = topic_manager.get_stats()
-
+        topic_datatypes = {}
         system_topics = []
-        try:
-            result = subprocess.run(
-                ["ros2", "topic", "list"], capture_output=True, text=True, check=True)
-            system_topics = [t.strip()
-                             for t in result.stdout.split('\n') if t.strip()]
-        except:
-            pass
-
+        if ROS2Tools:
+            try:
+                topic_datatypes = ROS2Tools.get_topics()
+                system_topics = sorted(topic_datatypes.keys())
+            except Exception as e:
+                logging.warning(f"ROS2Tools.get_topics() failed: {e}")
+        if not system_topics:
+            # Fallback: raw subprocess when ros2tools unavailable or returned nothing
+            try:
+                r = subprocess.run(["ros2", "topic", "list", "-t"],
+                                   capture_output=True, text=True, timeout=8)
+                for line in r.stdout.splitlines():
+                    line = line.strip()
+                    if not line:
+                        continue
+                    if " [" in line:
+                        topic, rest = line.split(" [", 1)
+                        topic = topic.strip()
+                        system_topics.append(topic)
+                        topic_datatypes[topic] = rest.rstrip("]").strip()
+                    else:
+                        system_topics.append(line)
+                system_topics.sort()
+            except Exception:
+                pass
         return jsonify({
             "success": True,
             "managed_topics": stats,
-            "system_topics": system_topics
+            "system_topics": system_topics,
+            "topic_datatypes": topic_datatypes
         })
     except Exception as e:
         return jsonify({"success": False, "message": f"Failed to list topics: {str(e)}"}), 500
@@ -1695,14 +1710,15 @@ def list_active_topics():
 
 @app.route('/api/topic/info/<path:topic_name>')
 def get_topic_info(topic_name):
-    if not ROSMarshaller:
-        return jsonify({"success": False, "message": "ROS functionality not available"}), 500
-
     try:
         if not topic_name.startswith('/'):
             topic_name = '/' + topic_name
 
-        datatype = ROSMarshaller.get_datatype(topic_name)
+        datatype = None
+        if ROS2Tools:
+            datatype = ROS2Tools.get_topic_datatype(topic_name)
+        elif ROSMarshaller:
+            datatype = ROSMarshaller.get_datatype(topic_name)
 
         managed = False
         with topic_manager.lock:
@@ -1714,7 +1730,6 @@ def get_topic_info(topic_name):
             "datatype": datatype,
             "managed": managed
         })
-
     except Exception as e:
         return jsonify({"success": False, "message": f"Failed to get topic info: {str(e)}"}), 500
 
@@ -2398,30 +2413,11 @@ def topic_hz():
     topic = data.get('topic', '').strip()
     if not topic:
         return jsonify({'success': False, 'message': 'topic required'}), 400
+    if not ROS2Tools:
+        return jsonify({'success': False, 'message': 'ros2tools not available'}), 500
     try:
-        import select as _select
-        proc = subprocess.Popen(
-            ['ros2', 'topic', 'hz', '-w', '10', topic],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            universal_newlines=True,
-            bufsize=1,
-        )
-        lines = []
-        deadline = time.time() + 12
-        while time.time() < deadline and len(lines) < 6:
-            r, _, _ = _select.select([proc.stdout], [], [], 0.5)
-            if r:
-                line = proc.stdout.readline()
-                if line:
-                    lines.append(line.rstrip())
-                elif proc.poll() is not None:
-                    break
-        try:
-            proc.terminate()
-        except Exception:
-            pass
-        return jsonify({'success': True, 'topic': topic, 'output': '\n'.join(lines)})
+        output = ROS2Tools.topic_hz(topic)
+        return jsonify({'success': True, 'topic': topic, 'output': output})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
@@ -2432,6 +2428,33 @@ def topic_echo_once():
     topic = data.get('topic', '').strip()
     if not topic:
         return jsonify({'success': False, 'message': 'topic required'}), 400
+
+    if ROSMarshaller:
+        received = []
+        done = threading.Event()
+
+        def _cb(json_str, _topic, _dtype):
+            if not done.is_set():
+                received.append(json_str)
+                done.set()
+
+        try:
+            sub = ROSMarshaller.subscribe(topic, _cb)
+            done.wait(timeout=10)
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500
+
+        if received:
+            try:
+                msg = json.loads(received[0])
+                msg.pop('topic', None)
+                msg.pop('datatype', None)
+                return jsonify({'success': True, 'topic': topic, 'msg': msg})
+            except Exception:
+                pass
+
+        return jsonify({'success': False, 'message': 'Timeout waiting for message'}), 504
+
     try:
         result = subprocess.run(
             ['ros2', 'topic', 'echo', '--once', topic],
@@ -2443,6 +2466,157 @@ def topic_echo_once():
         return jsonify({'success': False, 'message': 'Timeout waiting for message'}), 504
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/topic/empty_message', methods=['POST'])
+def topic_empty_message():
+    data = request.get_json(silent=True) or {}
+    datatype = data.get('datatype', '').strip()
+    if not datatype:
+        return jsonify({'success': False, 'message': 'datatype required'}), 400
+
+    # Try ros2tools first (handles fallback to interface show internally)
+    if ROS2Tools:
+        try:
+            proto = ROS2Tools.get_interface_proto(datatype)
+            if proto and isinstance(proto, dict):
+                return jsonify({'success': True, 'datatype': datatype, 'msg': proto})
+        except Exception as e:
+            logging.warning(f'ROS2Tools.get_interface_proto failed: {e}')
+
+    # Direct subprocess: try ros2 interface proto then fall back to interface show
+    import yaml as _yaml
+
+    def _build_proto_from_show(dtype):
+        r2 = subprocess.run(
+            ['ros2', 'interface', 'show', dtype],
+            capture_output=True, text=True, timeout=20
+        )
+        if r2.returncode != 0 or not r2.stdout.strip():
+            return None
+        return _parse_interface_to_proto(r2.stdout.strip())
+
+    def _parse_interface_to_proto(text):
+        """Build a zero-value dict from ros2 interface show output."""
+        PRIM = {
+            'bool': False, 'byte': 0, 'char': 0,
+            'float32': 0.0, 'float64': 0.0,
+            'int8': 0, 'uint8': 0, 'int16': 0, 'uint16': 0,
+            'int32': 0, 'uint32': 0, 'int64': 0, 'uint64': 0,
+            'string': '', 'wstring': '',
+        }
+        result = {}
+        lines = [l for l in text.splitlines() if l.strip() and not l.strip().startswith('#')]
+        for line in lines:
+            if line.startswith(' ') or line.startswith('	'):
+                continue  # skip nested lines — handled by ros2tools parse
+            parts = line.strip().split()
+            if len(parts) < 2:
+                continue
+            dtype_part, label = parts[0], parts[1]
+            if '=' in label or '=' in dtype_part:
+                continue  # constant
+            is_array = '[]' in dtype_part or (len(parts) > 2 and '[' in parts[0])
+            base_type = dtype_part.replace('[]', '').split('[')[0]
+            if is_array:
+                result[label] = []
+            elif base_type in PRIM:
+                result[label] = PRIM[base_type]
+            else:
+                result[label] = {}  # nested object placeholder
+        return result if result else None
+
+    try:
+        r = subprocess.run(
+            ['ros2', 'interface', 'proto', datatype],
+            capture_output=True, text=True, timeout=20
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            parsed = _yaml.safe_load(r.stdout)
+            if parsed and isinstance(parsed, dict):
+                return jsonify({'success': True, 'datatype': datatype, 'msg': parsed})
+    except subprocess.TimeoutExpired:
+        pass
+    except Exception:
+        pass
+
+    # Last resort: build from interface show
+    try:
+        proto = _build_proto_from_show(datatype)
+        if proto:
+            return jsonify({'success': True, 'datatype': datatype, 'msg': proto})
+        err = f'Could not build prototype for {datatype}'
+        return jsonify({'success': False, 'message': err}), 500
+    except subprocess.TimeoutExpired:
+        return jsonify({'success': False, 'message': 'Timeout fetching interface'}), 504
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+_publish_timers = {}
+_publish_timers_lock = threading.Lock()
+
+
+@app.route('/api/topic/publish_timed', methods=['POST'])
+def publish_timed():
+    if not ROSMarshaller:
+        return jsonify({'success': False, 'message': 'ROS functionality not available'}), 500
+
+    data = request.get_json(silent=True) or {}
+    topic = data.get('topic', '').strip()
+    message_data = data.get('data')
+    datatype = data.get('datatype', '').strip()
+    frequency = data.get('frequency', 0)
+    action = data.get('action', 'publish')
+
+    if not topic or message_data is None:
+        return jsonify({'success': False, 'message': 'topic and data required'}), 400
+
+    if action == 'stop':
+        with _publish_timers_lock:
+            entry = _publish_timers.pop(topic, None)
+        if entry:
+            entry['stop'].set()
+        return jsonify({'success': True, 'message': f'Stopped publishing to {topic}'})
+
+    if not datatype:
+        datatype = ROSMarshaller.get_datatype(topic)
+        if not datatype:
+            return jsonify({'success': False, 'message': f'Could not determine datatype for {topic}'}), 400
+
+    if frequency and float(frequency) > 0:
+        with _publish_timers_lock:
+            old = _publish_timers.pop(topic, None)
+            if old:
+                old['stop'].set()
+            stop_event = threading.Event()
+            interval = 1.0 / float(frequency)
+
+            def _pub_loop():
+                while not stop_event.is_set():
+                    try:
+                        ROSMarshaller.publish(json.dumps(message_data), topic, datatype)
+                    except Exception as e:
+                        print(f'Publish loop error: {e}')
+                    stop_event.wait(interval)
+
+            t = threading.Thread(target=_pub_loop, daemon=True)
+            _publish_timers[topic] = {'thread': t, 'stop': stop_event, 'datatype': datatype}
+            t.start()
+        return jsonify({'success': True, 'message': f'Publishing to {topic} at {frequency} Hz', 'topic': topic, 'datatype': datatype})
+
+    try:
+        ROSMarshaller.publish(json.dumps(message_data), topic, datatype)
+        return jsonify({'success': True, 'message': f'Published to {topic}', 'topic': topic, 'datatype': datatype})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/topic/publish_status')
+def publish_status():
+    with _publish_timers_lock:
+        active = {t: {'datatype': v['datatype']} for t, v in _publish_timers.items() if not v['stop'].is_set()}
+    return jsonify({'active': active})
 
 
 @app.route('/api/topic/stream')

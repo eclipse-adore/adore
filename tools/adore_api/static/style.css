@@ -168,6 +168,7 @@ body {
     padding: 16px;
     flex: 1;
     overflow-y: auto;
+    overflow-x: visible;
     min-height: 0;
 }
 .tab-content.active { display: flex; flex-direction: column; }
@@ -195,8 +196,11 @@ body {
     flex-direction: column;
     gap: 0;
     min-height: 0;
-    overflow: hidden;
+    overflow: visible;
 }
+
+.log-tab-content { display: none; }
+.log-tab-content.active { display: flex; flex-direction: column; }
 
 /* ── Control Panel ──────────────────────────────────────────────────────────── */
 .control-panel {
@@ -453,8 +457,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .log-tab:hover { color: #c9d1d9; background: none; }
 .log-tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
 
-.log-tab-content { display: none; }
-.log-tab-content.active { display: block; }
 
 /* ── Code editor ────────────────────────────────────────────────────────────── */
 .editor-panel {
@@ -812,7 +814,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     height: calc(100vh - 280px); overflow-y: auto;
 }
 .topic-list-item {
-    display: flex; align-items: center; padding: 6px 12px; cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 12px; cursor: pointer;
     border-bottom: 1px solid #21262d; font-size: 11px;
     font-family: 'JetBrains Mono', 'Consolas', monospace;
     transition: background 0.15s; color: #c9d1d9;
@@ -820,6 +823,31 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .topic-list-item:last-child { border-bottom: none; }
 .topic-list-item:hover { background: #21262d; }
 .topic-list-item.topic-selected { background: #0c2d4a; border-left: 3px solid #58a6ff; }
+
+.topic-datatype {
+    font-size: 10px; color: #6e7681; font-family: 'JetBrains Mono','Consolas',monospace;
+    margin-left: 8px; flex-shrink: 0; max-width: 160px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.topic-dropdown {
+    display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+    background: #161b22; border: 1px solid #30363d; border-radius: 0 0 6px 6px;
+    max-height: 220px; overflow-y: auto;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.topic-dropdown-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 12px; cursor: pointer; font-size: 11px;
+    font-family: 'JetBrains Mono','Consolas',monospace; color: #c9d1d9;
+    border-bottom: 1px solid #21262d;
+}
+.topic-dropdown-item:last-child { border-bottom: none; }
+.topic-dropdown-item:hover { background: #21262d; color: #58a6ff; }
+.topic-dropdown-dt {
+    font-size: 10px; color: #6e7681; margin-left: 8px; flex-shrink: 0;
+    max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
 .json-viewer {
     background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
@@ -949,3 +977,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 ::-webkit-scrollbar-track { background: #0d1117; }
 ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+/* ── Publish CodeMirror editor ──────────────────────────────────────────── */
+#rosPublishEditorContainer { height: 260px; }
+#rosPublishEditorContainer .CodeMirror {
+    height: 100%;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    background: #0d1117;
+}
+#rosPublishEditorContainer .CodeMirror-scroll { height: 100%; }
