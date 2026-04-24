@@ -2376,6 +2376,34 @@ def ros_workspace_clean():
     return jsonify(_run_workspace_make('clean'))
 
 
+@app.route('/api/ros_workspace/ccache/stats')
+def ccache_stats():
+    try:
+        r = subprocess.run(['ccache', '-s', '-v'], capture_output=True, text=True, timeout=10)
+        if r.returncode != 0:
+            r2 = subprocess.run(['ccache', '-s'], capture_output=True, text=True, timeout=10)
+            raw = r2.stdout.strip() or r2.stderr.strip()
+            return jsonify({'available': True, 'raw': raw, 'verbose': False})
+        return jsonify({'available': True, 'raw': r.stdout.strip(), 'verbose': True})
+    except FileNotFoundError:
+        return jsonify({'available': False, 'message': 'ccache not found'})
+    except Exception as e:
+        return jsonify({'available': False, 'message': str(e)}), 500
+
+
+@app.route('/api/ros_workspace/ccache/clear', methods=['POST'])
+def ccache_clear():
+    try:
+        r = subprocess.run(['ccache', '-C'], capture_output=True, text=True, timeout=30)
+        if r.returncode != 0:
+            return jsonify({'success': False, 'message': r.stderr.strip() or 'ccache -C failed'}), 500
+        return jsonify({'success': True, 'message': r.stdout.strip() or 'Cache cleared'})
+    except FileNotFoundError:
+        return jsonify({'success': False, 'message': 'ccache not found'}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 @app.route('/api/ros_workspace/build', methods=['POST'])
 def ros_workspace_build():
     return jsonify(_run_workspace_make('build'))
@@ -2746,6 +2774,40 @@ def publish_status():
                     'count': v.get('count'),
                 }
     return jsonify({'active': active})
+
+
+@app.route('/api/topic/interface_types')
+def list_interface_types():
+    """Return all installed ROS message types, merging installed types with active topic datatypes."""
+    types = set()
+
+    # Active topic datatypes — always available, fast
+    try:
+        if ROS2Tools:
+            td = ROS2Tools.get_topics()
+            types.update(v for v in td.values() if v)
+        else:
+            r = subprocess.run(['ros2', 'topic', 'list', '-t'],
+                               capture_output=True, text=True, timeout=8)
+            for line in r.stdout.splitlines():
+                if ' [' in line:
+                    types.add(line.split(' [', 1)[1].rstrip(']').strip())
+    except Exception:
+        pass
+
+    # All installed message types
+    try:
+        if ROS2Tools:
+            types.update(ROS2Tools.get_message_types())
+        else:
+            r = subprocess.run(['ros2', 'interface', 'list', '--only-msgs'],
+                               capture_output=True, text=True, timeout=15)
+            if r.returncode == 0:
+                types.update(t.strip() for t in r.stdout.splitlines() if t.strip())
+    except Exception:
+        pass
+
+    return jsonify({'types': sorted(types)})
 
 
 @app.route('/api/topic/stream')

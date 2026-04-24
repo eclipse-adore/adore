@@ -8,8 +8,8 @@
   <depend>rclpy</depend>
   <depend>std_msgs</depend>
   <depend>rosidl_runtime_py</depend>
-  <python_depend>yq</python_depend>
-  <python_depend>eclipse-zenoh</python_depend>
+  <exec_depend>yq</exec_depend>
+  <exec_depend>eclipse-zenoh</exec_depend>
   <export>
     <build_type>ament_python</build_type>
   </export>

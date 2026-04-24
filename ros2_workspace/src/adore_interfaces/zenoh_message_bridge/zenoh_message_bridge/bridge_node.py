@@ -12,7 +12,7 @@
 # ********************************************************************************
 
 import os
-import yq
+import yaml
 import zenoh
 import rclpy
 from rclpy.node import Node
@@ -32,7 +32,7 @@ class ROS2ZenohBridge(Node):
 
         try:
             with open(config_path, 'r') as f:
-                self.config = yq.load(f)
+                self.config = yaml.safe_load(f)
         except Exception as e:
             self.get_logger().error(f"Failed to parse config with yq: {e}")
             return

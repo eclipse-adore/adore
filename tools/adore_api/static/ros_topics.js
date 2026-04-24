@@ -133,11 +133,24 @@
             const d = await r.json();
             _allTopics = (d.system_topics || []).sort();
             _topicDatatypes = d.topic_datatypes || {};
-            _allDatatypes = [...new Set(Object.values(_topicDatatypes))].sort();
+            _allDatatypes = [...new Set(Object.values(_topicDatatypes).filter(Boolean))].sort();
             renderTopicList();
         } catch (e) {
             listEl.innerHTML = `<div class="no-running-nodes" style="color:#f85149;">Error: ${escHtml(String(e))}</div>`;
         }
+        // Load full type list in background — does not block the topic list render
+        loadInterfaceTypes();
+    }
+
+    async function loadInterfaceTypes() {
+        try {
+            const r = await fetch('/api/topic/interface_types');
+            const d = await r.json();
+            if (d.types && d.types.length) {
+                const merged = new Set([..._allDatatypes, ...d.types]);
+                _allDatatypes = [...merged].sort();
+            }
+        } catch {}
     }
 
     function selectTopic(topic, el) {

@@ -403,17 +403,38 @@
                     </div>
                 </div>
                 <div class="split-right">
-                    <div class="control-panel" style="height:100%;">
-                        <div class="log-header">
-                            <span>Build Output</span>
-                            <div style="display:flex;gap:8px;align-items:center;">
-                                <label class="toggle-label small">
-                                    <input type="checkbox" id="wsAutoScroll" checked> Auto-scroll
-                                </label>
-                                <button id="wsClearLogBtn" class="btn-info btn-sm">✕ Clear</button>
+                    <div class="log-editor-tabs">
+                        <button class="log-tab active" data-logtab="ws-build-panel">Build Output</button>
+                        <button class="log-tab" data-logtab="ws-ccache-panel">CCache</button>
+                    </div>
+
+                    <div id="ws-build-panel" class="log-tab-content active">
+                        <div class="control-panel" style="border-radius:0 8px 8px 8px;height:calc(100vh - 175px);">
+                            <div class="log-header">
+                                <span>Build Output</span>
+                                <div style="display:flex;gap:8px;align-items:center;">
+                                    <label class="toggle-label small">
+                                        <input type="checkbox" id="wsAutoScroll" checked> Auto-scroll
+                                    </label>
+                                    <button id="wsClearLogBtn" class="btn-info btn-sm">✕ Clear</button>
+                                </div>
                             </div>
+                            <div class="log-container" id="wsLogContainer" style="height:calc(100vh - 255px);"></div>
                         </div>
-                        <div class="log-container" id="wsLogContainer" style="height:calc(100vh - 220px);"></div>
+                    </div>
+
+                    <div id="ws-ccache-panel" class="log-tab-content">
+                        <div class="control-panel" style="border-radius:0 8px 8px 8px;height:calc(100vh - 175px);display:flex;flex-direction:column;">
+                            <div class="log-header">
+                                <span>CCache Statistics</span>
+                                <div style="display:flex;gap:8px;align-items:center;">
+                                    <button id="ccacheRefreshBtn" class="btn-info btn-sm">⟳ Refresh</button>
+                                    <button id="ccacheClearBtn" class="btn-warning btn-sm">🗑 Clear Cache</button>
+                                </div>
+                            </div>
+                            <div id="ccacheStatus" style="font-size:12px;color:#8b949e;margin-bottom:8px;"></div>
+                            <div id="ccacheStats" style="flex:1;overflow-y:auto;"></div>
+                        </div>
                     </div>
                 </div>
             </div>

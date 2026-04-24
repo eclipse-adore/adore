@@ -203,6 +203,100 @@
         }, 2000);
     }
 
+    // ── CCache ───────────────────────────────────────────────────────────────
+
+    function escHtml(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function renderCcacheStats(raw) {
+        const el = document.getElementById('ccacheStats');
+        if (!el) return;
+
+        const lines = raw.split('\n');
+        let html = '<table style="width:100%;border-collapse:collapse;font-size:12px;font-family:monospace;">';
+
+        const BAR_KEYS = ['Cacheable calls', 'Hits', 'Direct', 'Preprocessed', 'Misses',
+                          'Uncacheable calls', 'Cache size'];
+
+        for (const line of lines) {
+            if (!line.trim()) continue;
+            const isHeader = line.match(/^[A-Z]/) && !line.includes(':');
+            const isSection = line.trim().match(/^[A-Za-z]/) && !line.includes('%') && line.endsWith(':');
+
+            if (isSection) {
+                html += `<tr><td colspan="2" style="padding:10px 0 4px;color:#58a6ff;font-weight:600;border-bottom:1px solid #30363d;">${escHtml(line)}</td></tr>`;
+                continue;
+            }
+
+            const m = line.match(/^(.*?):\s+(.*)$/);
+            if (!m) continue;
+            const [, key, val] = m;
+            const keyTrimmed = key.trim();
+
+            // Extract percentage for progress bar
+            const pct = val.match(/\((\d+(?:\.\d+)?)%\)/);
+            const showBar = pct && BAR_KEYS.some(k => keyTrimmed.includes(k));
+            const pctVal = pct ? parseFloat(pct[1]) : 0;
+
+            const indent = key.match(/^(\s+)/) ? key.match(/^(\s+)/)[1].length * 2 : 0;
+
+            let valHtml = `<span style="color:#e1e4e8;">${escHtml(val)}</span>`;
+            if (showBar) {
+                const barColor = pctVal > 70 ? '#3fb950' : pctVal > 40 ? '#d29922' : '#f85149';
+                valHtml = `<div style="display:flex;align-items:center;gap:8px;">
+                    <span style="color:#e1e4e8;white-space:nowrap;">${escHtml(val)}</span>
+                    <div style="flex:1;min-width:60px;background:#21262d;border-radius:3px;height:6px;overflow:hidden;">
+                        <div style="width:${pctVal}%;background:${barColor};height:100%;border-radius:3px;transition:width 0.3s;"></div>
+                    </div>
+                </div>`;
+            }
+
+            html += `<tr style="border-bottom:1px solid #21262d;">
+                <td style="padding:5px 8px 5px ${indent + 8}px;color:#8b949e;white-space:nowrap;">${escHtml(keyTrimmed)}</td>
+                <td style="padding:5px 8px;">${valHtml}</td>
+            </tr>`;
+        }
+        html += '</table>';
+        el.innerHTML = html;
+    }
+
+    async function loadCcacheStats() {
+        const status = document.getElementById('ccacheStatus');
+        const statsEl = document.getElementById('ccacheStats');
+        if (status) status.textContent = 'Loading…';
+        if (statsEl) statsEl.innerHTML = '';
+        try {
+            const r = await fetch('/api/ros_workspace/ccache/stats');
+            const d = await r.json();
+            if (!d.available) {
+                if (status) status.textContent = d.message || 'ccache not available';
+                return;
+            }
+            if (status) status.textContent = '';
+            renderCcacheStats(d.raw);
+        } catch (e) {
+            if (status) status.textContent = 'Error: ' + e;
+        }
+    }
+
+    async function clearCcache() {
+        const btn = document.getElementById('ccacheClearBtn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Clearing…'; }
+        try {
+            const r = await fetch('/api/ros_workspace/ccache/clear', { method: 'POST' });
+            const d = await r.json();
+            const status = document.getElementById('ccacheStatus');
+            if (status) status.textContent = d.success ? (d.message || 'Cache cleared') : ('Error: ' + d.message);
+            if (d.success) await loadCcacheStats();
+        } catch (e) {
+            const status = document.getElementById('ccacheStatus');
+            if (status) status.textContent = 'Error: ' + e;
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = '🗑 Clear Cache'; }
+        }
+    }
+
     function init() {
         document.getElementById('wsRefreshBtn')?.addEventListener('click', () => { loadStatus(); loadPackages(); });
         document.getElementById('wsCleanBtn')?.addEventListener('click', () => runMake('clean'));
@@ -214,6 +308,11 @@
         document.getElementById('wsAutoScroll')?.addEventListener('change', e => { _autoScroll = e.target.checked; });
         document.getElementById('wsPkgSearch')?.addEventListener('input', e => { _pkgFilter = e.target.value; renderPackages(); });
         document.getElementById('wsAutoRebuildToggle')?.addEventListener('change', e => setAutoRebuild(e.target.checked));
+        document.getElementById('ccacheRefreshBtn')?.addEventListener('click', loadCcacheStats);
+        document.getElementById('ccacheClearBtn')?.addEventListener('click', clearCcache);
+
+        // Load ccache stats when tab is clicked
+        document.querySelector('[data-logtab="ws-ccache-panel"]')?.addEventListener('click', loadCcacheStats);
 
         window.addEventListener('tabchange', e => {
             if (e.detail.tab === 'ros-workspace') { loadStatus(); loadPackages(); connectLogStream(); }
