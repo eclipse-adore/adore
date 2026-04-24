@@ -2553,8 +2553,38 @@ def topic_empty_message():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
-_publish_timers = {}
-_publish_timers_lock = threading.Lock()
+# ── Publish session registry ────────────────────────────────────────────────
+# Each entry: {'proc': Popen|None, 'stop': Event, 'datatype': str, 'mode': str}
+_publish_sessions = {}
+_publish_sessions_lock = threading.Lock()
+
+_MSG_STRIP = frozenset(('topic', 'datatype', 'WARNING', 'WARN', 'ERROR', 'INFO', 'DEBUG'))
+
+
+def _clean_msg(msg):
+    if isinstance(msg, dict):
+        return {k: v for k, v in msg.items() if k not in _MSG_STRIP}
+    return msg
+
+
+def _resolve_datatype(topic, datatype):
+    if datatype:
+        return datatype
+    dt = ROSMarshaller.get_datatype(topic) if ROSMarshaller else None
+    if ROS2Tools and not dt:
+        dt = ROS2Tools.get_topic_datatype(topic)
+    return dt
+
+
+def _stop_session(topic):
+    """Stop any active publish session for a topic."""
+    with _publish_sessions_lock:
+        entry = _publish_sessions.pop(topic, None)
+    if not entry:
+        return
+    entry['stop'].set()
+    if entry.get('proc'):
+        ROSMarshaller.stop_persistent(entry['proc'])
 
 
 @app.route('/api/topic/publish_timed', methods=['POST'])
@@ -2569,53 +2599,152 @@ def publish_timed():
     frequency = data.get('frequency', 0)
     action = data.get('action', 'publish')
 
+    if action == 'stop':
+        _stop_session(topic)
+        return jsonify({'success': True, 'message': f'Stopped publishing to {topic}'})
+
     if not topic or message_data is None:
         return jsonify({'success': False, 'message': 'topic and data required'}), 400
 
-    if action == 'stop':
-        with _publish_timers_lock:
-            entry = _publish_timers.pop(topic, None)
-        if entry:
-            entry['stop'].set()
-        return jsonify({'success': True, 'message': f'Stopped publishing to {topic}'})
+    message_data = _clean_msg(message_data)
 
+    datatype = _resolve_datatype(topic, datatype)
     if not datatype:
-        datatype = ROSMarshaller.get_datatype(topic)
-        if not datatype:
-            return jsonify({'success': False, 'message': f'Could not determine datatype for {topic}'}), 400
+        return jsonify({'success': False, 'message': f'Could not determine datatype for {topic}'}), 400
+
+    _stop_session(topic)
 
     if frequency and float(frequency) > 0:
-        with _publish_timers_lock:
-            old = _publish_timers.pop(topic, None)
-            if old:
-                old['stop'].set()
-            stop_event = threading.Event()
-            interval = 1.0 / float(frequency)
-
-            def _pub_loop():
-                while not stop_event.is_set():
-                    try:
-                        ROSMarshaller.publish(json.dumps(message_data), topic, datatype)
-                    except Exception as e:
-                        print(f'Publish loop error: {e}')
-                    stop_event.wait(interval)
-
-            t = threading.Thread(target=_pub_loop, daemon=True)
-            _publish_timers[topic] = {'thread': t, 'stop': stop_event, 'datatype': datatype}
-            t.start()
-        return jsonify({'success': True, 'message': f'Publishing to {topic} at {frequency} Hz', 'topic': topic, 'datatype': datatype})
+        hz = float(frequency)
+        stop_event = threading.Event()
+        try:
+            proc = ROSMarshaller.publish_persistent(topic, datatype, message_data, hz)
+            with _publish_sessions_lock:
+                _publish_sessions[topic] = {'proc': proc, 'stop': stop_event,
+                                             'datatype': datatype, 'mode': 'persistent'}
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500
+        return jsonify({'success': True, 'message': f'Publishing to {topic} at {hz} Hz',
+                        'topic': topic, 'datatype': datatype})
 
     try:
         ROSMarshaller.publish(json.dumps(message_data), topic, datatype)
-        return jsonify({'success': True, 'message': f'Published to {topic}', 'topic': topic, 'datatype': datatype})
+        return jsonify({'success': True, 'message': f'Published to {topic}',
+                        'topic': topic, 'datatype': datatype})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
 
+@app.route('/api/topic/publish_batch', methods=['POST'])
+def publish_batch():
+    """
+    Publish a sequence of messages (batch/replay) with optional looping.
+
+    JSON body:
+      topic     str           target topic
+      datatype  str           message type (optional, auto-detected if omitted)
+      messages  list[dict]    ordered message list
+      frequency float         publish rate Hz (default 1.0)
+      loop      bool          repeat the sequence indefinitely (default false)
+
+    Or send raw JSONL as text/plain body (one JSON object per line).
+    POST /api/topic/publish_batch?topic=...&datatype=...&frequency=1&loop=true
+
+    Returns immediately; the batch runs in a background thread.
+    Use POST /api/topic/publish_timed  {action: stop, topic: ...} to cancel.
+    """
+    if not ROSMarshaller:
+        return jsonify({'success': False, 'message': 'ROS functionality not available'}), 500
+
+    ct = request.content_type or ''
+    if 'application/json' in ct:
+        data = request.get_json(silent=True) or {}
+        topic = data.get('topic', request.args.get('topic', '')).strip()
+        datatype = data.get('datatype', request.args.get('datatype', '')).strip()
+        messages = data.get('messages', [])
+        frequency = float(data.get('frequency', request.args.get('frequency', 1)))
+        loop = bool(data.get('loop', request.args.get('loop', 'false').lower() == 'true'))
+    else:
+        # Raw JSONL body
+        topic = request.args.get('topic', '').strip()
+        datatype = request.args.get('datatype', '').strip()
+        frequency = float(request.args.get('frequency', 1))
+        loop = request.args.get('loop', 'false').lower() == 'true'
+        messages = []
+        for line in request.get_data(as_text=True).splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                messages.append(json.loads(line))
+            except Exception:
+                pass
+
+    if not topic:
+        return jsonify({'success': False, 'message': 'topic required'}), 400
+    if not messages:
+        return jsonify({'success': False, 'message': 'no messages provided'}), 400
+
+    datatype = _resolve_datatype(topic, datatype)
+    if not datatype:
+        return jsonify({'success': False, 'message': f'Could not determine datatype for {topic}'}), 400
+
+    messages = [_clean_msg(m) for m in messages]
+    interval = 1.0 / frequency if frequency > 0 else 1.0
+    _stop_session(topic)
+
+    stop_event = threading.Event()
+    with _publish_sessions_lock:
+        _publish_sessions[topic] = {'proc': None, 'stop': stop_event,
+                                     'datatype': datatype, 'mode': 'batch',
+                                     'count': len(messages), 'loop': loop}
+
+    def _batch_loop():
+        iteration = 0
+        while not stop_event.is_set():
+            for msg in messages:
+                if stop_event.is_set():
+                    break
+                try:
+                    ROSMarshaller.publish(json.dumps(msg), topic, datatype)
+                except Exception as e:
+                    logging.error(f'Batch publish error on {topic}: {e}')
+                stop_event.wait(interval)
+            iteration += 1
+            if not loop:
+                break
+        with _publish_sessions_lock:
+            _publish_sessions.pop(topic, None)
+        logging.info(f'Batch publish complete: {topic} ({iteration} iteration(s))')
+
+    t = threading.Thread(target=_batch_loop, daemon=True)
+    t.start()
+
+    return jsonify({
+        'success': True,
+        'topic': topic,
+        'datatype': datatype,
+        'messages': len(messages),
+        'frequency': frequency,
+        'loop': loop,
+        'message': f'Batch started: {len(messages)} messages at {frequency} Hz{"  (looping)" if loop else ""}'
+    })
+
+
 @app.route('/api/topic/publish_status')
 def publish_status():
-    with _publish_timers_lock:
-        active = {t: {'datatype': v['datatype']} for t, v in _publish_timers.items() if not v['stop'].is_set()}
+    with _publish_sessions_lock:
+        active = {}
+        for t, v in list(_publish_sessions.items()):
+            proc = v.get('proc')
+            alive = (proc is None or proc.poll() is None) and not v['stop'].is_set()
+            if alive:
+                active[t] = {
+                    'datatype': v['datatype'],
+                    'mode': v.get('mode', 'unknown'),
+                    'loop': v.get('loop', False),
+                    'count': v.get('count'),
+                }
     return jsonify({'active': active})
 
 

@@ -418,10 +418,21 @@
         }
     }
 
+    const _META_KEYS = new Set(['topic', 'datatype', 'WARNING', 'WARN', 'ERROR', 'INFO', 'DEBUG']);
+
+    function stripMessageMeta(msg) {
+        if (!msg || typeof msg !== 'object' || Array.isArray(msg)) return msg;
+        const out = {};
+        for (const [k, v] of Object.entries(msg)) {
+            if (!_META_KEYS.has(k)) out[k] = v;
+        }
+        return out;
+    }
+
     async function doPublish(data, topic, datatype, frequency) {
         const r = await fetch('/api/topic/publish_timed', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ topic, datatype: datatype || undefined, data, frequency: frequency || 0 }),
+            body: JSON.stringify({ topic, datatype: datatype || undefined, data: stripMessageMeta(data), frequency: frequency || 0 }),
         });
         return r.json();
     }
@@ -448,10 +459,9 @@
         try {
             const d = await doPublish(data, topic, datatype, freq);
             if (d.success) {
-                _publishLoopActive = true;
-                document.getElementById('rosPublishStartBtn').disabled = true;
-                document.getElementById('rosPublishStopBtn').disabled = false;
-                appendToPublishLog(`Started loop on ${d.topic} at ${freq} Hz [${d.datatype}]`, false);
+                setPublishLoopUI(true);
+                startStatusPoll(topic);
+                appendToPublishLog(`Started persistent publisher on ${d.topic} at ${freq} Hz [${d.datatype}]`, false);
             } else {
                 appendToPublishLog(`Error: ${d.message}`, true);
             }
@@ -467,9 +477,8 @@
                 body: JSON.stringify({ topic, action: 'stop', data: {} }),
             });
         } catch {}
-        _publishLoopActive = false;
-        document.getElementById('rosPublishStartBtn').disabled = false;
-        document.getElementById('rosPublishStopBtn').disabled = true;
+        setPublishLoopUI(false);
+        stopStatusPoll();
         appendToPublishLog(`Stopped loop on ${topic}`, false);
     }
 
@@ -512,21 +521,75 @@
         setEditorValue(JSON.stringify(_importedMessages[_importIdx], null, 2));
     }
 
+    let _statusPollTimer = null;
+
+    function startStatusPoll(topic) {
+        stopStatusPoll();
+        _statusPollTimer = setInterval(async () => {
+            try {
+                const r = await fetch('/api/topic/publish_status');
+                const d = await r.json();
+                if (!d.active || !d.active[topic]) {
+                    appendToPublishLog(`[status] Session on ${topic} ended`, false);
+                    setPublishLoopUI(false);
+                    stopStatusPoll();
+                }
+            } catch {}
+        }, 2000);
+    }
+
+    function stopStatusPoll() {
+        if (_statusPollTimer) { clearInterval(_statusPollTimer); _statusPollTimer = null; }
+    }
+
+    function setPublishLoopUI(active) {
+        _publishLoopActive = active;
+        document.getElementById('rosPublishStartBtn').disabled = active;
+        document.getElementById('rosPublishStopBtn').disabled = !active;
+        const replayBtn = document.getElementById('rosPublishImportReplayBtn');
+        const replayStop = document.getElementById('rosPublishImportStopBtn');
+        if (replayBtn) replayBtn.disabled = active;
+        if (replayStop) replayStop.disabled = !active;
+    }
+
     async function replayImported() {
         if (!_importedMessages.length) return;
         const topic = document.getElementById('rosPublishTopicInput').value.trim();
         const datatype = document.getElementById('rosPublishDatatypeInput').value.trim();
+        const freq = parseFloat(document.getElementById('rosPublishFreqInput').value) || 1;
+        const loop = document.getElementById('rosPublishLoopReplay')?.checked || false;
         if (!topic) { setEditorError('Topic required'); return; }
-        appendToPublishLog(`Replaying ${_importedMessages.length} messages...`, false);
-        for (let i = 0; i < _importedMessages.length; i++) {
-            try {
-                const d = await doPublish(_importedMessages[i], topic, datatype, 0);
-                appendToPublishLog(`[${i + 1}/${_importedMessages.length}] ${d.success ? 'OK' : d.message}`, !d.success);
-            } catch (e) {
-                appendToPublishLog(`[${i + 1}] Error: ${e}`, true);
+
+        const messages = _importedMessages.map(stripMessageMeta);
+        try {
+            const r = await fetch('/api/topic/publish_batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic, datatype: datatype || undefined, messages, frequency: freq, loop }),
+            });
+            const d = await r.json();
+            if (d.success) {
+                appendToPublishLog(`Batch started: ${d.messages} messages @ ${d.frequency} Hz${loop ? ' (looping)' : ''}`, false);
+                setPublishLoopUI(true);
+                startStatusPoll(topic);
+            } else {
+                appendToPublishLog(`Error: ${d.message}`, true);
             }
+        } catch (e) {
+            appendToPublishLog('Request failed: ' + e, true);
         }
-        appendToPublishLog('Replay complete.', false);
+    }
+
+    async function stopReplay() {
+        const topic = document.getElementById('rosPublishTopicInput').value.trim();
+        if (!topic) return;
+        await fetch('/api/topic/publish_timed', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic, action: 'stop', data: {} }),
+        });
+        setPublishLoopUI(false);
+        stopStatusPoll();
+        appendToPublishLog(`Stopped batch on ${topic}`, false);
     }
 
     // ── Init ─────────────────────────────────────────────────────────────────
@@ -574,6 +637,7 @@
             _importedMessages = []; _importIdx = 0; updateImportUI();
         });
         document.getElementById('rosPublishImportReplayBtn')?.addEventListener('click', replayImported);
+        document.getElementById('rosPublishImportStopBtn')?.addEventListener('click', stopReplay);
 
         document.getElementById('rosPublishTopicInput')?.addEventListener('change', e => {
             const dt = _topicDatatypes[e.target.value.trim()];
