@@ -12,6 +12,7 @@
 # ********************************************************************************
 
 import os
+import queue
 import yaml
 import zenoh
 import rclpy
@@ -42,10 +43,12 @@ class ROS2ZenohBridge(Node):
         self.zenoh_pubs = {}
         self.ros_subs = []
         self.ros_pubs = {}
+        self._z2r_queue = queue.Queue()
 
         self._setup_zenoh()
         self._setup_ros2_to_zenoh()
         self._setup_zenoh_to_ros2()
+        self.create_timer(0.01, self._drain_z2r_queue)
         
     def _setup_zenoh(self):
         endpoint = self.get_parameter('zenoh_router').get_parameter_value().string_value
@@ -73,10 +76,15 @@ class ROS2ZenohBridge(Node):
             self.ros_pubs[z_key] = pub
             def z_cb(sample, p=pub, mt=m_type, t=ros_topic):
                 try:
-                    p.publish(bytes_to_msg(sample.payload.to_bytes(), mt))
+                    self._z2r_queue.put((p, bytes_to_msg(sample.payload.to_bytes(), mt)))
                 except Exception as e:
                     self.get_logger().error(f'Deser failed on {t}: {e}')
             self.zenoh_subs.append(self.zenoh_session.declare_subscriber(z_key, z_cb))
+
+    def _drain_z2r_queue(self):
+        while not self._z2r_queue.empty():
+            pub, msg = self._z2r_queue.get_nowait()
+            pub.publish(msg)
 
     def shutdown(self):
         for s in self.zenoh_subs: s.undeclare()

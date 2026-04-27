@@ -16,6 +16,7 @@ adore_embedded/packages/
 adore_embedded/build/
 **.rej
 **.orig
+ros2_workspace/src/vendor/adore_extended
 
 **.vscode
 .colcon_workspace/build

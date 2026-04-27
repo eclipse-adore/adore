@@ -1,5 +1,9 @@
 ros2_to_zenoh:
-  - ros_topic: "/chatter"
+  - ros_topic: "/ros2_chatter"
     zenoh_key: "demo/chatter"
     msg_type: "std_msgs/msg/String"
-zenoh_to_ros2: []
+
+zenoh_to_ros2:
+  - zenoh_key: "demo/chatter"
+    ros_topic: "/zenoh_chatter"
+    msg_type: "std_msgs/msg/String"
