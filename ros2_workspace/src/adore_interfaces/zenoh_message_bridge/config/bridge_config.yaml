@@ -1,3 +1,15 @@
+# This configuration file controls the message bridging behaviro of the 
+# zenoh_message_bridge node.
+
+# The zenoh_message_bridge passes messages to and from the default FastDDS to 
+# Eclipse Zenoh via CDR
+
+# ros2_to_zenoh tag indicates which messages will be passed from ROS2 to Eclipse Zenoh
+# zenoh_to_ros2 section tag indicates which messages will be passed from Eclipse Zenoh to ROS2
+
+# To run the zenoh_message_bridge use:
+#   ros2 launch zenoh_message_bridge bridge.launch.py
+
 ros2_to_zenoh:
   - ros_topic: "/ros2_chatter"
     zenoh_key: "demo/chatter"
