@@ -1,16 +1,3 @@
-# ********************************************************************************
-# Copyright (c) 2026 Contributors to the Eclipse Foundation
-#
-# See the NOTICE file(s) distributed with this work for additional
-# information regarding copyright ownership.
-#
-# This program and the accompanying materials are made available under the
-# terms of the Eclipse Public License 2.0 which is available at
-# https://www.eclipse.org/legal/epl-2.0
-#
-# SPDX-License-Identifier: EPL-2.0
-# ********************************************************************************
-
 import os
 import queue
 import yaml
@@ -18,7 +5,26 @@ import zenoh
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
+from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy, HistoryPolicy
 from .utils import load_msg_type, msg_to_bytes, bytes_to_msg
+
+_DURABILITY = {
+    'volatile':        DurabilityPolicy.VOLATILE,
+    'transient_local': DurabilityPolicy.TRANSIENT_LOCAL,
+}
+_RELIABILITY = {
+    'best_effort': ReliabilityPolicy.BEST_EFFORT,
+    'reliable':    ReliabilityPolicy.RELIABLE,
+}
+
+def _qos_from_mapping(mapping: dict) -> QoSProfile:
+    return QoSProfile(
+        depth=mapping.get('qos_depth', 10),
+        durability=_DURABILITY.get(mapping.get('qos_durability', 'volatile'), DurabilityPolicy.VOLATILE),
+        reliability=_RELIABILITY.get(mapping.get('qos_reliability', 'best_effort'), ReliabilityPolicy.BEST_EFFORT),
+        history=HistoryPolicy.KEEP_LAST,
+    )
+
 
 class ROS2ZenohBridge(Node):
     def __init__(self):
@@ -35,7 +41,7 @@ class ROS2ZenohBridge(Node):
             with open(config_path, 'r') as f:
                 self.config = yaml.safe_load(f)
         except Exception as e:
-            self.get_logger().error(f"Failed to parse config with yq: {e}")
+            self.get_logger().error(f"Failed to load config: {e}")
             return
 
         self.zenoh_session = None
@@ -49,7 +55,7 @@ class ROS2ZenohBridge(Node):
         self._setup_ros2_to_zenoh()
         self._setup_zenoh_to_ros2()
         self.create_timer(0.01, self._drain_z2r_queue)
-        
+
     def _setup_zenoh(self):
         endpoint = self.get_parameter('zenoh_router').get_parameter_value().string_value
         z_config = zenoh.Config()
@@ -62,17 +68,19 @@ class ROS2ZenohBridge(Node):
             ros_topic = mapping['ros_topic']
             zenoh_key = mapping['zenoh_key']
             msg_type = load_msg_type(mapping.get('msg_type', 'std_msgs/msg/String'))
+            qos = _qos_from_mapping(mapping)
             pub = self.zenoh_session.declare_publisher(zenoh_key)
             self.zenoh_pubs[ros_topic] = pub
             cb = lambda msg, p=pub, k=zenoh_key: (p.put(msg_to_bytes(msg)), self.get_logger().debug(f'R2Z: {k}'))
-            self.ros_subs.append(self.create_subscription(msg_type, ros_topic, cb, 10))
+            self.ros_subs.append(self.create_subscription(msg_type, ros_topic, cb, qos))
 
     def _setup_zenoh_to_ros2(self):
         for mapping in self.config.get('zenoh_to_ros2', []):
             z_key = mapping['zenoh_key']
             ros_topic = mapping['ros_topic']
             m_type = load_msg_type(mapping.get('msg_type', 'std_msgs/msg/String'))
-            pub = self.create_publisher(m_type, ros_topic, 10)
+            qos = _qos_from_mapping(mapping)
+            pub = self.create_publisher(m_type, ros_topic, qos)
             self.ros_pubs[z_key] = pub
             def z_cb(sample, p=pub, mt=m_type, t=ros_topic):
                 try:
@@ -89,6 +97,7 @@ class ROS2ZenohBridge(Node):
     def shutdown(self):
         for s in self.zenoh_subs: s.undeclare()
         if self.zenoh_session: self.zenoh_session.close()
+
 
 def main(args=None):
     rclpy.init(args=args)

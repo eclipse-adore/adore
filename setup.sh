@@ -56,3 +56,6 @@ PYVER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_in
 export PYTHONPATH="/opt/adore_venv/lib/python${PYVER}/site-packages:/usr/lib/python3/dist-packages:${PYTHONPATH}"
 
 bash ${SCRIPT_DIRECTORY}/tools/adore_api/adore_api.sh
+
+bash ${SCRIPT_DIRECTORY}/tools/start_zenoh_router.sh
+bash ${SCRIPT_DIRECTORY}/tools/start_zenoh_bridge.sh

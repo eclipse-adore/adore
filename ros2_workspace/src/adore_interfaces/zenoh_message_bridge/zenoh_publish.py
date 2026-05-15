@@ -10,7 +10,7 @@ conf = zenoh.Config.from_json5('''
 ''')
 
 with zenoh.open(conf) as session:
-    pub = session.declare_publisher("demo/chatter")
+    pub = session.declare_publisher("zenoh/chatter")
     while True:
         payload = json.dumps({"data": "Hello, Zenoh!"}).encode('utf-8')
         pub.put(payload)

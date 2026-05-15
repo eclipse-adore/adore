@@ -1,1 +1,1 @@
-ros2 launch zenoh_message_bridge bridge.launch.py
+RMW_IMPLEMENTATION=rmw_fastrtps_cpp ros2 launch zenoh_message_bridge bridge.launch.py
