@@ -1,13 +1,9 @@
 ros2_to_zenoh:
   - ros_topic: "/ros2_chatter"
-    zenoh_key: "0/ros2_chatter/std_msgs::msg::dds_::String_/TypeHashNotSupported"
+    zenoh_key: "0/ros2_chatter/**"
     msg_type: "std_msgs/msg/String"
-    qos_durability: "volatile"
-    qos_reliability: "reliable"
 
 zenoh_to_ros2:
-  - zenoh_key: "0/zenoh_chatter/std_msgs::msg::dds_::String_/TypeHashNotSupported"
+  - zenoh_key: "0/zenoh_chatter/**"
     ros_topic: "/zenoh_chatter"
     msg_type: "std_msgs/msg/String"
-    qos_durability: "volatile"
-    qos_reliability: "reliable"

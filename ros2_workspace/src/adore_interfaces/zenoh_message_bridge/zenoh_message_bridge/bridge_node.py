@@ -1,5 +1,6 @@
 import os
 import queue
+import threading
 import yaml
 import zenoh
 import rclpy
@@ -50,6 +51,7 @@ class ROS2ZenohBridge(Node):
         self.ros_subs = []
         self.ros_pubs = {}
         self._z2r_queue = queue.Queue()
+        self._shutdown_event = threading.Event()
 
         self._setup_zenoh()
         self._setup_ros2_to_zenoh()
@@ -83,6 +85,8 @@ class ROS2ZenohBridge(Node):
             pub = self.create_publisher(m_type, ros_topic, qos)
             self.ros_pubs[z_key] = pub
             def z_cb(sample, p=pub, mt=m_type, t=ros_topic):
+                if self._shutdown_event.is_set():
+                    return
                 try:
                     self._z2r_queue.put((p, bytes_to_msg(sample.payload.to_bytes(), mt)))
                 except Exception as e:
@@ -95,8 +99,11 @@ class ROS2ZenohBridge(Node):
             pub.publish(msg)
 
     def shutdown(self):
-        for s in self.zenoh_subs: s.undeclare()
-        if self.zenoh_session: self.zenoh_session.close()
+        self._shutdown_event.set()
+        for s in self.zenoh_subs:
+            s.undeclare()
+        if self.zenoh_session:
+            self.zenoh_session.close()
 
 
 def main(args=None):
@@ -110,5 +117,6 @@ def main(args=None):
         pass
     finally:
         node.shutdown()
+        executor.shutdown()
         node.destroy_node()
         rclpy.shutdown()
