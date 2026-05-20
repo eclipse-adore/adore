@@ -1,0 +1,101 @@
+<!--
+********************************************************************************
+* Copyright (C) 2017-2020 German Aerospace Center (DLR). 
+* Eclipse ADORe, Automated Driving Open Research https://eclipse.org/adore
+*
+* This program and the accompanying materials are made available under the 
+* terms of the Eclipse Public License 2.0 which is available at
+* http://www.eclipse.org/legal/epl-2.0.
+*
+* SPDX-License-Identifier: EPL-2.0 
+*
+* Contributors: 
+* Andrew Koerner
+********************************************************************************
+-->
+# Anonymous Cloning
+
+In order to make development more friendly nearly all git submodules are
+configured to use git over ssh via the `.gitmodules`. The downside of this is that
+GitHub requires account keys to be configured in order to clone the repository.
+
+
+If you attempt to clone without configuring your account keys you will receive
+the following error:
+
+```bash
+git clone git@github.com:eclipse-adore/adore.git
+Cloning into 'adore'...
+The authenticity of host 'github.com (140.82.121.3)' can't be established.
+ECDSA key fingerprint is SHA256:p2QAMXNIC1TJYWeIOttrVc98/R1BUFWu3/LiyKgUfQM.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added 'github.com,140.82.121.3' (ECDSA) to the list of known hosts.
+git@github.com: Permission denied (publickey).
+fatal: Could not read from remote repository.
+
+Please make sure you have the correct access rights
+and the repository exists.
+```
+
+## Anonymous Cloning Over HTTPS **GLOBAL**
+
+You can configure git to exclusively use HTTPS. This can be done with the
+following commands:
+
+```bash
+git config --global url."https://github.com/".insteadOf git@github.com:
+git config --global url."https://".insteadOf git://
+```
+
+Next, you can clone the repository as normal except use HTTPS:
+
+```bash
+git clone --recurse-submodules -j$(nproc) https://github.com/eclipse-adore/adore.git
+```
+
+To undo these global configuration changes you can run:
+
+```bash
+git config --global --unset url."git@github.com:".insteadof
+git config --global --unset url."git://".insteadof
+```
+
+## Anonymous Cloning Without Global Configuration
+
+If you prefer not to modify your global git settings, you can configure HTTPS
+rewrites **only for this repository** after cloning:
+
+```bash
+git clone https://github.com/eclipse-adore/adore.git
+cd adore
+git config url."https://github.com/".insteadOf git@github.com:
+git config url."https://".insteadOf git://
+git submodule update --init --recursive
+```
+
+This will update the repository’s local `.git/config` file, allowing submodules
+to be fetched over HTTPS without requiring SSH keys or affecting other projects.
+
+You can verify the settings with:
+
+```bash
+git config --local --list | grep insteadOf
+```
+
+To remove the local configuration later, run:
+
+```bash
+git config --unset url."git@github.com:".insteadof
+git config --unset url."git://".insteadof
+```
+
+# Tips
+Building ADORe **will** fail until all submodules have been properly initialized. 
+If cloning or repository initialization fails refer to the
+[troubleshooting](../problems_and_solutions.md) guide before proceeding.
+
+> **⚠️ WARNING:**
+> Do not proceed with building ADORe until `git submodule update --init --receive`
+> finishes without error. 
+
+

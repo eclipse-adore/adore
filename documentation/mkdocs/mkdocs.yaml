@@ -1,0 +1,73 @@
+site_name: ADORe Documentation
+repo_url: https://github.com/eclipse-adore/adore
+nav:
+  - About ADORe: README.md
+  - Quick Start: quick_start.md
+  - Getting Started:
+    - Getting Started: getting_started/getting_started.md
+    - System Requirements: getting_started/system_requirements.md
+    - Anonymous Cloning: system_and_development/anonymous_cloning.md
+    - Prerequisites: getting_started/prerequisites.md
+    - Installing Docker: getting_started/installing_docker.md
+    - Running Your First Scenario In ADORe: getting_started/running_your_first_scenario.md
+  - Technical Reference Manual:
+    - Table of Contents: technical_reference_manual.md
+    - Documentation: system_and_development/documentation.md
+    - Configuring ADORe: generated/configuring_adore/configuring_adore.md
+    - ADORe Embedded: adore_embedded.md
+    - ADORe ROS Nodes: generated/ROS_NODES_SUMMARY.md
+    - ADORe ROS Messages: generated/modules/adore_ros2_msgs/README.md
+    - ADORe ROS Topics:   generated/adore_ros2_msgs/topics.md
+    - ADORe Mission Control Dashboard & REST API:
+      - About The ADORe REST API: generated/api/adore_api/README.md
+      - ADORe Mission Control Web Interface: generated/api/adore_api/adore_mission_control.md
+      - ADORE API Reference: generated/api/adore_api/api_reference.md
+      - ADORE API Examples: generated/api/adore_api/api_reference_curl_examples.md
+    - Creating A New Node: system_and_development/creating_a_new_node.md
+    - Running A Scenario In ADORe: getting_started/running_your_first_scenario.md
+    - Scenario Visualization: generated/visualization/lichtblick/README.md
+    - Scenario Model Checking: 
+        - Scenario Model Checking Quick Start: generated/adore_model_checker/model_checking_quick_start.md 
+        - Scenario Model Checking API Quick Start: generated/adore_model_checker/model_checking_api_quick_start.md 
+        - Scenario Model Checking README: generated/adore_model_checker/README.md 
+        - Scenario Model Checking With The ADORe Mission Control: system_and_development/model_checking_with_the_adore_mission_control.md
+    - ADORe And CARLa: generated/carla_bridge/README.md
+    - ADORe And SUMO:  generated/sumo_bridge/README.md
+    - Creating A New Scenario: system_and_development/scenario_generation.md
+    - ADORe CLI: 
+        - ADORe CLI: generated/adore_cli/README.md
+        - Multi-arch Build Support: system_and_development/multiarch_support.md
+    - Testing: 
+        - System Testing: system_and_development/system_tests.md 
+        - ROS Unit Testing: system_and_development/ros_unit_testing.md
+        - C++ Library Testing: system_and_development/library_testing.md
+    - Submodules: generated/modules/modules.md
+    - Troubleshooting: problems_and_solutions.md
+    - Licensing: licensing.md
+    - Third-Party: generated/THIRD-PARTY.md
+    - Notices: generated/NOTICE.md
+    - Publicaitons: publications.md
+    - Contributing: generated/CONTRIBUTING.md
+    - Code of Conduct: generated/CODE_OF_CONDUCT.md
+    - Style Guide: styleguide.md
+  - Contact: contact.md
+
+extra:
+  github_issues: "https://github.com/eclipse-adore/adore/issues"
+
+theme:
+  name: material 
+  palette:
+    scheme: slate 
+  logo: ../img/logo.png
+  favicon: ../img/favicon.ico
+  features:
+    - content.code.copy
+  footer:
+    links:
+      - title: "Help"
+        url: "https://github.com/eclipse-adore/adore/issues"
+
+plugins:
+  - search
+  # - pdf-export

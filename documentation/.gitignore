@@ -1,0 +1,10 @@
+docs/
+doxygen/generated_doxygen_documentation
+technical_reference_manual/modules/
+technical_reference_manual/modules/
+technical_reference_manual/modules/*
+technical_reference_manual/modules.md
+technical_reference_manual/modules
+technical_reference_manual/generated
+.aspell.en.prepl
+technical_reference_manual/system_and_development/ROS_NODES_SUMMARY.md
