@@ -15,6 +15,8 @@ The configuration file can be used to configure control ADORe's behavior:
 ## Usage
 
 The environment variables are automatically sourced by ADORe components and 
-build scripts. Modify the values in `adore.env` and the ADORe CLI to apply changes.
+build scripts. Modify the values in `adore.env` and restart the ADORe CLI with 
+`make stop && make start` or `make restart` to apply changes.
 
-See the configuration file for detailed documentation on each variable and its available options.
+See the `adore.env` configuration file for detailed documentation on each 
+variable and its available options.

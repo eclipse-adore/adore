@@ -2,7 +2,6 @@ site_name: ADORe Documentation
 repo_url: https://github.com/eclipse-adore/adore
 nav:
   - About ADORe: README.md
-  - Quick Start: quick_start.md
   - Getting Started:
     - Getting Started: getting_started/getting_started.md
     - System Requirements: getting_started/system_requirements.md
