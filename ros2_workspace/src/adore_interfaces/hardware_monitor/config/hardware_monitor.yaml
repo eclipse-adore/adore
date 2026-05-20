@@ -1,0 +1,21 @@
+hardware_discovery_node:
+  ros__parameters:
+    # Publish rate for /cluster/hardware_inventory.
+    # Hardware is static so 0.1 Hz (every 10 s) is the default.
+    publish_rate_hz: 0.1
+    # Override the hostname used as the node identifier in each message.
+    # Defaults to the system hostname when left unset.
+    # node_name: "my-robot"
+
+hardware_status_node:
+  ros__parameters:
+    # Publish rate for /cluster/hardware_status.
+    # Default: 0.1 Hz (every 10 s). Increase to 1.0 Hz for live monitoring.
+    publish_rate_hz: 0.1
+    # node_name: "my-robot"
+
+    # Threshold parameters - status fields change to "warn"/"error" above these
+    cpu_warn_percent: 85.0
+    ram_warn_percent: 85.0
+    disk_warn_percent: 85.0
+    temp_warn_celsius: 80.0

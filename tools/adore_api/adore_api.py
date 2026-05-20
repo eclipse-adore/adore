@@ -12,6 +12,7 @@
 # ********************************************************************************
 
 import os
+import sys
 import subprocess
 import threading
 import time
@@ -134,6 +135,21 @@ app = Flask(__name__,
             template_folder=os.path.join(_HERE, 'templates'),
             static_folder=os.path.join(_HERE, 'static'))
 CORS(app)
+
+# Register hardware monitor blueprint
+# adore_api.py lives at tools/adore_api/adore_api.py
+# hardware_monitor lives at ros2_workspace/src/adore_interfaces/hardware_monitor/
+_HW_MONITOR_PATH = os.path.normpath(
+    os.path.join(_HERE, '..', '..', 'ros2_workspace', 'src', 'adore_interfaces', 'hardware_monitor')
+)
+if _HW_MONITOR_PATH not in sys.path:
+    sys.path.insert(0, _HW_MONITOR_PATH)
+try:
+    from hardware_monitor.hardware_monitor_api import get_hardware_monitor_blueprint as _get_hw_bp
+    app.register_blueprint(_get_hw_bp())
+    print(f"✓ Hardware monitor blueprint registered (path: {_HW_MONITOR_PATH})")
+except Exception as _hw_err:
+    print(f"✗ Hardware monitor blueprint not available: {_hw_err}")
 
 LOG_DIRECTORY = None
 

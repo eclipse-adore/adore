@@ -10,6 +10,7 @@ The configuration file can be used to configure control ADORe's behavior:
 - **API Configuration**: Enable/disable and configure the ADORe API server
 - **Logging Configuration**: Configure rsyslog server and forwarding
 - **General Settings**: File size limits, paths, and other runtime parameters
+- **ROS Settings**:  ROS Domain ID, ROS logging directory
 
 ## Usage
 

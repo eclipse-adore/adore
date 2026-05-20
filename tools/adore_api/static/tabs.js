@@ -4,6 +4,7 @@
 
     let _mcFrameLoaded = false;
     let _vizFrameLoaded = false;
+    let _hwMonitorInited = false;
 
     function showTab(name) {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -27,6 +28,13 @@
             if (frame && frame.dataset.src) {
                 frame.src = frame.dataset.src;
                 _vizFrameLoaded = true;
+            }
+        }
+
+        if (name === 'hardware-monitor' && !_hwMonitorInited) {
+            _hwMonitorInited = true;
+            if (window.HardwareMonitorPanel) {
+                window.HardwareMonitorPanel.init();
             }
         }
 
