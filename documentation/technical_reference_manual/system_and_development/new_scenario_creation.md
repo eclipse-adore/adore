@@ -5,29 +5,21 @@ This guide walks you through the steps to create a custom scenario file for simu
 ### 1. Copy an Existing Scenario
 Start by copying any **working scenario file**. This ensures you have a valid structure and format to begin with.
 ```bash
-cp existing_scenario.py my_custom_scenario.py
+cp template.launch.py my_custom_scenario.launch.py
 ```
 ---
-### 2. Start the Goal Picking Tool
-To use the interactive goal picker tool:
-
-1. Start `lichtblick suite` from the `ADORe` project root:
+### 2. Open the goal picking tool to select a goal:
+1. Once the ADORe CLI is running with `make start` or `make cli` and navigate to the goal picker:
 ```bash
-cd tools/lichtblick
-make build
-make start
-```
-
-2. Open the goal picker tool in your browser:
-```bash
-chromium http://localhost:8080/assets/goal_picker.html
+chromium "http://localhost:8888/?tab=goal-picker"
 ```
 or use the direct link:
-[http://localhost:8080/assets/goal_picker.html](http://localhost:8080/assets/goal_picker.html)
+[http://localhost:8888/?tab=goal-picker](http://localhost:8888/?tab=goal-picker)
 
-3. Use the tool to:
+2. Use the goal picking tool to:
    - Search for locations using the search box
    - Click on the map to place start and goal markers
+   - On the start point set the heading flag (this can be clicked and dragged). 
    - Toggle between start and goal placement modes
    - View coordinates in both Lat/Long and UTM formats
    - Copy the generated Python code directly from the text boxes
@@ -36,7 +28,7 @@ or use the direct link:
 You can obtain coordinates using one of these methods:
 
 **Method A: Goal Picker Tool (Recommended)**
-- Use the **goal_picker.html** tool as described above
+- Use the **goal picker** tool as described above
 - This tool provides both coordinate formats and generates Python code automatically
 - Simply click on the map to place markers and copy the generated code
 
@@ -118,17 +110,3 @@ start_position = Position(utm=(606372, 5797172, 32, 'N'), psi=3.04)
 goal_position = Position(utm=(606380, 5797058, 32, 'N'))
 ```
 
-**Legacy tuple format:**
-```python
-start_position = (606529.67, 5797315.01, -3.23)
-goal_position = (606447.98, 5797272.22)
-```
----
-## 🔁 Final Check
-Before running the scenario:
-- ✅ Validate the file syntax.
-- ✅ Make sure start and goal positions make sense visually.
-- ✅ Run the simulation and fine-tune as needed.
-- ✅ Test both coordinate formats to ensure compatibility.
-- ✅ Verify the import statement for the Position class is included.
----

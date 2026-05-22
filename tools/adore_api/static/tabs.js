@@ -56,6 +56,18 @@
                 if (target) target.classList.add('active');
             });
         });
+
+        // ── URL Parameter Check ────────────────────────────────────────────────
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeTab = urlParams.get('tab'); // Looks for ?tab=value
+        
+        if (activeTab) {
+            // Verify the tab actually exists before trying to switch to it
+            const tabExists = document.querySelector(`.tab[data-tab="${activeTab}"]`);
+            if (tabExists) {
+                showTab(activeTab);
+            }
+        }
     }
 
     window.showTab = showTab;
