@@ -1,13 +1,88 @@
 import os
 import queue
+import struct
 import threading
+import time
+import uuid
 import yaml
 import zenoh
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy, HistoryPolicy
-from .utils import load_msg_type, msg_to_bytes, bytes_to_msg
+from .utils import load_msg_type, msg_to_bytes, bytes_to_msg, msg_to_json, json_to_msg
+
+def _make_gid() -> bytes:
+    """Generate a 16-byte publisher GID from a random UUID."""
+    return uuid.uuid4().bytes
+
+def _make_attachment(seq: int, gid: bytes) -> bytes:
+    """
+    rmw_zenoh_cpp attachment format:
+      8 bytes - sequence number (int64 LE)
+      8 bytes - source timestamp (ns since epoch, int64 LE)
+      1 byte  - GID length (always 16)
+     16 bytes - publisher GID
+    """
+    ts = time.time_ns()
+    return struct.pack('<qq', seq, ts) + bytes([len(gid)]) + gid
+
+def _type_hash(ros_type: str) -> str:
+    import json
+    pkg, interface, name = ros_type.split('/')
+    ros_distro = os.environ.get('ROS_DISTRO', '')
+    json_path = f'/opt/ros/{ros_distro}/share/{pkg}/{interface}/{name}.json'
+    try:
+        with open(json_path) as f:
+            for entry in json.load(f).get('type_hashes', []):
+                if entry.get('type_name') == ros_type:
+                    return entry['hash_string']
+    except (FileNotFoundError, KeyError, ValueError):
+        pass
+    return 'TypeHashNotSupported'
+
+_RMW_ZENOH_LV_PREFIX = '@ros2_lv'
+
+def _mangle(name: str) -> str:
+    return name.replace('/', '%', 1) if name.startswith('/') else name
+
+def _strip_slash(name: str) -> str:
+    return name.lstrip('/')
+
+def _dds_type(ros_type: str) -> str:
+    pkg, interface, name = ros_type.split('/')
+    return f'{pkg}::{interface}::dds_::{name}_'
+
+def _qos_to_keyexpr(qos: QoSProfile) -> str:
+    rel = '1' if qos.reliability == ReliabilityPolicy.RELIABLE else '2'
+    depth = str(qos.depth)
+    dur = '1' if qos.durability == DurabilityPolicy.TRANSIENT_LOCAL else ''
+    return f':{rel}:,{depth}:,:{dur},:,,'
+
+def _topic_keyexpr(domain_id: int, topic: str, ros_type: str, rmw_target: str) -> str:
+    hash_str = _type_hash(ros_type) if rmw_target == 'jazzy' else 'TypeHashNotSupported'
+    return f'{domain_id}/{_strip_slash(topic)}/{_dds_type(ros_type)}/{hash_str}'
+
+def _topic_sub_keyexpr(domain_id: int, topic: str, ros_type: str) -> str:
+    """Wildcard hash segment to match publishers from any ROS2 distro."""
+    return f'{domain_id}/{_strip_slash(topic)}/{_dds_type(ros_type)}/*'
+
+def _liveliness_keyexpr(
+    domain_id: int,
+    session_id: str,
+    pub_id: int,
+    node_name: str,
+    topic: str,
+    ros_type: str,
+    qos: QoSProfile,
+    rmw_target: str,
+) -> str:
+    hash_str = _type_hash(ros_type) if rmw_target == 'jazzy' else 'TypeHashNotSupported'
+    return (
+        f'{_RMW_ZENOH_LV_PREFIX}/{domain_id}/{session_id}'
+        f'/0/{pub_id}/MP/%/%/{_mangle(node_name)}'
+        f'/{_mangle(topic)}/{_dds_type(ros_type)}/{hash_str}/{_qos_to_keyexpr(qos)}'
+    )
 
 _DURABILITY = {
     'volatile':        DurabilityPolicy.VOLATILE,
@@ -18,11 +93,12 @@ _RELIABILITY = {
     'reliable':    ReliabilityPolicy.RELIABLE,
 }
 
-def _qos_from_mapping(mapping: dict) -> QoSProfile:
+def _qos_from_mapping(mapping: dict, default_reliability: str = 'reliable') -> QoSProfile:
     return QoSProfile(
-        depth=mapping.get('qos_depth', 10),
+        depth=mapping.get('qos_depth', 1),
         durability=_DURABILITY.get(mapping.get('qos_durability', 'volatile'), DurabilityPolicy.VOLATILE),
-        reliability=_RELIABILITY.get(mapping.get('qos_reliability', 'best_effort'), ReliabilityPolicy.BEST_EFFORT),
+        reliability=_RELIABILITY.get(mapping.get('qos_reliability', default_reliability),
+                                     _RELIABILITY[default_reliability]),
         history=HistoryPolicy.KEEP_LAST,
     )
 
@@ -45,9 +121,14 @@ class ROS2ZenohBridge(Node):
             self.get_logger().error(f"Failed to load config: {e}")
             return
 
+        self._ros_domain_id   = int(self.config.get('ros_domain_id', os.environ.get('ROS_DOMAIN', '0')))
+        self._zenoh_bridge_id = int(self.config.get('zenoh_bridge_id', 0))
+        self._rmw_target      = self.config.get('rmw_target', 'humble')
+
         self.zenoh_session = None
         self.zenoh_subs = []
         self.zenoh_pubs = {}
+        self.zenoh_lv_tokens = []
         self.ros_subs = []
         self.ros_pubs = {}
         self._z2r_queue = queue.Queue()
@@ -63,32 +144,62 @@ class ROS2ZenohBridge(Node):
         z_config = zenoh.Config()
         z_config.insert_json5('connect/endpoints', f'["{endpoint}"]')
         self.zenoh_session = zenoh.open(z_config)
-        self.get_logger().info(f'Connected to Zenoh: {endpoint}')
+        self._session_id = str(self.zenoh_session.info.zid()).replace('-', '')
+        self.get_logger().info(f'Connected to Zenoh: {endpoint} session={self._session_id}')
 
     def _setup_ros2_to_zenoh(self):
-        for mapping in self.config.get('ros2_to_zenoh', []):
-            ros_topic = mapping['ros_topic']
-            zenoh_key = mapping['zenoh_key']
-            msg_type = load_msg_type(mapping.get('msg_type', 'std_msgs/msg/String'))
-            qos = _qos_from_mapping(mapping)
+        node_name = self.get_name()
+        _STR_TYPE = 'std_msgs/msg/String'
+        for pub_id, mapping in enumerate(self.config.get('ros2_to_zenoh', [])):
+            ros_topic   = mapping['ros_topic']
+            ros_type    = mapping.get('msg_type', _STR_TYPE)
+            msg_type    = load_msg_type(ros_type)
+            domain_id   = int(mapping.get('domain_id', self._zenoh_bridge_id))
+            fmt         = mapping.get('format', 'cdr')
+            qos         = _qos_from_mapping(mapping, default_reliability='reliable')
+            wire_type   = _STR_TYPE if fmt == 'json' else ros_type
+            serialize   = (lambda msg, rt=ros_type: msg_to_json(msg, rt)) if fmt == 'json' else msg_to_bytes
+
+            zenoh_key = _topic_keyexpr(domain_id, ros_topic, wire_type, self._rmw_target)
             pub = self.zenoh_session.declare_publisher(zenoh_key)
             self.zenoh_pubs[ros_topic] = pub
-            cb = lambda msg, p=pub, k=zenoh_key: (p.put(msg_to_bytes(msg)), self.get_logger().debug(f'R2Z: {k}'))
+
+            lv_key = _liveliness_keyexpr(domain_id, self._session_id, pub_id, node_name, ros_topic, wire_type, qos, self._rmw_target)
+            token = self.zenoh_session.liveliness().declare_token(lv_key)
+            self.zenoh_lv_tokens.append(token)
+
+            gid = _make_gid()
+            seq = [0]
+            self.get_logger().info(f'R2Z: {ros_topic} -> {zenoh_key} [{fmt}]')
+            def cb(msg, p=pub, k=zenoh_key, g=gid, s=seq, ser=serialize):
+                attachment = _make_attachment(s[0], g)
+                s[0] += 1
+                p.put(ser(msg), attachment=attachment)
+                self.get_logger().info(f'R2Z sent: {k}')
             self.ros_subs.append(self.create_subscription(msg_type, ros_topic, cb, qos))
 
     def _setup_zenoh_to_ros2(self):
+        _STR_TYPE = 'std_msgs/msg/String'
         for mapping in self.config.get('zenoh_to_ros2', []):
-            z_key = mapping['zenoh_key']
-            ros_topic = mapping['ros_topic']
-            m_type = load_msg_type(mapping.get('msg_type', 'std_msgs/msg/String'))
-            qos = _qos_from_mapping(mapping)
-            pub = self.create_publisher(m_type, ros_topic, qos)
-            self.ros_pubs[z_key] = pub
-            def z_cb(sample, p=pub, mt=m_type, t=ros_topic):
+            ros_topic   = mapping['ros_topic']
+            ros_type    = mapping.get('msg_type', _STR_TYPE)
+            domain_id   = int(mapping.get('domain_id', self._zenoh_bridge_id))
+            fmt         = mapping.get('format', 'cdr')
+            wire_type   = _STR_TYPE if fmt == 'json' else ros_type
+            pub_type    = load_msg_type(wire_type)
+            m_type      = load_msg_type(ros_type)
+            qos         = _qos_from_mapping(mapping, default_reliability='best_effort')
+            z_key       = _topic_sub_keyexpr(domain_id, ros_topic, wire_type)
+            deserialize = (lambda data, mt=m_type: json_to_msg(data, mt)) if fmt == 'json' \
+                     else (lambda data, mt=m_type: bytes_to_msg(data, mt))
+            pub = self.create_publisher(pub_type, ros_topic, qos)
+            self.ros_pubs[ros_topic] = pub
+            self.get_logger().info(f'Z2R: {z_key} -> {ros_topic} [{fmt}]')
+            def z_cb(sample, p=pub, t=ros_topic, deser=deserialize):
                 if self._shutdown_event.is_set():
                     return
                 try:
-                    self._z2r_queue.put((p, bytes_to_msg(sample.payload.to_bytes(), mt)))
+                    self._z2r_queue.put((p, deser(sample.payload.to_bytes())))
                 except Exception as e:
                     self.get_logger().error(f'Deser failed on {t}: {e}')
             self.zenoh_subs.append(self.zenoh_session.declare_subscriber(z_key, z_cb))
@@ -102,6 +213,8 @@ class ROS2ZenohBridge(Node):
         self._shutdown_event.set()
         for s in self.zenoh_subs:
             s.undeclare()
+        for t in self.zenoh_lv_tokens:
+            t.undeclare()
         if self.zenoh_session:
             self.zenoh_session.close()
 

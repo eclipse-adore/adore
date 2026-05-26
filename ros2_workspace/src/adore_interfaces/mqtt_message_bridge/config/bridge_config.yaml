@@ -1,0 +1,27 @@
+# Bridge ROS2 DDS topics to MQTT.
+ros2_to_mqtt:
+  - ros_topic: "/ros2_chatter"
+    mqtt_topic: "ros2/chatter"
+    msg_type: "std_msgs/msg/String"
+    # format: cdr       # Serialization format: 'cdr' (default) or 'json'.
+    #                   # 'json': serializes message fields as a JSON string with
+    #                   #   'datatype' metadata appended.
+    #                   #   The MQTT payload is a UTF-8 JSON string.
+    #                   # 'cdr': raw CDR bytes.
+    # qos_reliability: best_effort  # 'best_effort' (default) or 'reliable'
+    # qos_durability: volatile      # 'volatile' (default) or 'transient_local'
+    # qos_depth: 1                  # History depth. Defaults to 1.
+
+# Bridge MQTT topics to ROS2 DDS.
+mqtt_to_ros2:
+  - mqtt_topic: "mqtt/chatter"
+    ros_topic: "/mqtt_chatter"
+    msg_type: "std_msgs/msg/String"
+    # format: cdr       # Serialization format: 'cdr' (default) or 'json'.
+    #                   # 'json': expects a JSON string payload with 'datatype'
+    #                   #   metadata. Deserializes back into msg_type before
+    #                   #   publishing to DDS.
+    #                   # 'cdr': raw CDR bytes.
+    # qos_reliability: best_effort  # 'best_effort' (default) or 'reliable'
+    # qos_durability: volatile      # 'volatile' (default) or 'transient_local'
+    # qos_depth: 1                  # History depth. Defaults to 1.

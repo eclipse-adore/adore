@@ -60,3 +60,5 @@ bash ${SCRIPT_DIRECTORY}/tools/adore_api/adore_api.sh
 bash ${SCRIPT_DIRECTORY}/tools/start_zenoh_router.sh
 bash ${SCRIPT_DIRECTORY}/tools/start_zenoh_bridge.sh
 bash ${SCRIPT_DIRECTORY}/tools/start_sumo_bridge.sh
+bash ${SCRIPT_DIRECTORY}/tools/start_mqtt_broker.sh
+bash ${SCRIPT_DIRECTORY}/tools/start_mqtt_bridge.sh

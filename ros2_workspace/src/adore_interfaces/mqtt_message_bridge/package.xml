@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>mqtt_message_bridge</name>
+  <version>1.0.0</version>
+  <description>Bridge between ROS 2 and MQTT</description>
+  <maintainer email="you@example.com">Eclipse ADORe</maintainer>
+  <license>Apache-2.0</license>
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>rosidl_runtime_py</depend>
+  <exec_depend>paho-mqtt</exec_depend>
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

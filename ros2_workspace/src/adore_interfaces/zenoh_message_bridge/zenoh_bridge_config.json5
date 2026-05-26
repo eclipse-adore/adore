@@ -30,7 +30,7 @@
       // namespace: "/adore",
 
       // DDS domain ID. Defaults to $ROS_DOMAIN_ID or 0.
-      domain: 0,
+      domain: 62,
 
       ros_localhost_only: false,
 
@@ -54,4 +54,5 @@
     },
   },
 }
+
 
