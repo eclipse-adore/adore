@@ -25,7 +25,7 @@ publish:
         -e RMW_IMPLEMENTATION=rmw_zenoh_cpp \
         -v $(ROOT_DIR)/config.json5:/opt/ros/humble/share/rmw_zenoh_cpp/config/DEFAULT_RMW_ZENOH_SESSION_CONFIG.json5:ro \
         ros2-humble-zenoh \
-        ros2 topic pub /zenoh_chatter std_msgs/msg/String "data: 'Hello, World'"
+        ros2 topic pub /zenoh_chatter std_msgs/msg/String "data: 'Hello, Humble'"
 
 .PHONY: echo
 echo:
