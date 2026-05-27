@@ -7,7 +7,26 @@ import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy, HistoryPolicy
-from .utils import load_msg_type, msg_to_bytes, bytes_to_msg, msg_to_json, json_to_msg
+from .utils import load_msg_type, msg_to_bytes, bytes_to_msg, msg_to_json, json_to_msg, msg_to_cdr_json, cdr_json_to_msg
+
+_STR_TYPE = 'std_msgs/msg/String'
+
+def _serializer(ros_type: str, fmt: str):
+    if fmt == 'json':
+        return lambda msg, rt=ros_type: msg_to_json(msg, rt)
+    if fmt == 'cdr_json':
+        return lambda msg, rt=ros_type: msg_to_cdr_json(msg, rt)
+    return msg_to_bytes
+
+def _deserializer(msg_type, fmt: str):
+    if fmt == 'json':
+        return lambda data, mt=msg_type: json_to_msg(data, mt)
+    if fmt == 'cdr_json':
+        return lambda data, mt=msg_type: cdr_json_to_msg(data, mt)
+    return lambda data, mt=msg_type: bytes_to_msg(data, mt)
+
+def _wire_type(ros_type: str, fmt: str) -> str:
+    return _STR_TYPE if fmt in ('json', 'cdr_json') else ros_type
 
 _DURABILITY = {
     'volatile':        DurabilityPolicy.VOLATILE,
@@ -93,7 +112,6 @@ class ROS2MQTTBridge(Node):
             self.get_logger().error(f'Deser failed on {ros_topic}: {e}')
 
     def _setup_ros2_to_mqtt(self):
-        _STR_TYPE = 'std_msgs/msg/String'
         for mapping in self.config.get('ros2_to_mqtt', []):
             ros_topic  = mapping['ros_topic']
             mqtt_topic = mapping['mqtt_topic']
@@ -101,7 +119,7 @@ class ROS2MQTTBridge(Node):
             msg_type   = load_msg_type(ros_type)
             fmt        = mapping.get('format', 'cdr')
             qos        = _qos_from_mapping(mapping)
-            serialize  = (lambda msg, rt=ros_type: msg_to_json(msg, rt)) if fmt == 'json' else msg_to_bytes
+            serialize  = _serializer(ros_type, fmt)
             cb = lambda msg, t=mqtt_topic, s=serialize: (
                 self.mqtt_client.publish(t, s(msg)),
                 self.get_logger().debug(f'R2M: {t}')
@@ -109,19 +127,16 @@ class ROS2MQTTBridge(Node):
             self.ros_subs.append(self.create_subscription(msg_type, ros_topic, cb, qos))
 
     def _setup_mqtt_to_ros2(self):
-        _STR_TYPE = 'std_msgs/msg/String'
         for mapping in self.config.get('mqtt_to_ros2', []):
             mqtt_topic  = mapping['mqtt_topic']
             ros_topic   = mapping['ros_topic']
             ros_type    = mapping.get('msg_type', _STR_TYPE)
             fmt         = mapping.get('format', 'cdr')
-            wire_type   = _STR_TYPE if fmt == 'json' else ros_type
-            pub_type    = load_msg_type(wire_type)
+            pub_type    = load_msg_type(_wire_type(ros_type, fmt))
             m_type      = load_msg_type(ros_type)
             qos         = _qos_from_mapping(mapping)
             pub         = self.create_publisher(pub_type, ros_topic, qos)
-            deserialize = (lambda data, mt=m_type: json_to_msg(data, mt)) if fmt == 'json' \
-                     else (lambda data, mt=m_type: bytes_to_msg(data, mt))
+            deserialize = _deserializer(m_type, fmt)
             self.ros_pubs[mqtt_topic] = pub
             self._mqtt_topic_map[mqtt_topic] = (pub, m_type, ros_topic, deserialize)
 

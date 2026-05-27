@@ -10,23 +10,24 @@ zenoh_bridge_id: 62
 # Target RMW distro for zenoh key expression compatibility.
 # 'humble' uses TypeHashNotSupported (compatible with Humble and older).
 # 'jazzy'  uses the RIHS01 type hash from the local ROS installation.
-# if set to humble this allows jazzy => humble and humble => jazzy data exchange.
 # Defaults to 'humble' if unset.
 rmw_target: humble
-#rmw_target: jazzy
 
 # Bridge ROS2 DDS topics to zenoh.
 # The receiving end must be running rmw_zenoh_cpp with a matching zenoh_bridge_id.
 ros2_to_zenoh:
   - ros_topic: "/ros2_chatter"
     msg_type: "std_msgs/msg/String"
-    format: cdr         # Serialization format: 'cdr' (default) or 'json'.
-    #                   # 'json': serializes message fields as a JSON string with
-    #                   #   'datatype' metadata appended.
-    #                   #   The zenoh transport type becomes std_msgs/msg/String
-    #                   #   regardless of msg_type.
-    #                   # 'cdr': raw CDR bytes, transport type matches msg_type.
-    # domain_id: 62     # Overrides zenoh_bridge_id for this topic only.
+    # format: cdr         # 'cdr' (default): raw CDR bytes. Transport type matches
+    #                     #   msg_type. Consumable by rmw_zenoh_cpp natively.
+    #                     # 'json': raw JSON bytes with 'datatype' metadata appended.
+    #                     #   Transport type is std_msgs/msg/String. Bridge-to-bridge
+    #                     #   only -- not consumable by rmw_zenoh_cpp directly.
+    #                     # 'cdr_json': CDR-serialized std_msgs/msg/String whose
+    #                     #   'data' field contains JSON with 'datatype' metadata.
+    #                     #   Transport type is std_msgs/msg/String CDR. Consumable by
+    #                     #   rmw_zenoh_cpp natively via 'ros2 topic echo'.
+    # domain_id: 62       # Overrides zenoh_bridge_id for this topic only.
     # qos_reliability: reliable     # 'reliable' (default) or 'best_effort'
     # qos_durability: volatile      # 'volatile' (default) or 'transient_local'
     # qos_depth: 1                  # History depth. Defaults to 1.
@@ -36,13 +37,16 @@ ros2_to_zenoh:
 zenoh_to_ros2:
   - ros_topic: "/zenoh_chatter"
     msg_type: "std_msgs/msg/String"
-    format: cdr         # Serialization format: 'cdr' (default) or 'json'.
-    #                   # 'json': expects a JSON string payload with 'datatype'
-    #                   #   metadata. Subscribes on the std_msgs/msg/String zenoh
-    #                   #   key and deserializes back into msg_type before
-    #                   #   publishing to DDS.
-    #                   # 'cdr': raw CDR bytes, subscribes on the msg_type key.
-    # domain_id: 62     # Overrides zenoh_bridge_id for this topic only.
+    # format: cdr         # 'cdr' (default): raw CDR bytes. Subscribes on the
+    #                     #   msg_type zenoh key.
+    #                     # 'json': expects raw JSON bytes with 'datatype' metadata.
+    #                     #   Subscribes on std_msgs/msg/String zenoh key.
+    #                     #   Bridge-to-bridge only.
+    #                     # 'cdr_json': expects CDR std_msgs/msg/String whose 'data'
+    #                     #   field is JSON with 'datatype' metadata. Subscribes on
+    #                     #   std_msgs/msg/String zenoh key. Compatible with native
+    #                     #   rmw_zenoh_cpp publishers using cdr_json format.
+    # domain_id: 62       # Overrides zenoh_bridge_id for this topic only.
     # qos_reliability: best_effort  # 'best_effort' (default) or 'reliable'
     # qos_durability: volatile      # 'volatile' (default) or 'transient_local'
     # qos_depth: 1                  # History depth. Defaults to 1.

@@ -10,7 +10,27 @@ import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy, HistoryPolicy
-from .utils import load_msg_type, msg_to_bytes, bytes_to_msg, msg_to_json, json_to_msg
+from .utils import load_msg_type, msg_to_bytes, bytes_to_msg, msg_to_json, json_to_msg, msg_to_cdr_json, cdr_json_to_msg
+
+_STR_TYPE = 'std_msgs/msg/String'
+
+def _wire_type(ros_type: str, fmt: str) -> str:
+    """Transport type: json uses raw bytes (no fixed type), cdr_json wraps in std_msgs/msg/String."""
+    return _STR_TYPE if fmt in ('json', 'cdr_json') else ros_type
+
+def _serializer(ros_type: str, fmt: str):
+    if fmt == 'json':
+        return lambda msg, rt=ros_type: msg_to_json(msg, rt)
+    if fmt == 'cdr_json':
+        return lambda msg, rt=ros_type: msg_to_cdr_json(msg, rt)
+    return msg_to_bytes
+
+def _deserializer(msg_type, fmt: str):
+    if fmt == 'json':
+        return lambda data, mt=msg_type: json_to_msg(data, mt)
+    if fmt == 'cdr_json':
+        return lambda data, mt=msg_type: cdr_json_to_msg(data, mt)
+    return lambda data, mt=msg_type: bytes_to_msg(data, mt)
 
 def _make_gid() -> bytes:
     """Generate a 16-byte publisher GID from a random UUID."""
@@ -149,22 +169,21 @@ class ROS2ZenohBridge(Node):
 
     def _setup_ros2_to_zenoh(self):
         node_name = self.get_name()
-        _STR_TYPE = 'std_msgs/msg/String'
         for pub_id, mapping in enumerate(self.config.get('ros2_to_zenoh', [])):
-            ros_topic   = mapping['ros_topic']
-            ros_type    = mapping.get('msg_type', _STR_TYPE)
-            msg_type    = load_msg_type(ros_type)
-            domain_id   = int(mapping.get('domain_id', self._zenoh_bridge_id))
-            fmt         = mapping.get('format', 'cdr')
-            qos         = _qos_from_mapping(mapping, default_reliability='reliable')
-            wire_type   = _STR_TYPE if fmt == 'json' else ros_type
-            serialize   = (lambda msg, rt=ros_type: msg_to_json(msg, rt)) if fmt == 'json' else msg_to_bytes
+            ros_topic = mapping['ros_topic']
+            ros_type  = mapping.get('msg_type', _STR_TYPE)
+            msg_type  = load_msg_type(ros_type)
+            domain_id = int(mapping.get('domain_id', self._zenoh_bridge_id))
+            fmt       = mapping.get('format', 'cdr')
+            qos       = _qos_from_mapping(mapping, default_reliability='reliable')
+            wtype     = _wire_type(ros_type, fmt)
+            serialize = _serializer(ros_type, fmt)
 
-            zenoh_key = _topic_keyexpr(domain_id, ros_topic, wire_type, self._rmw_target)
+            zenoh_key = _topic_keyexpr(domain_id, ros_topic, wtype, self._rmw_target)
             pub = self.zenoh_session.declare_publisher(zenoh_key)
             self.zenoh_pubs[ros_topic] = pub
 
-            lv_key = _liveliness_keyexpr(domain_id, self._session_id, pub_id, node_name, ros_topic, wire_type, qos, self._rmw_target)
+            lv_key = _liveliness_keyexpr(domain_id, self._session_id, pub_id, node_name, ros_topic, wtype, qos, self._rmw_target)
             token = self.zenoh_session.liveliness().declare_token(lv_key)
             self.zenoh_lv_tokens.append(token)
 
@@ -179,19 +198,17 @@ class ROS2ZenohBridge(Node):
             self.ros_subs.append(self.create_subscription(msg_type, ros_topic, cb, qos))
 
     def _setup_zenoh_to_ros2(self):
-        _STR_TYPE = 'std_msgs/msg/String'
         for mapping in self.config.get('zenoh_to_ros2', []):
-            ros_topic   = mapping['ros_topic']
-            ros_type    = mapping.get('msg_type', _STR_TYPE)
-            domain_id   = int(mapping.get('domain_id', self._zenoh_bridge_id))
-            fmt         = mapping.get('format', 'cdr')
-            wire_type   = _STR_TYPE if fmt == 'json' else ros_type
-            pub_type    = load_msg_type(wire_type)
-            m_type      = load_msg_type(ros_type)
-            qos         = _qos_from_mapping(mapping, default_reliability='best_effort')
-            z_key       = _topic_sub_keyexpr(domain_id, ros_topic, wire_type)
-            deserialize = (lambda data, mt=m_type: json_to_msg(data, mt)) if fmt == 'json' \
-                     else (lambda data, mt=m_type: bytes_to_msg(data, mt))
+            ros_topic = mapping['ros_topic']
+            ros_type  = mapping.get('msg_type', _STR_TYPE)
+            domain_id = int(mapping.get('domain_id', self._zenoh_bridge_id))
+            fmt       = mapping.get('format', 'cdr')
+            wtype     = _wire_type(ros_type, fmt)
+            pub_type  = load_msg_type(wtype)
+            m_type    = load_msg_type(ros_type)
+            qos       = _qos_from_mapping(mapping, default_reliability='best_effort')
+            z_key     = _topic_sub_keyexpr(domain_id, ros_topic, wtype)
+            deserialize = _deserializer(m_type, fmt)
             pub = self.create_publisher(pub_type, ros_topic, qos)
             self.ros_pubs[ros_topic] = pub
             self.get_logger().info(f'Z2R: {z_key} -> {ros_topic} [{fmt}]')

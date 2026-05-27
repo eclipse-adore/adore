@@ -21,6 +21,9 @@ VENDOR_PATH      ?= $(ROOT_DIR)/../vendor
 ROS2_WORKSPACE   ?= $(ROOT_DIR)/../ros2_workspace
 ROS2_SRC         ?= $(ROS2_WORKSPACE)/src
 
+#Directories to exclude during requirements gathering
+GATHER_EXCLUDE_DIRS ?= mqtt_message_bridge
+
 SHORT_HASH        := $(shell git -C "$(ROOT_DIR)" rev-parse --short HEAD 2>/dev/null || echo "0000000")
 REQUIREMENTS_HASH := $(shell \
     { find $(ROOT_DIR) -maxdepth 2 -type f \( -name "*.system" -o -name "*.pip3" -o -name "*.ppa" \) \
@@ -287,30 +290,36 @@ _write_scripts:
 	@cp -r $(LICHTBLICK_DIR)/. $(_BUILD_DIR)/lichtblick/
 	@cp $(ROOT_DIR)/README.release.md $(_BUILD_DIR)/README.md
 
+
+_gather_excludes = $(foreach d,$(GATHER_EXCLUDE_DIRS),! -path "*/$(d)/*")
+
 .PHONY: _gather
 _gather:
 	@echo "=== Gathering requirements ==="
 	@rm -rf $(CONTEXT_DIR)
 	@mkdir -p $(CONTEXT_DIR)/vendor
 	@{ find $(ROOT_DIR) -maxdepth 2 -type f -name "*.system" \
-	        ! -path "*/context/*" 2>/dev/null; \
-	     find $(ROS2_SRC) -type f -name "*.system" 2>/dev/null; } \
+	        ! -path "*/context/*" $(_gather_excludes) 2>/dev/null; \
+	     find $(ROS2_SRC) -type f -name "*.system" \
+	        $(_gather_excludes) 2>/dev/null; } \
 	    | LC_ALL=C sort \
 	    | xargs -r grep -hv '^\s*#' \
 	    | grep -v '^\s*$$' \
 	    | LC_ALL=C sort -u \
 	    > $(CONTEXT_DIR)/requirements.system || true
 	@{ find $(ROOT_DIR) -maxdepth 2 -type f -name "*.pip3" \
-	        ! -path "*/context/*" 2>/dev/null; \
-	     find $(ROS2_SRC) -type f -name "*.pip3" 2>/dev/null; } \
+	        ! -path "*/context/*" $(_gather_excludes) 2>/dev/null; \
+	     find $(ROS2_SRC) -type f -name "*.pip3" \
+	        $(_gather_excludes) 2>/dev/null; } \
 	    | LC_ALL=C sort \
 	    | xargs -r grep -hv '^\s*#' \
 	    | grep -v '^\s*$$' \
 	    | LC_ALL=C sort -u \
 	    > $(CONTEXT_DIR)/requirements.pip3 || true
 	@{ find $(ROOT_DIR) -maxdepth 2 -type f -name "*.ppa" \
-	        ! -path "*/context/*" 2>/dev/null; \
-	     find $(ROS2_SRC) -type f -name "*.ppa" 2>/dev/null; } \
+	        ! -path "*/context/*" $(_gather_excludes) 2>/dev/null; \
+	     find $(ROS2_SRC) -type f -name "*.ppa" \
+	        $(_gather_excludes) 2>/dev/null; } \
 	    | LC_ALL=C sort \
 	    | xargs -r grep -hv '^\s*#' \
 	    | grep '^ppa:' \
