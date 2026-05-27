@@ -19,7 +19,9 @@ _ENCODING_CHANNELS = {
 
 
 def _open_device(cfg: dict) -> cv2.VideoCapture:
-    cap = cv2.VideoCapture(cfg['path'])
+    cap = cv2.VideoCapture(cfg['path'], cv2.CAP_V4L2)
+    fourcc = cfg.get('fourcc', 'MJPG')
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*fourcc))
     cap.set(cv2.CAP_PROP_FRAME_WIDTH,  cfg.get('width',  1280))
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, cfg.get('height', 720))
     cap.set(cv2.CAP_PROP_FPS,          cfg.get('fps',    30))
