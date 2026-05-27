@@ -3,7 +3,7 @@ MAKEFLAGS += --no-print-directory
 
 ARCH := $(shell uname -m)
 
-EXCLUDE_ON_ARM64 ?= mqtt_message_bridge
+EXCLUDE_ON_ARM64 ?= mqtt_message_bridge sumo_bridge
 
 ROOT_DIR                 := $(shell dirname "$(realpath $(firstword $(MAKEFILE_LIST)))")
 COLCON_DEFAULTS          := $(ROOT_DIR)/colcon_defaults.yaml
