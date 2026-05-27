@@ -1,0 +1,35 @@
+# Source type: 'device' for a local V4L2 device, 'ffmpeg' for an FFmpeg socket/URL
+source_type: ffmpeg
+
+# --- Device source options (source_type: device) ---
+device:
+  # V4L2 device path
+  path: /dev/video0
+  # Capture resolution
+  width: 1280
+  height: 720
+  # Target capture frame rate
+  fps: 30
+
+# --- FFmpeg source options (source_type: ffmpeg) ---
+ffmpeg:
+  # Any URL or transport string that OpenCV/FFmpeg can open.
+  # Examples:
+  #   udp://0.0.0.0:5000          (receive UDP stream)
+  #   tcp://192.168.1.10:5000     (TCP pull)
+  #   rtsp://user:pass@host/path  (RTSP)
+  #   /path/to/file.mp4           (file playback)
+  url: udp://0.0.0.0:5000
+  # Optional extra FFmpeg options passed as OpenCV capture properties.
+  # These are forwarded via cv2.CAP_PROP_OPEN_TIMEOUT_MSEC etc.
+  # Leave empty if not needed.
+  options: {}
+
+# ROS topic on which sensor_msgs/msg/Image frames are published.
+publish_topic: /camera/image_raw
+
+# Image encoding published to the topic: bgr8, rgb8, mono8
+encoding: bgr8
+
+# Publishing queue depth
+queue_depth: 10

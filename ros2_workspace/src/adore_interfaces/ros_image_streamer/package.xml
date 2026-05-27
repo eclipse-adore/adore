@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>ros_image_streamer</name>
+  <version>1.0.0</version>
+  <description>ROS 2 image streaming and viewing nodes supporting local devices and FFmpeg sockets</description>
+  <maintainer email="you@example.com">maintainer</maintainer>
+  <license>Apache-2.0</license>
+  <depend>rclpy</depend>
+  <depend>sensor_msgs</depend>
+  <depend>cv_bridge</depend>
+  <exec_depend>python3-opencv</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
