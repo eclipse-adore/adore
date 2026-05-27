@@ -30,8 +30,12 @@ nav:
         - Scenario Model Checking API Quick Start: generated/adore_model_checker/model_checking_api_quick_start.md 
         - Scenario Model Checking README: generated/adore_model_checker/README.md 
         - Scenario Model Checking With The ADORe Mission Control: system_and_development/model_checking_with_the_adore_mission_control.md
-    - ADORe And CARLa: generated/carla_bridge/README.md
-    - ADORe And SUMO:  system_and_development/sumo_bridge.md
+
+    - Interfaces to ADORe: 
+      - ADORe And CARLa: generated/carla_bridge/README.md
+      - ADORe And SUMO:  system_and_development/sumo_bridge.md
+      - ADORe And Eclipse Zenoh:  system_and_development/eclipse_zenoh.md
+      - ADORe And MQTT:  system_and_development/mqtt.md
     - Creating A New Scenario: system_and_development/scenario_generation.md
     - ADORe CLI: 
         - ADORe CLI: generated/adore_cli/README.md
