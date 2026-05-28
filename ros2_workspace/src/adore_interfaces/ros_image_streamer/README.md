@@ -2,6 +2,8 @@
 
 Two ROS 2 nodes for capturing and displaying video streams. The streaming node publishes `sensor_msgs/Image` from a local V4L2 device or an FFmpeg source. The viewer node subscribes to the topic and displays it in an OpenCV window.
 
+
+
 ## Dependencies
 
 ```bash
@@ -66,3 +68,23 @@ source install/setup.bash
 ```
 
 Press `q` or `Esc` to close the viewer. `Ctrl+C` terminates any of the above.
+
+## Docker
+The ROS Image Streamer package includes a docker image runtime environment. 
+With docker installed and configured you can build the docker environment with:
+```
+make build
+```
+
+To run the streamer node configure the VIDEO_DEVICE in the Makefile (`VIDEO_DEVICE   := /dev/video0`),
+also configure the streamer in `streamer_config.yaml`. After configuring the node run:
+```
+make run_streamer
+```
+Optionally, you can configure the streamer node to connect to an ffmpeg socket to republish to ROS. 
+
+
+To run viewer node configure the viewer in `viewer_config.yaml`. After configuring the node run:
+```
+make run_viewer
+```

@@ -13,9 +13,13 @@ from ament_index_python.packages import get_package_share_directory
 
 
 _ENCODING_CONVERSIONS = {
-    'rgb8':  cv2.COLOR_RGB2BGR,
-    'mono8': None,
-    'bgr8':  None,
+    'rgb8':        cv2.COLOR_RGB2BGR,
+    'mono8':       None,
+    'bgr8':        None,
+    'bayer_rggb8': cv2.COLOR_BayerRGGB2BGR,
+    'bayer_bggr8': cv2.COLOR_BayerBGGR2BGR,
+    'bayer_gbrg8': cv2.COLOR_BayerGBRG2BGR,
+    'bayer_grbg8': cv2.COLOR_BayerGRBG2BGR,
 }
 
 _FREQ_WINDOW    = 30
@@ -31,8 +35,11 @@ def _to_bgr(frame: np.ndarray, encoding: str) -> np.ndarray:
     return frame
 
 
+_SINGLE_CHANNEL_ENCODINGS = {'mono8', 'bayer_rggb8', 'bayer_bggr8', 'bayer_gbrg8', 'bayer_grbg8'}
+
+
 def _raw_msg_to_frame(msg: Image) -> tuple[np.ndarray, str]:
-    channels = 1 if msg.encoding == 'mono8' else 3
+    channels = 1 if msg.encoding in _SINGLE_CHANNEL_ENCODINGS else 3
     frame = np.frombuffer(msg.data, dtype=np.uint8).reshape((msg.height, msg.width, channels))
     return _to_bgr(frame, msg.encoding), msg.encoding
 
