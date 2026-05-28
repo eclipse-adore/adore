@@ -6,23 +6,30 @@ ROS_DISTRO   := jazzy
 OS_CODE_NAME := noble
 SAVE_FILE    := $(IMAGE_NAME).tar
 
-VIDEO_DEVICE  := /dev/video0
-CONFIG        := $(shell pwd)/config/streamer_config.yaml
-FFMPEG_HOST   := 127.0.0.1
-FFMPEG_PORT   := 5000
-FFMPEG_WIDTH  := 640
-FFMPEG_HEIGHT := 480
-FFMPEG_FPS    := 30
-ROS_DOMAIN_ID := 0
+VIDEO_DEVICE   := /dev/video0
+CONFIG         := $(shell pwd)/config/streamer_config.yaml
+VIEWER_CONFIG  := $(shell pwd)/config/viewer_config.yaml
+FFMPEG_HOST    := 127.0.0.1
+FFMPEG_PORT    := 5000
+FFMPEG_WIDTH   := 640
+FFMPEG_HEIGHT  := 480
+FFMPEG_FPS     := 30
+ROS_DOMAIN_ID  := 0
 
-DOCKER_RUN := docker run --rm \
+DOCKER_COMMON := docker run --rm \
 	--network host \
-	--device $(VIDEO_DEVICE):$(VIDEO_DEVICE) \
 	--env DISPLAY=$(DISPLAY) \
 	--env ROS_DOMAIN_ID=$(ROS_DOMAIN_ID) \
 	--env FASTDDS_BUILTIN_TRANSPORTS=UDPv4 \
 	--volume /tmp/.X11-unix:/tmp/.X11-unix \
-	--volume $(CONFIG):/ros2_ws/src/ros_image_streamer/config/streamer_config.yaml:ro \
+	--volume $(VIEWER_CONFIG):/config/viewer_config.yaml:ro
+
+DOCKER_RUN := $(DOCKER_COMMON) \
+	--device $(VIDEO_DEVICE):$(VIDEO_DEVICE) \
+	--volume $(CONFIG):/config/streamer_config.yaml:ro \
+	$(IMAGE_NAME):$(IMAGE_TAG)
+
+DOCKER_RUN_VIEWER := $(DOCKER_COMMON) \
 	$(IMAGE_NAME):$(IMAGE_TAG)
 
 .PHONY: help
@@ -44,6 +51,7 @@ help:
 	@echo "Variables (override on the command line):"
 	@echo "  VIDEO_DEVICE     V4L2 device path         (default: $(VIDEO_DEVICE))"
 	@echo "  CONFIG           Path to streamer config   (default: config/streamer_config.yaml)"
+	@echo "  VIEWER_CONFIG    Path to viewer config     (default: config/viewer_config.yaml)"
 	@echo "  ROS_DOMAIN_ID    ROS domain ID             (default: $(ROS_DOMAIN_ID))"
 	@echo "  FFMPEG_HOST      FFmpeg UDP target host     (default: $(FFMPEG_HOST))"
 	@echo "  FFMPEG_PORT      FFmpeg UDP target port     (default: $(FFMPEG_PORT))"
@@ -64,16 +72,20 @@ build:
 .PHONY: run
 run:
 	xhost +local:docker
-	$(DOCKER_RUN) ros2 launch ros_image_streamer streamer_and_viewer.launch.py
+	$(DOCKER_RUN) ros2 launch ros_image_streamer streamer_and_viewer.launch.py \
+		streamer_config_path:=/config/streamer_config.yaml \
+		viewer_config_path:=/config/viewer_config.yaml
 
 .PHONY: run_streamer
 run_streamer:
-	$(DOCKER_RUN) ros2 launch ros_image_streamer streamer.launch.py
+	$(DOCKER_RUN) ros2 launch ros_image_streamer streamer.launch.py \
+		config_path:=/config/streamer_config.yaml
 
 .PHONY: run_viewer
 run_viewer:
 	xhost +local:docker
-	$(DOCKER_RUN) ros2 launch ros_image_streamer viewer.launch.py
+	$(DOCKER_RUN_VIEWER) ros2 launch ros_image_streamer viewer.launch.py \
+		config_path:=/config/viewer_config.yaml
 
 .PHONY: run_ffmpeg
 run_ffmpeg:

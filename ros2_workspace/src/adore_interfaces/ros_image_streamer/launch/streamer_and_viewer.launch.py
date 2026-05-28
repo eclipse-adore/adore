@@ -7,21 +7,19 @@ import os
 
 
 def generate_launch_description():
-    config = os.path.join(
-        get_package_share_directory('ros_image_streamer'),
-        'config', 'streamer_config.yaml'
-    )
+    pkg_share = get_package_share_directory('ros_image_streamer')
+    streamer_config = os.path.join(pkg_share, 'config', 'streamer_config.yaml')
+    viewer_config   = os.path.join(pkg_share, 'config', 'viewer_config.yaml')
 
     return LaunchDescription([
-        DeclareLaunchArgument('config_path',  default_value=config),
-        DeclareLaunchArgument('topic',        default_value='/camera/image_raw'),
-        DeclareLaunchArgument('window_name',  default_value='ROS Image Viewer'),
+        DeclareLaunchArgument('streamer_config_path', default_value=streamer_config),
+        DeclareLaunchArgument('viewer_config_path',   default_value=viewer_config),
 
         Node(
             package='ros_image_streamer',
             executable='streaming_node',
             name='streaming_node',
-            parameters=[{'config_path': LaunchConfiguration('config_path')}],
+            parameters=[{'config_path': LaunchConfiguration('streamer_config_path')}],
             output='screen',
         ),
 
@@ -29,10 +27,7 @@ def generate_launch_description():
             package='ros_image_streamer',
             executable='viewer_node',
             name='viewer_node',
-            parameters=[{
-                'topic':       LaunchConfiguration('topic'),
-                'window_name': LaunchConfiguration('window_name'),
-            }],
+            parameters=[{'config_path': LaunchConfiguration('viewer_config_path')}],
             output='screen',
         ),
     ])

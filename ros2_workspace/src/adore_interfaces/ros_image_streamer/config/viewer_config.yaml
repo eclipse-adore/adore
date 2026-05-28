@@ -1,0 +1,4 @@
+topic: /camera/image_raw
+window_name: ROS Image Viewer
+queue_depth: 10
+compressed: false
