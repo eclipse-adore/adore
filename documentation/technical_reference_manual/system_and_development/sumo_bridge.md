@@ -6,6 +6,43 @@ This document describes how to get ADORe and SUMO running together using the `su
 
 The `sumo_bridge` is a ROS 2 node located in `ros2_workspace/src/adore_interfaces/sumo_bridge` that bridges [SUMO](https://sumo.dlr.de) traffic simulation to the ADORe stack via libsumo. SUMO vehicles are published as `TrafficParticipantSet` messages and the ego vehicle state is injected back into SUMO each simulation step.
 
+## Quick Start
+
+**Prerequisites**
+
+- ADORe built: `make build`
+- Lichtblick running: `cd tools/Lichtblick && make start`
+
+**1. Start an interactive ADORe CLI session**
+
+```bash
+make cli
+```
+
+**2. Navigate to the simulation scenarios directory**
+
+```bash
+cd adore_scenarios/simulation_scenarios
+```
+
+**3. Launch a SUMO scenario**
+
+For the synthetic 50 m circle track:
+
+```bash
+ros2 launch sumo_test.launch.py
+```
+
+For the georeferenced OSM scenario with live traffic:
+
+```bash
+ros2 launch sumo_example.launch.py
+```
+
+**4. Open Lichtblick in a Chromium-based browser**
+Open [http://localhost:8080/?ds=rosbridge-websocket&ds.url=ws://localhost:9090&layout=Default.json](http://localhost:8080/?ds=rosbridge-websocket&ds.url=ws://localhost:9090&layout=Default.json) in a Chromium-based browser.
+
+
 ## Configuration via Environmental Variables
 
 All variables are set in `adore.env`.
