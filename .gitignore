@@ -18,6 +18,7 @@ adore_embedded/build/
 **.orig
 ros2_workspace/src/vendor/adore_extended
 Function
+tools/adore_api/scenario_manager_state.json
 
 **.vscode
 .colcon_workspace/build

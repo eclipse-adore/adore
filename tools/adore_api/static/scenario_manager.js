@@ -5,8 +5,10 @@
     let _codeEditor = null;
     let _usingTextarea = false;
     let _currentStatus = 'idle';
-    let _isEditingLoop = false;
+    let _pendingLoopUpdate = false;
     let _loopDebounce = null;
+
+    const PERSIST_KEYS = ['loopMode', 'loopDelay', 'loopRuntime', 'modelCheckEnabled', 'modelCheckConfig'];
 
     const DEFAULT_LAUNCH = `from launch import LaunchDescription
 import os, sys
@@ -81,6 +83,33 @@ def generate_launch_description():
             _usingTextarea = true;
         }
     }
+
+    // ── localStorage persistence ──────────────────────────────────────────────
+
+    function saveLoopPrefs() {
+        PERSIST_KEYS.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            localStorage.setItem('scenario_' + id,
+                el.type === 'checkbox' ? el.checked : el.value);
+        });
+    }
+
+    function restoreLoopPrefs() {
+        PERSIST_KEYS.forEach(id => {
+            const stored = localStorage.getItem('scenario_' + id);
+            if (stored === null) return;
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (el.type === 'checkbox') {
+                el.checked = stored === 'true';
+            } else {
+                el.value = stored;
+            }
+        });
+    }
+
+    // ── Scenarios ─────────────────────────────────────────────────────────────
 
     async function loadScenarios() {
         try {
@@ -182,7 +211,8 @@ def generate_launch_description():
     }
 
     async function toggleLoopMode() {
-        if (_isEditingLoop) return;
+        _pendingLoopUpdate = false;
+        saveLoopPrefs();
         await fetch('/api/scenario/loop', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -196,6 +226,14 @@ def generate_launch_description():
         });
     }
 
+    function scheduleLoopUpdate() {
+        _pendingLoopUpdate = true;
+        clearTimeout(_loopDebounce);
+        _loopDebounce = setTimeout(toggleLoopMode, 600);
+    }
+
+    // ── Status polling ────────────────────────────────────────────────────────
+
     async function updateStatus() {
         try {
             const r = await fetch('/api/scenario/status');
@@ -204,19 +242,30 @@ def generate_launch_description():
 
             const ind = document.getElementById('globalStatusIndicator');
             const txt = document.getElementById('globalStatusText');
-            if (ind) ind.className = `status-indicator status-${s.status}`;
+            if (ind) {
+                const indicatorStatus = s.loop_restarting ? 'restarting' : s.status;
+                ind.className = `status-indicator status-${indicatorStatus}`;
+            }
+
             let label = s.status.toUpperCase();
-            if (s.scenario) label += ` — ${s.scenario}`;
-            if (s.runtime) label += ` (${Math.round(s.runtime)}s)`;
+            if (s.loop_restarting) label = 'RESTARTING (loop)';
+            if (s.scenario && !s.loop_restarting) label += ` — ${s.scenario}`;
+            if (s.runtime) label += ` (${Math.round(s.runtime)}s`;
+            if (s.runtime && s.loop_mode && !s.loop_restarting) {
+                label += ` / ${s.default_runtime}s`;
+            }
+            if (s.runtime) label += `)`;
             if (s.waiting_for_model_check) label += ' · awaiting model check';
+            if (s.loop_mode && !s.loop_restarting) label += ' · looping';
             if (txt) txt.textContent = label;
 
-            if (!_isEditingLoop) {
-                document.getElementById('loopMode').checked = s.loop_mode;
-                document.getElementById('loopDelay').value = s.loop_delay;
-                document.getElementById('loopRuntime').value = s.default_runtime;
-                document.getElementById('modelCheckEnabled').checked = s.model_check_enabled !== false;
-                document.getElementById('modelCheckConfig').value = s.model_check_config || 'config/default.yaml';
+            // Only sync server-side loop settings if the user isn't actively editing them
+            if (!_pendingLoopUpdate) {
+                syncCheckbox('loopMode', s.loop_mode);
+                syncInput('loopDelay', s.loop_delay);
+                syncInput('loopRuntime', s.default_runtime);
+                syncCheckbox('modelCheckEnabled', s.model_check_enabled !== false);
+                syncInput('modelCheckConfig', s.model_check_config || 'config/default.yaml');
             }
 
             const startBtn = document.getElementById('startBtn');
@@ -232,6 +281,18 @@ def generate_launch_description():
         } catch (e) { /* network */ }
     }
 
+    function syncCheckbox(id, value) {
+        const el = document.getElementById(id);
+        if (el && el !== document.activeElement) el.checked = value;
+    }
+
+    function syncInput(id, value) {
+        const el = document.getElementById(id);
+        if (el && el !== document.activeElement) el.value = value;
+    }
+
+    // ── Log ───────────────────────────────────────────────────────────────────
+
     let _lastLogContent = '';
 
     async function updateLog() {
@@ -243,21 +304,20 @@ def generate_launch_description():
             const text = d.output || '';
             if (text === _lastLogContent) return;
             _lastLogContent = text;
-            // Only update DOM content if autoscroll is on, or user is already
-            // at the bottom — avoids yanking the viewport during copy/select.
             const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
             const shouldScroll = document.getElementById('autoScrollScenario')?.checked;
             if (shouldScroll || atBottom) {
                 el.textContent = text;
                 if (shouldScroll) el.scrollTop = el.scrollHeight;
             } else {
-                // Append only new lines so existing selection is not destroyed
                 const newText = text.slice(_lastRenderedLength ?? 0);
                 if (newText) el.textContent += newText;
             }
             _lastRenderedLength = text.length;
         } catch (e) { /* network */ }
     }
+
+    // ── Positions ─────────────────────────────────────────────────────────────
 
     async function updateStoredPositions() {
         try {
@@ -273,7 +333,7 @@ def generate_launch_description():
 
             let html = '';
             if (positions.start) {
-                const { lat, lng, psi, utm } = positions.start;
+                const { lat, lng, psi } = positions.start;
                 html += `<div class="position-item">
                     <strong>🟢 Start</strong><br>
                     ${lat.toFixed(6)}, ${lng.toFixed(6)}&nbsp;|&nbsp;ψ=${(psi||0).toFixed(3)} rad<br>
@@ -281,7 +341,7 @@ def generate_launch_description():
                 </div>`;
             }
             if (positions.goal) {
-                const { lat, lng, utm } = positions.goal;
+                const { lat, lng } = positions.goal;
                 html += `<div class="position-item">
                     <strong>🔴 Goal</strong><br>
                     ${lat.toFixed(6)}, ${lng.toFixed(6)}<br>
@@ -322,9 +382,12 @@ def generate_launch_description():
 
     function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+    // ── Init ──────────────────────────────────────────────────────────────────
+
     function init() {
         initEditor();
         loadScenarios();
+        restoreLoopPrefs();
         updateStatus();
         updateLog();
         updateStoredPositions();
@@ -341,20 +404,11 @@ def generate_launch_description():
         document.getElementById('applyPositionsBtn')?.addEventListener('click', applyPositions);
         document.getElementById('clearPositionsBtn')?.addEventListener('click', clearPositions);
 
-        const loopInputs = ['loopMode', 'loopDelay', 'loopRuntime', 'modelCheckEnabled', 'modelCheckConfig'];
-        loopInputs.forEach(id => {
+        PERSIST_KEYS.forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
-            el.addEventListener('focus', () => { _isEditingLoop = true; });
-            el.addEventListener('blur', () => { _isEditingLoop = false; });
-            el.addEventListener('change', () => {
-                clearTimeout(_loopDebounce);
-                _loopDebounce = setTimeout(toggleLoopMode, 600);
-            });
-            el.addEventListener('input', () => {
-                clearTimeout(_loopDebounce);
-                _loopDebounce = setTimeout(toggleLoopMode, 1000);
-            });
+            el.addEventListener('change', scheduleLoopUpdate);
+            el.addEventListener('input', scheduleLoopUpdate);
         });
 
         setInterval(updateStatus, 1000);

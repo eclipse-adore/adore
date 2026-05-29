@@ -332,9 +332,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     flex-shrink: 0;
     background: #6e7681;
 }
-.status-running  { background: #3fb950; box-shadow: 0 0 6px #3fb95060; animation: pulse 1.5s infinite; }
-.status-failed   { background: #f85149; }
-.status-idle     { background: #e3b341; }
+.status-running    { background: #3fb950; box-shadow: 0 0 6px #3fb95060; animation: pulse 1.5s infinite; }
+.status-restarting { background: #d29922; box-shadow: 0 0 6px #d2992260; animation: pulse 0.8s infinite; }
+.status-failed     { background: #f85149; }
+.status-idle       { background: #e3b341; }
 .status-recording{ background: #f85149; animation: pulse 1s infinite; }
 .status-stopped  { background: #6e7681; }
 .status-completed{ background: #3fb950; }
