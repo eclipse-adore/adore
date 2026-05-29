@@ -2206,6 +2206,7 @@ def _mc_load_package_default_yaml():
 # ── ROS Workspace Build Management ──────────────────────────────────────────
 
 _workspace_build_procs: dict = {}
+_workspace_build_results: dict = {}  # target -> exit code, populated after process exits
 _workspace_build_broadcaster = _LogBroadcaster(maxlen=5000)
 
 
@@ -2242,6 +2243,7 @@ def ros_workspace_status():
         'build_dir_exists': os.path.isdir(build_dir),
         'install_dir_exists': os.path.isdir(install_dir),
         'running': running,
+        'exit_codes': dict(_workspace_build_results),
         'total_packages': total_pkgs,
         'built_packages': built_pkgs,
     })
@@ -2376,6 +2378,7 @@ def _run_workspace_make(target: str):
                         _colcon_unknown_packages.add(pkg_name)
                         unknown_warned = True
             rc = proc.wait()
+            _workspace_build_results[target] = rc
             _workspace_build_broadcaster.write(
                 f'=== {label} exited (rc={rc}) ===',
                 'stdout' if rc == 0 else 'stderr'

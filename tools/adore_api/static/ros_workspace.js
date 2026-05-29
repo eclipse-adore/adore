@@ -9,7 +9,8 @@
     let _autoRebuildEnabled = false;          // global toggle
     let _autoRebuildPkgs = new Set();         // per-package opt-in
     let _autoRebuildTimer = null;
-    let _rebuilding = new Set();              // currently building via auto-rebuild
+    let _rebuilding = new Set();
+    let _buildFailed = new Set();
 
     const AUTO_REBUILD_INTERVAL_MS = 5000;
 
@@ -104,8 +105,9 @@
             return;
         }
         el.innerHTML = filtered.map(p => {
-            const indClass = !p.built ? 'pkg-not-built' : p.stale ? 'pkg-stale' : 'pkg-built';
-            const indTitle = !p.built ? 'Not built' : p.stale ? 'Built but source has changed' : 'Built and up to date';
+            const failed = _buildFailed.has(p.name);
+            const indClass = failed ? 'pkg-build-failed' : !p.built ? 'pkg-not-built' : p.stale ? 'pkg-stale' : 'pkg-built';
+            const indTitle = failed ? 'Build failed' : !p.built ? 'Not built' : p.stale ? 'Built but source has changed' : 'Built and up to date';
             const unknown = p.colcon_unknown;
             const autoChecked = _autoRebuildPkgs.has(p.name) && !unknown ? 'checked' : '';
             const autoDisabled = unknown ? 'disabled title="colcon cannot find this package"' : '';
@@ -135,6 +137,7 @@
     async function buildPackage(pkg, isAuto = false) {
         if (_rebuilding.has(pkg)) return;
         _rebuilding.add(pkg);
+        _buildFailed.delete(pkg);
         if (isAuto) appendLog(`[auto-rebuild] ${pkg}`, false);
         try {
             const r = await fetch('/api/ros_workspace/build_package', {
@@ -155,10 +158,16 @@
                     if (!sr.running?.[key]) {
                         clearInterval(poll);
                         _rebuilding.delete(pkg);
-                        loadPackages();
+                        const rc = sr.exit_codes?.[key];
+                        if (rc !== undefined && rc !== 0) {
+                            _buildFailed.add(pkg);
+                        } else {
+                            _buildFailed.delete(pkg);
+                        }
+                        await loadPackages();
                         renderPackages();
                     }
-                } catch { clearInterval(poll); _rebuilding.delete(pkg); }
+                } catch { clearInterval(poll); _rebuilding.delete(pkg); renderPackages(); }
             }, 2000);
         } catch (e) {
             appendLog(`Request failed: ${e}`, true);

@@ -891,6 +891,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .ws-val.ok  { color: #3fb950; }
 .ws-val.err { color: #f85149; }
 
+.pkg-indicator.pkg-build-failed {
+    background: #f85149;
+}
+
 /* ── mc-panel-summary alias ─────────────────────────────────────────────────── */
 .mc-panel-summary .modelcheck-summary { margin: 0; }
 
