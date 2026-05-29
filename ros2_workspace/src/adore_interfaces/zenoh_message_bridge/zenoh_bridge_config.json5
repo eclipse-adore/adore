@@ -1,58 +1,27 @@
 {
-  mode: "peer",
-
-  // id: "aabbccdd1122334455667788aabbccdd",
-
-  listen: {
-    endpoints: [
-      //"tcp/0.0.0.0:7447",
-    ],
-  },
+  mode: "client",
 
   connect: {
-    // Remote bridges or zenoh routers to connect to at startup
     endpoints: [
-      "tcp/127.0.0.1:7447",
+      "tcp/127.0.0.1:7446",
     ],
   },
 
   scouting: {
     multicast: {
+      enabled: false,
+    },
+    gossip: {
       enabled: true,
-      autoconnect: { router: ["router"], peer: ["router", "peer"] },
+      multihop: false,
     },
   },
 
-  plugins: {
-    ros2dds: {
-      nodename: "zenoh_bridge_ros2dds",
-
-      // namespace: "/adore",
-
-      // DDS domain ID. Defaults to $ROS_DOMAIN_ID or 0.
-      domain: 62,
-
-      ros_localhost_only: false,
-
-      // Matches ROS_AUTOMATIC_DISCOVERY_RANGE=SUBNET in the container env.
-      // Options: localhost, subnet, off
-      ros_automatic_discovery_range: "SUBNET",
-
-      // allow: ".*",
-      // deny: ".*/camera/image_raw",
-
-      // pub_max_frequencies: [
-      //   ".*/camera/image_raw=5",
-      //   ".*/pointcloud=10",
-      // ],
-
-      // pub_priorities: [
-      //   "/emergency_stop=1:express",
-      //   "/cmd_vel=2:express",
-      //   "/diagnostics=7",
-      // ],
+  transport: {
+    unicast: {
+      lowlatency: false,
+      qos: { enabled: true },
+      compression: { enabled: false },
     },
   },
 }
-
-

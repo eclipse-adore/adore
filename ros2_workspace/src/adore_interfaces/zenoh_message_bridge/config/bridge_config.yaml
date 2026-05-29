@@ -1,3 +1,7 @@
+
+# To configure zenoh behavior see the `zenoh_bridge_config.json5`
+
+
 # ROS2 domain ID this bridge node subscribes/publishes on.
 # Defaults to $ROS_DOMAIN if unset.
 ros_domain_id: 0

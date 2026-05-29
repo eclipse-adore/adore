@@ -22,10 +22,21 @@ fi
 
 ROUTER_ARGS=""
 if [ -f "${ZENOH_ROUTER_CONFIG:-}" ]; then
-    ROUTER_ARGS="--zenoh-config ${ZENOH_ROUTER_CONFIG}"
+    ROUTER_ARGS="--config ${ZENOH_ROUTER_CONFIG}"
 fi
 
-echo "Starting zenoh router -> ${LOGFILE}"
-ros2 run rmw_zenoh_cpp rmw_zenohd ${ROUTER_ARGS} >> "${LOGFILE}" 2>&1 &
+ZENOHD_BIN="$(PATH="/usr/bin:/usr/local/bin:${PATH}" command -v zenohd 2>/dev/null || true)"
+
+if [ -n "${ZENOHD_BIN}" ]; then
+    echo "Starting zenoh router (zenohd) -> ${LOGFILE}"
+    "${ZENOHD_BIN}" ${ROUTER_ARGS} >> "${LOGFILE}" 2>&1 &
+elif command -v ros2 &>/dev/null && ros2 pkg list 2>/dev/null | grep -q rmw_zenoh_cpp; then
+    echo "Starting zenoh router (rmw_zenohd) -> ${LOGFILE}"
+    ros2 run rmw_zenoh_cpp rmw_zenohd ${ROUTER_ARGS} >> "${LOGFILE}" 2>&1 &
+else
+    echo "ERROR: no zenoh router found. Install zenohd or ros-${ROS_DISTRO}-rmw-zenoh-cpp." >&2
+    exit 1
+fi
+
 echo $! > "${PIDFILE}"
 echo "  pid $!"

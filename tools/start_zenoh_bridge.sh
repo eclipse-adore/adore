@@ -25,10 +25,16 @@ if [ -f "${PIDFILE}" ] && kill -0 "$(cat "${PIDFILE}")" 2>/dev/null; then
     exit 0
 fi
 
+ZENOH_CONFIG_ARG=""
+if [ -f "${ZENOH_BRIDGE_CONFIG:-}" ]; then
+    ZENOH_CONFIG_ARG="zenoh_config_path:=${ZENOH_BRIDGE_CONFIG}"
+fi
+
 echo "Starting zenoh_message_bridge -> ${LOGFILE}"
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 ros2 launch zenoh_message_bridge bridge.launch.py \
     zenoh_router:="${ZENOH_BRIDGE_ROUTER:-tcp/localhost:7447}" \
+    ${ZENOH_CONFIG_ARG} \
     >> "${LOGFILE}" 2>&1 &
 BRIDGE_PID=$!
 echo $BRIDGE_PID > "${PIDFILE}"

@@ -127,6 +127,7 @@ class ROS2ZenohBridge(Node):
     def __init__(self):
         super().__init__('zenoh_bridge_node')
         self.declare_parameter('config_path', '')
+        self.declare_parameter('zenoh_config_path', '')
         self.declare_parameter('zenoh_router', 'tcp/localhost:7447')
 
         config_path = self.get_parameter('config_path').get_parameter_value().string_value
@@ -160,12 +161,21 @@ class ROS2ZenohBridge(Node):
         self.create_timer(0.01, self._drain_z2r_queue)
 
     def _setup_zenoh(self):
-        endpoint = self.get_parameter('zenoh_router').get_parameter_value().string_value
-        z_config = zenoh.Config()
-        z_config.insert_json5('connect/endpoints', f'["{endpoint}"]')
+        zenoh_config_path = self.get_parameter('zenoh_config_path').get_parameter_value().string_value
+
+        if zenoh_config_path and os.path.exists(zenoh_config_path):
+            self.get_logger().info(f'Loading Zenoh config: {zenoh_config_path}')
+            z_config = zenoh.Config.from_file(zenoh_config_path)
+        else:
+            if zenoh_config_path:
+                self.get_logger().warn(f'Zenoh config not found: {zenoh_config_path}, falling back to endpoint param')
+            endpoint = self.get_parameter('zenoh_router').get_parameter_value().string_value
+            z_config = zenoh.Config()
+            z_config.insert_json5('connect/endpoints', f'["{endpoint}"]')
+
         self.zenoh_session = zenoh.open(z_config)
         self._session_id = str(self.zenoh_session.info.zid()).replace('-', '')
-        self.get_logger().info(f'Connected to Zenoh: {endpoint} session={self._session_id}')
+        self.get_logger().info(f'Zenoh session opened: {self._session_id}')
 
     def _setup_ros2_to_zenoh(self):
         node_name = self.get_name()
