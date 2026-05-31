@@ -155,7 +155,7 @@ LOG_DIRECTORY = None
 
 stored_positions = {
     'start': None,
-    'goal': None
+    'goals': []
 }
 
 
@@ -1395,6 +1395,15 @@ def goal_picker():
     return render_template('goal_picker.html')
 
 
+@app.route('/api/scenario/template')
+def get_scenario_template():
+    result = scenario_manager.get_scenario_content('simulation_scenarios/template.launch.py')
+    if not result['success']:
+        result['path_checked'] = os.path.join(scenario_manager.base_directory, 'simulation_scenarios', 'template.launch.py')
+        return jsonify(result), 404
+    return jsonify(result)
+
+
 @app.route('/api/status')
 def api_status():
     ws_status = workspace_monitor.get_status() if workspace_monitor else None
@@ -1590,8 +1599,8 @@ def set_positions():
 
     if 'start' in data:
         stored_positions['start'] = data['start']
-    if 'goal' in data:
-        stored_positions['goal'] = data['goal']
+    if 'goals' in data:
+        stored_positions['goals'] = data['goals']
 
     return jsonify({"success": True, "message": "Positions stored successfully"})
 
@@ -1604,7 +1613,7 @@ def get_positions():
 @app.route('/api/positions/clear', methods=['POST'])
 def clear_positions():
     global stored_positions
-    stored_positions = {'start': None, 'goal': None}
+    stored_positions = {'start': None, 'goals': []}
     return jsonify({"success": True, "message": "Positions cleared"})
 
 

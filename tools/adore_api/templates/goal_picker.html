@@ -10,14 +10,14 @@
     <style>
         body { margin:0; padding:0; font-family:Arial,sans-serif; display:flex; height:100vh; }
         #map { flex:1; height:100%; }
-        .controls { width:350px; padding:20px; background:#f5f5f5; border-left:1px solid #ddd; overflow-y:auto; box-sizing:border-box; }
+        .controls { width:370px; padding:20px; background:#f5f5f5; border-left:1px solid #ddd; overflow-y:auto; box-sizing:border-box; }
         .search-section, .settings-section, .marker-section, .stored-positions {
             margin-bottom:16px; padding:15px; background:white; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.1);
         }
         .marker-section h3 { margin:0 0 10px 0; color:#333; }
         .search-section input { width:100%; padding:8px; border:1px solid #ddd; border-radius:3px; font-size:14px; box-sizing:border-box; }
         .coord-display { margin:6px 0; font-family:monospace; font-size:12px; background:#f8f8f8; padding:8px; border-radius:3px; }
-        .python-code-input { width:100%; height:80px; font-family:monospace; font-size:11px; background:#f0f0f0; border:1px solid #ddd; border-radius:3px; padding:8px; box-sizing:border-box; margin-top:8px; resize:none; }
+        .python-code-input { width:100%; font-family:monospace; font-size:11px; background:#f0f0f0; border:1px solid #ddd; border-radius:3px; padding:8px; box-sizing:border-box; margin-top:8px; resize:none; }
         .heading-row { display:flex; align-items:center; gap:8px; margin:8px 0; }
         .heading-row label { font-size:12px; font-weight:600; white-space:nowrap; }
         .heading-row input[type="number"] { width:80px; padding:4px 6px; border:1px solid #ddd; border-radius:3px; font-family:monospace; font-size:12px; }
@@ -40,6 +40,28 @@
         .clear-btn { background:#dc3545 !important; color:white !important; width:100%; }
         .start-marker { color:#28a745; }
         .goal-marker { color:#dc3545; }
+
+        #goalNodeList { margin-top:8px; }
+        .goal-node-row {
+            display:flex; align-items:center; gap:6px;
+            background:#f8f9fa; border:1px solid #e0e0e0; border-radius:4px;
+            padding:6px 8px; margin-bottom:5px; font-size:12px; font-family:monospace;
+        }
+        .goal-node-index { font-weight:700; color:#dc3545; min-width:22px; text-align:center; }
+        .goal-node-coords { flex:1; color:#333; font-size:11px; line-height:1.4; }
+        .stop-toggle { display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap; font-family:sans-serif; }
+        .stop-toggle input[type="checkbox"] { cursor:pointer; accent-color:#e67e00; }
+        .stop-label { font-size:11px; font-weight:600; color:#e67e00; min-width:42px; }
+        .stop-label.continue { color:#888; }
+        .goal-node-del {
+            background:#dc3545 !important; color:white !important;
+            padding:2px 7px !important; font-size:11px !important;
+            border-radius:3px; cursor:pointer; border:none; flex-shrink:0;
+        }
+        .btn-clear-goals {
+            background:#dc3545 !important; color:white !important;
+            padding:4px 10px !important; font-size:11px !important; border-radius:3px;
+        }
     </style>
 </head>
 <body>
@@ -68,7 +90,8 @@
 
         <div class="mode-switch-info">
             <strong>Auto-Switch:</strong> Placing a start point switches to Goal mode automatically.
-            Drag the <span style="color:#007bff;font-weight:600;">blue handle</span> around the start marker to set heading.
+            Drag the <span style="color:#007bff;font-weight:600;">blue handle</span> to set heading.
+            Goal nodes are <strong>draggable</strong>. Toggle <span style="color:#e67e00;font-weight:600;">STOP</span> per node.
         </div>
 
         <div class="stored-positions">
@@ -89,13 +112,15 @@
                 <input type="number" id="headingInput" value="0.000" step="0.01" min="-3.14159" max="3.14159" />
                 <span>rad &nbsp;|&nbsp; <span id="headingDeg">0.0</span>&deg;</span>
             </div>
-            <textarea id="startPythonCode" class="python-code-input" readonly placeholder="Click map to generate Python code..."></textarea>
+            <textarea id="startPythonCode" class="python-code-input" readonly style="height:80px;" placeholder="Click map to generate Python code..."></textarea>
         </div>
 
         <div class="marker-section">
-            <h3 class="goal-marker">&#x1F534; Goal Position</h3>
-            <div id="goalCoords"><div class="coord-display">Click map to place goal marker</div></div>
-            <textarea id="goalPythonCode" class="python-code-input" readonly placeholder="Click map to generate Python code..."></textarea>
+            <h3 class="goal-marker" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>&#x1F534; Goal Positions</span>
+                <button class="btn-clear-goals" onclick="clearGoalNodes()">Clear Goals</button>
+            </h3>
+            <div id="goalNodeList"><div class="no-positions">Click map in Goal mode to add nodes</div></div>
         </div>
 
         <button class="clear-btn" onclick="clearMarkers()">Clear All Markers</button>
@@ -105,7 +130,7 @@
                 Lat/Long Code
                 <button onclick="copyCode('summaryLatLong')" class="btn-primary" style="padding:4px 10px; font-size:11px;">Copy</button>
             </h3>
-            <textarea id="summaryLatLong" class="python-code-input" readonly style="height:60px; background:#e8f4e8;" placeholder="Place markers to generate..."></textarea>
+            <textarea id="summaryLatLong" class="python-code-input" readonly style="height:100px; background:#e8f4e8;" placeholder="Place markers to generate..."></textarea>
         </div>
 
         <div class="marker-section">
@@ -113,28 +138,31 @@
                 UTM Code
                 <button onclick="copyCode('summaryUtm')" class="btn-primary" style="padding:4px 10px; font-size:11px;">Copy</button>
             </h3>
-            <textarea id="summaryUtm" class="python-code-input" readonly style="height:60px; background:#e8f4e8;" placeholder="Place markers to generate..."></textarea>
+            <textarea id="summaryUtm" class="python-code-input" readonly style="height:100px; background:#e8f4e8;" placeholder="Place markers to generate..."></textarea>
         </div>
     </div>
 
     <script>
-        const map = L.map('map').setView([52.5200, 13.4050], 13);
+        const map = L.map('map', { maxZoom: 23 }).setView([52.2689, 10.5268], 14);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 23,
+            maxNativeZoom: 19
         }).addTo(map);
 
         let startMarker   = null;
-        let goalMarker    = null;
         let headingHandle = null;
         let headingLine   = null;
         let currentMode   = 'start';
         let routePolyline = null;
         let searchTimeout = null;
         let startCoords   = null;
-        let goalCoords    = null;
         let startPsi      = 0.0;
 
-        const HANDLE_R = 0.0004; // ~44m visual orbit radius
+        // Each entry: { marker, lat, lng, stop }
+        let goalNodes = [];
+
+        const HANDLE_PX = 34; // fixed pixel orbit radius from start marker center
 
         // ── Icons ──────────────────────────────────────────────────────────────
 
@@ -143,18 +171,21 @@
             const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">'
                 + '<circle cx="20" cy="20" r="11" fill="#28a745" stroke="white" stroke-width="2"/>'
                 + '<g transform="rotate(' + deg + ',20,20)">'
-                + '<line x1="20" y1="20" x2="33" y2="20" stroke="white" stroke-width="2.5" stroke-linecap="round"/>'
-                + '<polygon points="33,16.5 39,20 33,23.5" fill="white"/>'
+                + '<line x1="20" y1="20" x2="24" y2="20" stroke="white" stroke-width="2" stroke-linecap="round"/>'
+                + '<polygon points="24,18 28,20 24,22" fill="white"/>'
                 + '</g></svg>';
             return L.icon({ iconUrl: 'data:image/svg+xml;base64,' + btoa(svg), iconSize: [40,40], iconAnchor: [20,20] });
         }
 
-        function makeGoalIcon() {
-            const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">'
-                + '<circle cx="12" cy="12" r="10" fill="#dc3545" stroke="white" stroke-width="2"/>'
-                + '<text x="12" y="16" text-anchor="middle" fill="white" font-family="Arial" font-size="14" font-weight="bold">G</text>'
+        function makeGoalIcon(index, stop) {
+            const fill = stop ? '#e67e00' : '#dc3545';
+            const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="28" height="28">'
+                + '<circle cx="14" cy="14" r="12" fill="' + fill + '" stroke="white" stroke-width="2"/>'
+                + (stop
+                    ? '<rect x="9" y="9" width="10" height="10" fill="white" rx="1"/>'
+                    : '<text x="14" y="19" text-anchor="middle" fill="white" font-family="Arial" font-size="13" font-weight="bold">' + (index + 1) + '</text>')
                 + '</svg>';
-            return L.icon({ iconUrl: 'data:image/svg+xml;base64,' + btoa(svg), iconSize: [24,24], iconAnchor: [12,12] });
+            return L.icon({ iconUrl: 'data:image/svg+xml;base64,' + btoa(svg), iconSize: [28,28], iconAnchor: [14,14] });
         }
 
         function makeHandleIcon() {
@@ -167,11 +198,12 @@
         // ── Heading handle ─────────────────────────────────────────────────────
 
         function handleLatLng(psi) {
-            const cosLat = Math.cos(startCoords.lat * Math.PI / 180);
-            return L.latLng(
-                startCoords.lat + HANDLE_R * Math.sin(psi),
-                startCoords.lng + HANDLE_R * Math.cos(psi) / cosLat
+            const startPx = map.latLngToContainerPoint(L.latLng(startCoords.lat, startCoords.lng));
+            const handlePx = L.point(
+                startPx.x + HANDLE_PX * Math.cos(psi),
+                startPx.y - HANDLE_PX * Math.sin(psi)
             );
+            return map.containerPointToLatLng(handlePx);
         }
 
         function createHeadingVisuals() {
@@ -182,6 +214,7 @@
                 { color: '#28a745', weight: 2, dashArray: '5 5', opacity: 0.9 }
             ).addTo(map);
             headingHandle = L.marker(pos, { icon: makeHandleIcon(), draggable: true, zIndexOffset: 1000 }).addTo(map);
+            headingHandle.on('dragend', markDragEnd);
             headingHandle.on('drag', onHandleDrag);
         }
 
@@ -199,12 +232,9 @@
 
         function onHandleDrag(e) {
             if (!startCoords) return;
-            const h = e.target.getLatLng();
-            const cosLat = Math.cos(startCoords.lat * Math.PI / 180);
-            const dlng = (h.lng - startCoords.lng) * cosLat;
-            const dlat = h.lat - startCoords.lat;
-            startPsi = Math.atan2(dlat, dlng);
-            // snap handle back to orbit radius
+            const startPx  = map.latLngToContainerPoint(L.latLng(startCoords.lat, startCoords.lng));
+            const handlePx = map.latLngToContainerPoint(e.target.getLatLng());
+            startPsi = Math.atan2(-(handlePx.y - startPx.y), handlePx.x - startPx.x);
             const snapped = handleLatLng(startPsi);
             e.target.setLatLng(snapped);
             headingLine.setLatLngs([L.latLng(startCoords.lat, startCoords.lng), snapped]);
@@ -228,6 +258,89 @@
             updatePythonCode();
         });
 
+        // ── Drag suppression ───────────────────────────────────────────────────
+        // Leaflet fires a map 'click' after marker dragend; suppress it.
+
+        let _dragging = false;
+
+        function markDragEnd() {
+            _dragging = true;
+            setTimeout(function() { _dragging = false; }, 100);
+        }
+
+        // ── Goal nodes ─────────────────────────────────────────────────────────
+
+        function addGoalNode(lat, lng, stop) {
+            const node   = { lat, lng, stop: stop || false, marker: null };
+            const idx    = goalNodes.length;
+            const marker = L.marker([lat, lng], {
+                icon: makeGoalIcon(idx, node.stop),
+                draggable: true,
+                zIndexOffset: 500
+            }).addTo(map);
+            marker.on('dragend', markDragEnd);
+            marker.on('drag', function(e) {
+                const ll = e.target.getLatLng();
+                node.lat = ll.lat;
+                node.lng = ll.lng;
+                drawRoute();
+                updatePythonCode();
+                renderGoalNodeList();
+            });
+            node.marker = marker;
+            goalNodes.push(node);
+            renderGoalNodeList();
+            updatePythonCode();
+            drawRoute();
+        }
+
+        function removeGoalNode(idx) {
+            const node = goalNodes[idx];
+            if (node.marker) map.removeLayer(node.marker);
+            goalNodes.splice(idx, 1);
+            goalNodes.forEach(function(n, i) { n.marker.setIcon(makeGoalIcon(i, n.stop)); });
+            renderGoalNodeList();
+            updatePythonCode();
+            drawRoute();
+        }
+
+        function toggleNodeStop(idx, checked) {
+            const node = goalNodes[idx];
+            node.stop = checked;
+            node.marker.setIcon(makeGoalIcon(idx, node.stop));
+            renderGoalNodeList();
+            updatePythonCode();
+        }
+
+        function clearGoalNodes() {
+            goalNodes.forEach(function(n) { if (n.marker) map.removeLayer(n.marker); });
+            goalNodes = [];
+            renderGoalNodeList();
+            updatePythonCode();
+            drawRoute();
+        }
+
+        function renderGoalNodeList() {
+            const el = document.getElementById('goalNodeList');
+            if (goalNodes.length === 0) {
+                el.innerHTML = '<div class="no-positions">Click map in Goal mode to add nodes</div>';
+                return;
+            }
+            el.innerHTML = goalNodes.map(function(n, i) {
+                const labelClass = n.stop ? 'stop-label' : 'stop-label continue';
+                const labelText  = n.stop ? 'STOP' : 'CONT';
+                return '<div class="goal-node-row">'
+                    + '<span class="goal-node-index">' + (i + 1) + '</span>'
+                    + '<span class="goal-node-coords">' + n.lat.toFixed(5) + '<br>' + n.lng.toFixed(5) + '</span>'
+                    + '<label class="stop-toggle">'
+                    + '<input type="checkbox" ' + (n.stop ? 'checked' : '') + ' onchange="toggleNodeStop(' + i + ', this.checked)">'
+                    + '<span class="' + labelClass + '">' + labelText + '</span>'
+                    + '</label>'
+                    + '<button class="goal-node-del" onclick="removeGoalNode(' + i + ')">&#x2715;</button>'
+                    + '</div>';
+            }).join('');
+        }
+
         // ── Coords / Python ────────────────────────────────────────────────────
 
         function latLngToUtm(lat, lng) {
@@ -246,31 +359,46 @@
                 + '<br>Easting: ' + u.easting.toLocaleString() + 'm<br>Northing: ' + u.northing.toLocaleString() + 'm</div>';
         }
 
+        function goalPositionsLatLong() {
+            if (goalNodes.length === 0) return null;
+            const items = goalNodes.map(function(n) {
+                const behavior = n.stop ? ', WaypointBehavior.STOP' : '';
+                return '    Waypoint(Position(lat_long=(' + n.lat.toFixed(6) + ', ' + n.lng.toFixed(6) + '))' + behavior + '),';
+            });
+            return 'goal_positions = [\n' + items.join('\n') + '\n]';
+        }
+
+        function goalPositionsUtm() {
+            if (goalNodes.length === 0) return null;
+            const items = goalNodes.map(function(n) {
+                const u = latLngToUtm(n.lat, n.lng);
+                const behavior = n.stop ? ', WaypointBehavior.STOP' : '';
+                return '    Waypoint(Position(utm=(' + u.easting + ', ' + u.northing + ', ' + u.zone + ', \'' + u.hemisphere + '\'))' + behavior + '),';
+            });
+            return 'goal_positions = [\n' + items.join('\n') + '\n]';
+        }
+
         function updatePythonCode() {
             const se = document.getElementById('startPythonCode');
-            const ge = document.getElementById('goalPythonCode');
             const sl = document.getElementById('summaryLatLong');
             const su = document.getElementById('summaryUtm');
 
-            let startLl = '', startUt = '', goalLl = '', goalUt = '';
-
+            let startLl = '', startUt = '';
             if (startCoords) {
                 const u = latLngToUtm(startCoords.lat, startCoords.lng);
                 const p = startPsi.toFixed(3);
                 startLl = 'start_position = Position(lat_long=(' + startCoords.lat.toFixed(6) + ', ' + startCoords.lng.toFixed(6) + '), psi=' + p + ')';
                 startUt = 'start_position = Position(utm=(' + u.easting + ', ' + u.northing + ', ' + u.zone + ', \'' + u.hemisphere + '\'), psi=' + p + ')';
                 se.value = startLl + '\n' + startUt;
-            } else { se.value = ''; }
+            } else {
+                se.value = '';
+            }
 
-            if (goalCoords) {
-                const u = latLngToUtm(goalCoords.lat, goalCoords.lng);
-                goalLl = 'goal_position = Position(lat_long=(' + goalCoords.lat.toFixed(6) + ', ' + goalCoords.lng.toFixed(6) + '))';
-                goalUt = 'goal_position = Position(utm=(' + u.easting + ', ' + u.northing + ', ' + u.zone + ', \'' + u.hemisphere + '\'))';
-                ge.value = goalLl + '\n' + goalUt;
-            } else { ge.value = ''; }
+            const gll = goalPositionsLatLong();
+            const gut = goalPositionsUtm();
 
-            sl.value = (startLl && goalLl) ? startLl + '\n' + goalLl : (startLl || goalLl);
-            su.value = (startUt && goalUt) ? startUt + '\n' + goalUt : (startUt || goalUt);
+            sl.value = [startLl, gll].filter(Boolean).join('\n');
+            su.value = [startUt, gut].filter(Boolean).join('\n');
         }
 
         function copyCode(elementId) {
@@ -282,10 +410,7 @@
                 btn.textContent = 'Copied!';
                 btn.style.background = '#28a745';
                 setTimeout(function() { btn.textContent = orig; btn.style.background = ''; }, 1500);
-            }).catch(function() {
-                el.select();
-                document.execCommand('copy');
-            });
+            }).catch(function() { el.select(); document.execCommand('copy'); });
         }
 
         // ── Map click ──────────────────────────────────────────────────────────
@@ -299,7 +424,8 @@
             document.getElementById('goalMode').classList.toggle('active',  mode === 'goal');
         }
 
-        map.on('click', function (e) {
+        map.on('click', function(e) {
+            if (_dragging) return;
             const c = e.latlng;
             if (currentMode === 'start') {
                 if (startMarker) map.removeLayer(startMarker);
@@ -313,31 +439,29 @@
                 drawRoute();
                 setMode('goal');
             } else {
-                if (goalMarker) map.removeLayer(goalMarker);
-                goalCoords = { lat: c.lat, lng: c.lng };
-                goalMarker = L.marker([c.lat, c.lng], { icon: makeGoalIcon() }).addTo(map);
-                updateCoordDisplay(goalCoords, 'goalCoords');
-                updatePythonCode();
-                drawRoute();
+                addGoalNode(c.lat, c.lng);
             }
         });
+
+        // Resnap handle after zoom or pan so pixel distance stays constant
+        map.on('zoom moveend', function() { updateHeadingVisuals(); });
 
         // ── Route ──────────────────────────────────────────────────────────────
 
         document.getElementById('routeToggle').addEventListener('change', drawRoute);
 
         async function drawRoute() {
-            if (!startMarker || !goalMarker || !document.getElementById('routeToggle').checked) {
-                if (routePolyline) { map.removeLayer(routePolyline); routePolyline = null; }
-                return;
-            }
-            const s = startMarker.getLatLng(), g = goalMarker.getLatLng();
+            if (routePolyline) { map.removeLayer(routePolyline); routePolyline = null; }
+            if (!startMarker || goalNodes.length === 0 || !document.getElementById('routeToggle').checked) return;
+
+            const waypoints = [startMarker.getLatLng(), ...goalNodes.map(function(n) { return n.marker.getLatLng(); })];
+            const coords    = waypoints.map(function(p) { return p.lng + ',' + p.lat; }).join(';');
+
             try {
-                const res  = await fetch('https://router.project-osrm.org/route/v1/driving/' + s.lng + ',' + s.lat + ';' + g.lng + ',' + g.lat + '?overview=full&geometries=geojson');
+                const res  = await fetch('https://router.project-osrm.org/route/v1/driving/' + coords + '?overview=full&geometries=geojson');
                 const data = await res.json();
                 if (data.routes && data.routes.length > 0) {
                     const ll = data.routes[0].geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
-                    if (routePolyline) map.removeLayer(routePolyline);
                     routePolyline = L.polyline(ll, { color:'#007cba', weight:4, opacity:0.7 }).addTo(map);
                 }
             } catch(err) { console.error('Routing error:', err); }
@@ -347,8 +471,10 @@
 
         async function storePositions() {
             const data = {};
-            if (startCoords) data.start = { lat: startCoords.lat, lng: startCoords.lng, psi: startPsi, utm: latLngToUtm(startCoords.lat, startCoords.lng) };
-            if (goalCoords)  data.goal  = { lat: goalCoords.lat,  lng: goalCoords.lng,  utm: latLngToUtm(goalCoords.lat, goalCoords.lng) };
+            if (startCoords) data.start = { lat: startCoords.lat, lng: startCoords.lng, psi: startPsi };
+            if (goalNodes.length > 0) {
+                data.goals = goalNodes.map(function(n) { return { lat: n.lat, lng: n.lng, stop: n.stop }; });
+            }
             try {
                 const res = await fetch('/api/positions/set', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
                 const r   = await res.json();
@@ -371,11 +497,9 @@
                     updateCoordDisplay(startCoords, 'startCoords');
                     syncHeadingUI();
                 }
-                if (pos.goal) {
-                    goalCoords = { lat: pos.goal.lat, lng: pos.goal.lng };
-                    if (goalMarker) map.removeLayer(goalMarker);
-                    goalMarker = L.marker([goalCoords.lat, goalCoords.lng], { icon: makeGoalIcon() }).addTo(map);
-                    updateCoordDisplay(goalCoords, 'goalCoords');
+                if (pos.goals && pos.goals.length > 0) {
+                    clearGoalNodes();
+                    pos.goals.forEach(function(g) { addGoalNode(g.lat, g.lng, g.stop); });
                 }
                 updatePythonCode();
                 drawRoute();
@@ -395,32 +519,34 @@
                 const res = await fetch('/api/positions/get');
                 const pos = await res.json();
                 const el  = document.getElementById('storedPositionsDisplay');
-                if (!pos.start && !pos.goal) { el.innerHTML = '<div class="no-positions">No positions stored</div>'; return; }
+                if (!pos.start && !pos.goals) { el.innerHTML = '<div class="no-positions">No positions stored</div>'; return; }
                 let html = '';
                 if (pos.start) {
-                    const psiPart = pos.start.psi !== undefined ? ' | psi: ' + pos.start.psi.toFixed(3) + ' rad' : '';
+                    const psiPart = pos.start.psi !== undefined ? ' | psi: ' + pos.start.psi.toFixed(3) : '';
                     html += '<div class="stored-position"><strong>Start:</strong> ' + pos.start.lat.toFixed(6) + ', ' + pos.start.lng.toFixed(6) + psiPart + '</div>';
                 }
-                if (pos.goal) {
-                    html += '<div class="stored-position"><strong>Goal:</strong> ' + pos.goal.lat.toFixed(6) + ', ' + pos.goal.lng.toFixed(6) + '</div>';
+                if (pos.goals) {
+                    pos.goals.forEach(function(g, i) {
+                        html += '<div class="stored-position"><strong>Goal ' + (i + 1) + (g.stop ? ' [STOP]' : '') + ':</strong> ' + g.lat.toFixed(6) + ', ' + g.lng.toFixed(6) + '</div>';
+                    });
                 }
                 el.innerHTML = html;
             } catch(e) { console.error(e); }
         }
 
         function clearMarkers() {
-            if (startMarker)   { map.removeLayer(startMarker);   startMarker   = null; }
-            if (goalMarker)    { map.removeLayer(goalMarker);    goalMarker    = null; }
+            if (startMarker)   { map.removeLayer(startMarker); startMarker = null; }
             if (routePolyline) { map.removeLayer(routePolyline); routePolyline = null; }
             removeHeadingVisuals();
-            startCoords = null; goalCoords = null; startPsi = 0.0;
-            document.getElementById('startCoords').innerHTML = '<div class="coord-display">Click map to place start marker</div>';
-            document.getElementById('goalCoords').innerHTML  = '<div class="coord-display">Click map to place goal marker</div>';
-            document.getElementById('headingInput').value    = '0.000';
-            document.getElementById('headingDeg').textContent = '0.0';
-            document.getElementById('summaryLatLong').value   = '';
-            document.getElementById('summaryUtm').value       = '';
-            updatePythonCode();
+            clearGoalNodes();
+            startCoords = null;
+            startPsi    = 0.0;
+            document.getElementById('startCoords').innerHTML  = '<div class="coord-display">Click map to place start marker</div>';
+            document.getElementById('headingInput').value      = '0.000';
+            document.getElementById('headingDeg').textContent  = '0.0';
+            document.getElementById('summaryLatLong').value    = '';
+            document.getElementById('summaryUtm').value        = '';
+            document.getElementById('startPythonCode').value   = '';
             setMode('start');
         }
 
