@@ -14,9 +14,8 @@ Paths indicate where the content lives in this repository or how it is consumed
 | OSQP               | Apache License 2.0               | `vendor/osqp`                                    | https://osqp.org/ |
 | OSQP-Eigen         | BSD 3-Clause License             | `vendor/osqp_eigen`                              | https://github.com/robotology/osqp-eigen |
 | multi_agent_solver | Apache License 2.0               | `vendor/multi_agent_solver`                      | https://https://github.com/markomiz/multi_agent_solver |
-| websocketpp        | BSD 3-Clause License             | `tools/websocketpp/LICENSE`                      | https://github.com/zaphoyd/websocketpp |
-| adore_model_checker| Apache License 2.0               | `tools/adore_model_checker`                      | https://github.com/DLR-TS/adore_model_checker |
-| ros2_observer      | Apache License 2.0               | `tools/ros2_observer`                            | https://github.com/DLR-TS/ros2_observer |
+| adore_model_checker| Apache License 2.0               | `vendor/adore_model_checker`                      | https://github.com/DLR-TS/adore_model_checker |
+| ros2_observer      | Apache License 2.0               | `vendor/ros2_observer`                            | https://github.com/DLR-TS/ros2_observer |
 | ROS 2              | Apache License 2.0               | System dependency                                | https://docs.ros.org/ |
 | MkDocs & Material  | BSD 2-Clause / MIT               | `documentation/` (documentation build system)    | https://www.mkdocs.org/ ; https://squidfunk.github.io/mkdocs-material/ |
 | spline.h           | GNU General Public License v2    | `libraries/lib/adore_math/include/spline.h`      | https://kluge.in-chemnitz.de/opensource/spline/spline.h |

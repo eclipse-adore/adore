@@ -133,21 +133,39 @@ class ROSMarshaller:
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
             return None
 
+    # Keys emitted by ros2 topic echo that are not part of the message payload
+    _ECHO_NOISE_KEYS = frozenset({'WARNING', 'WARN', 'ERROR', 'INFO', 'DEBUG'})
+
+    @staticmethod
+    def _strip_echo_noise(yaml_string):
+        """Remove WARNING/INFO lines ros2 topic echo writes to stdout before real YAML."""
+        lines = yaml_string.splitlines()
+        clean = [l for l in lines if not any(l.startswith(k) for k in ('WARNING', 'WARN:', 'ERROR', 'INFO:', 'DEBUG:'))]
+        return '\n'.join(clean)
+
     @staticmethod
     def _yaml_to_json(yaml_string, topic, datatype):
         """Convert YAML message string to JSON, adding metadata."""
         try:
-            # Use safe_load to process the YAML string
-            obj = yaml.safe_load(yaml_string)
+            clean = ROSMarshaller._strip_echo_noise(yaml_string)
+            if not clean.strip():
+                return None
+
+            obj = yaml.safe_load(clean)
             if not isinstance(obj, dict):
-                # Handles cases where YAML is a single value, list, or null
                 obj = {"data": obj}
 
-            # Enrich with metadata
+            # Drop any echo-injected noise keys that survived YAML parsing
+            for k in list(obj.keys()):
+                if k in ROSMarshaller._ECHO_NOISE_KEYS:
+                    del obj[k]
+
+            if not obj:
+                return None
+
             obj['topic'] = topic
             obj['datatype'] = datatype
 
-            # Convert to JSON string
             return json.dumps(obj)
 
         except yaml.YAMLError as ye:
@@ -194,10 +212,10 @@ class ROSMarshaller:
             return
 
         json_str = ROSMarshaller._yaml_to_json(yaml_data, topic, datatype)
-        ROSMarshaller._increment_rx_counter()
+        if json_str is None:
+            return
 
-        # The callback is expected to accept (json_data_str, topic_name, datatype_str)
-        # Note: We pass the JSON string here, not the loaded object.
+        ROSMarshaller._increment_rx_counter()
         callback(json_str, topic, datatype)
 
     @staticmethod
@@ -298,25 +316,28 @@ class ROSMarshaller:
             def run():
                 retry_delay = 0.5
                 max_delay = 5.0
+                resolved_datatype = datatype
 
                 while not ROSMarshaller._stop_event.is_set():
+                    # Re-try datatype lookup each iteration if still unknown
+                    if resolved_datatype is None:
+                        resolved_datatype = ROSMarshaller.get_datatype(topic)
+
                     process = None
                     try:
-                        # Start the ROS command process
                         process = subprocess.Popen(
                             base_command,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE,
                             stdin=subprocess.DEVNULL,
                             bufsize=4096,
-                            universal_newlines=False  # Read bytes, decode in _direct_read_thread
+                            universal_newlines=False
                         )
                         logging.info(
                             f"Started process for {topic} (PID: {process.pid})")
 
-                        # Monitor and process the output
                         ROSMarshaller._direct_read_thread(
-                            process, topic, datatype, callback, ROSMarshaller._stop_event
+                            process, topic, resolved_datatype, callback, ROSMarshaller._stop_event
                         )
 
                         retry_delay = 0.5  # Reset delay after a successful run/termination
@@ -352,90 +373,99 @@ class ROSMarshaller:
             return thread
 
     # --- Publisher Core ---
+
+    @staticmethod
+    def _clean_payload(json_data):
+        """Parse and clean a message payload, stripping ROS/capture metadata keys."""
+        _STRIP = frozenset(('topic', 'datatype', 'WARNING', 'WARN', 'ERROR', 'INFO', 'DEBUG'))
+        if isinstance(json_data, str):
+            if json_data.startswith("data: "):
+                payload_data = json_data[6:].strip()
+                try:
+                    obj = json.loads(payload_data)
+                except json.JSONDecodeError:
+                    obj = {"data": payload_data}
+            else:
+                obj = json.loads(json_data)
+        elif isinstance(json_data, dict):
+            obj = json_data.copy()
+        else:
+            raise ValueError("json_data must be a dict or string")
+        if isinstance(obj, dict):
+            for k in _STRIP:
+                obj.pop(k, None)
+        return obj
+
     @staticmethod
     def publish(json_data, topic=None, datatype=None):
-        """
-        Publishes a message to a ROS topic. 
-        `json_data` can be a dict, JSON string, or a string starting with "data: " (for std_msgs/String).
-        """
+        """Single-shot publish. Spawns ros2 topic pub -1 and exits immediately."""
         if not ROSMarshaller.DEBUG_MODE and not ROSMarshaller.initialize():
-            logging.error(
-                "ROS environment not initialized or detected. Cannot publish.")
+            logging.error("ROS environment not initialized or detected. Cannot publish.")
             return
-
         try:
-            # 1. Parse Input
-            if isinstance(json_data, str):
-                if json_data.startswith("data: "):
-                    # Handle std_msgs/String JSON format
-                    payload_data = json_data[6:].strip()
-                    try:
-                        # Attempt to load as JSON to validate, then dump it back for the shell command
-                        payload_obj = json.loads(payload_data)
-                    except json.JSONDecodeError:
-                        # If it's just a raw string for std_msgs/String, wrap it
-                        payload_obj = {"data": payload_data}
-                else:
-                    # Assume it's a JSON string of a complex message
-                    payload_obj = json.loads(json_data)
-            elif isinstance(json_data, dict):
-                payload_obj = json_data
-            else:
-                raise ValueError("json_data must be a dict or string")
-
-            # 2. Determine Topic/Datatype
-            pub_topic = topic or payload_obj.get('topic')
-            pub_datatype = datatype or payload_obj.get('datatype')
-
-            if pub_topic is None or pub_datatype is None:
-                raise ValueError(
-                    "Topic and datatype must be provided either in the JSON/dict or as arguments")
-
-            # 3. Clean Payload for ROS
-            publish_obj = payload_obj.copy() if isinstance(
-                payload_obj, dict) else payload_obj
-            if isinstance(publish_obj, dict):
-                publish_obj.pop('datatype', None)
-                publish_obj.pop('topic', None)
-
-            # 4. Escape and Execute Command
-            json_payload = json.dumps(publish_obj)
+            obj = ROSMarshaller._clean_payload(json_data)
+            pub_topic = topic or (obj.get('topic') if isinstance(obj, dict) else None)
+            pub_datatype = datatype or (obj.get('datatype') if isinstance(obj, dict) else None)
+            if not pub_topic or not pub_datatype:
+                raise ValueError("topic and datatype required")
+            if isinstance(obj, dict):
+                obj.pop('topic', None)
+                obj.pop('datatype', None)
 
             if ROSMarshaller.DEBUG_MODE:
-                logging.debug(
-                    f"DEBUG PUBLISH to {pub_topic} ({pub_datatype}): {json_payload}")
+                logging.debug(f"DEBUG PUBLISH to {pub_topic} ({pub_datatype}): {json.dumps(obj)}")
                 ROSMarshaller._increment_tx_counter()
                 return
 
-            json_escaped = ROSMarshaller.shell_escape(json_payload)
-
-            ros_version = ROSMarshaller.ROS_VERSION
-
-            # Use a cache for command fragments
-            cache_key = f"{ros_version}:{pub_topic}:{pub_datatype}"
-            if cache_key not in ROSMarshaller._command_cache:
-                command = (ROSMarshaller.ROSPUBCMD[ros_version]).split()
-                command.extend([pub_topic, pub_datatype])
-                ROSMarshaller._command_cache[cache_key] = command
-
-            command = ROSMarshaller._command_cache[cache_key].copy()
-            command.append(json_escaped)
-
-            # Execute the publish command
-            subprocess.run(
-                command,
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.PIPE,
-                timeout=5
-            )
-
+            cmd = ['ros2', 'topic', 'pub', '-1', pub_topic, pub_datatype,
+                   ROSMarshaller.shell_escape(json.dumps(obj))]
+            subprocess.run(' '.join(cmd), shell=True,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=10)
             ROSMarshaller._increment_tx_counter()
-
         except Exception as e:
-            logging.error(
-                f"Failed to publish message to {pub_topic or 'Unknown'}: {e}")
+            logging.error(f"Failed to publish to {topic}: {e}")
             logging.debug(traceback.format_exc())
+
+    @staticmethod
+    def publish_persistent(topic, datatype, msg_dict, hz):
+        """
+        Start a persistent ros2 topic pub -r <hz> process.
+        The topic stays visible in ros2 topic list for the lifetime of the process.
+        Returns the Popen handle — caller must call stop_persistent() when done.
+        """
+        if not ROSMarshaller.DEBUG_MODE and not ROSMarshaller.initialize():
+            raise RuntimeError("ROS environment not initialized")
+        obj = ROSMarshaller._clean_payload(msg_dict)
+        cmd = ['ros2', 'topic', 'pub', '-r', str(float(hz)),
+               topic, datatype, ROSMarshaller.shell_escape(json.dumps(obj))]
+        proc = subprocess.Popen(
+            ' '.join(cmd), shell=True,
+            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+            preexec_fn=os.setsid
+        )
+        logging.info(f"Persistent publisher started: {topic} @ {hz} Hz (PID {proc.pid})")
+        return proc
+
+    @staticmethod
+    def stop_persistent(proc):
+        """Terminate a persistent publisher process started by publish_persistent."""
+        if proc is None or proc.poll() is not None:
+            return
+        try:
+            os.killpg(os.getpgid(proc.pid), __import__('signal').SIGTERM)
+        except Exception:
+            try:
+                proc.terminate()
+            except Exception:
+                pass
+        try:
+            proc.wait(timeout=3)
+        except Exception:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+        logging.info(f"Persistent publisher stopped (PID {proc.pid})")
 
     # --- Shutdown ---
     @staticmethod

@@ -1,0 +1,63 @@
+## User APT/system packages for the ADORe cli
+
+# Add any necessary APT dependencies here, one dependency per line, and invoke 
+# `make build` to rebuild the ADORe CLI docker context to make the changes take
+# effect.
+
+
+# Development Tools
+vim
+curl
+wget
+htop
+fzf
+gdb
+gdbserver
+clang-format
+clang-tidy
+cpplint
+cppcheck
+jq
+tree
+
+# Requires helix ppa ppa:maveonair/helix-editor
+helix
+
+# Language servers and intellicense
+clangd
+python3-pylsp
+
+
+## Plotting
+ros-${ROS_DISTRO}-plotjuggler-ros
+ros-${ROS_DISTRO}-plotjuggler
+ros-${ROS_DISTRO}-rosbridge-suite
+python3-matplotlib
+python3-pandas
+
+## Network debugging tools
+telnet
+netcat-traditional
+traceroute
+nmap
+inetutils-ping
+net-tools
+
+#ROS
+ros-${ROS_DISTRO}-ament-index-cpp
+ros-${ROS_DISTRO}-ament-index-cpp
+ros-${ROS_DISTRO}-tracetools
+ros-${ROS_DISTRO}-tracetools-acceleration
+ros-${ROS_DISTRO}-tracetools-acceleration-dbgsym
+ros-${ROS_DISTRO}-tracetools-analysis
+ros-${ROS_DISTRO}-tracetools-dbgsym
+ros-${ROS_DISTRO}-tracetools-image-pipeline
+ros-${ROS_DISTRO}-tracetools-image-pipeline-dbgsym
+ros-${ROS_DISTRO}-tracetools-launch
+ros-${ROS_DISTRO}-tracetools-read
+ros-${ROS_DISTRO}-tracetools-test
+ros-${ROS_DISTRO}-tracetools-trace
+
+# Carla
+ros-${ROS_DISTRO}-rviz2
+

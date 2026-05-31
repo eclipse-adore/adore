@@ -1,0 +1,427 @@
+{
+  "configById": {
+    "map!4k2dseo": {
+      "center": {
+        "lat": 52.314522990288516,
+        "lon": 10.563832842306658
+      },
+      "customTileUrl": "",
+      "disabledTopics": [],
+      "followTopic": "/ego_vehicle/vehicle_state_dynamic_nav_sat_fix",
+      "layer": "map",
+      "topicColors": {},
+      "zoomLevel": 17,
+      "maxNativeZoom": 18
+    },
+    "RawMessages!1kwomtm": {
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "topicPath": "/ego_vehicle/vehicle_info.speed",
+      "fontSize": 72,
+      "expansion": "none"
+    },
+    "Indicator!1830l1n": {
+      "path": "",
+      "style": "background",
+      "fallbackColor": "#000000",
+      "fallbackLabel": "km/h",
+      "rules": []
+    },
+    "RawMessages!3d7sltj": {
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "topicPath": "/ego_vehicle/trajectory_decision.label",
+      "expansion": "none",
+      "fontSize": 30
+    },
+    "3D!3unykn2": {
+      "cameraState": {
+        "perspective": true,
+        "distance": 33.403651402291565,
+        "phi": 63.640152417241445,
+        "thetaOffset": 90.11431293165384,
+        "targetOffset": [
+          10.41337337702692,
+          0.8975072406216155,
+          -0.25096348272435526
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "fovy": 45,
+        "near": 0.5,
+        "far": 5000
+      },
+      "followMode": "follow-pose",
+      "followTf": "ego_vehicle",
+      "scene": {},
+      "transforms": {
+        "frame:world": {
+          "visible": false
+        },
+        "frame:ego_vehicle": {
+          "visible": false
+        },
+        "frame:visualization_offset": {
+          "visible": false
+        }
+      },
+      "topics": {
+        "/ego_vehicle/map_grid": {
+          "visible": true
+        },
+        "/ego_vehicle/visualize_ego_vehicle": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/controller_trajectory": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/caution_zones": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/infrastructure_traffic_participants": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/local_map": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/mission/goal_position": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/mission/goal_request": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/remote_operation_waypoints": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/route": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/safety_corridor": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/traffic_signals": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/traffic_participants": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/trajectory_decision": {
+          "visible": true
+        },
+        "/ego_vehicle/viz/ego_vehicle/trajectory_suggestion": {
+          "visible": true
+        },
+        "/initialpose": {
+          "visible": true
+        },
+        "/move_base_simple/goal": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/caution_zones": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/controller_trajectory": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/local_map": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/mission/goal_request": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/reference_trajectory": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/route": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/safety_corridor": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/suggested_remote_operator_trajectory": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/traffic_participants": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/trajectory_decision": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/vehicle_state_dynamic": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/vehicle_state_dynamic_own_frame": {
+          "visible": true
+        }
+      },
+      "layers": {},
+      "publish": {
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      },
+      "imageMode": {}
+    },
+    "3D!186qy8": {
+      "cameraState": {
+        "distance": 20,
+        "perspective": true,
+        "phi": 60,
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOffset": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "thetaOffset": 45,
+        "fovy": 45,
+        "near": 0.5,
+        "far": 5000
+      },
+      "followMode": "follow-pose",
+      "scene": {},
+      "transforms": {},
+      "topics": {},
+      "layers": {},
+      "publish": {
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      },
+      "imageMode": {}
+    },
+    "3D!2b0f09d": {
+      "cameraState": {
+        "perspective": true,
+        "distance": 19.999999999999982,
+        "phi": 59.99999999999997,
+        "thetaOffset": 44.99999999999999,
+        "targetOffset": [
+          -0.01901904018269171,
+          -0.019019040182691713,
+          0
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "fovy": 45,
+        "near": 0.5,
+        "far": 5000
+      },
+      "followMode": "follow-pose",
+      "scene": {},
+      "transforms": {},
+      "topics": {},
+      "layers": {},
+      "publish": {
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      },
+      "imageMode": {}
+    },
+    "map!3wo7xzx": {
+      "center": {
+        "lat": 52.31429015151523,
+        "lon": 10.563779624633789
+      },
+      "customTileUrl": "",
+      "disabledTopics": [],
+      "followTopic": "/ego_vehicle/vehicle_state_dynamic_nav_sat_fix",
+      "layer": "map",
+      "topicColors": {},
+      "maxNativeZoom": 18
+    },
+    "3D!2d5i56h": {
+      "cameraState": {
+        "perspective": true,
+        "distance": 22.160664819943417,
+        "phi": 65.46637744034686,
+        "thetaOffset": 87.95010845987065,
+        "targetOffset": [
+          7.118685720849063,
+          0.4667884393850301,
+          -5.187247412374671e-17
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "fovy": 45,
+        "near": 0.5,
+        "far": 5000
+      },
+      "followMode": "follow-pose",
+      "followTf": "ego_vehicle",
+      "scene": {},
+      "transforms": {
+        "frame:world": {
+          "visible": false
+        },
+        "frame:ego_vehicle": {
+          "visible": false
+        },
+        "frame:visualization_offset": {
+          "visible": false
+        }
+      },
+      "topics": {
+        "/initialpose": {
+          "visible": true
+        },
+        "/move_base_simple/goal": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/caution_zones": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/controller_trajectory": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/local_map": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/mission/goal_request": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/reference_trajectory": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/route": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/safety_corridor": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/suggested_remote_operator_trajectory": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/traffic_participants": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/trajectory_decision": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/vehicle_state_dynamic": {
+          "visible": true
+        },
+        "/visualizer/viz/ego_vehicle/vehicle_state_dynamic_own_frame": {
+          "visible": true
+        }
+      },
+      "layers": {},
+      "publish": {
+        "type": "point",
+        "poseTopic": "/move_base_simple/goal",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26179939
+      },
+      "imageMode": {}
+    },
+    "Tab!2cablzg": {
+      "activeTabIdx": 0,
+      "tabs": [
+        {
+          "title": "SAAD",
+          "layout": {
+            "first": {
+              "first": "map!4k2dseo",
+              "second": {
+                "first": "RawMessages!1kwomtm",
+                "second": {
+                  "first": "Indicator!1830l1n",
+                  "second": "RawMessages!3d7sltj",
+                  "direction": "row",
+                  "splitPercentage": 16.18357487922705
+                },
+                "direction": "row",
+                "splitPercentage": 25.086940541151858
+              },
+              "direction": "column",
+              "splitPercentage": 82.83450704225352
+            },
+            "second": "3D!3unykn2",
+            "direction": "row",
+            "splitPercentage": 42.45723546005642
+          }
+        },
+        {
+          "title": "MAAD",
+          "layout": "3D!186qy8"
+        },
+        {
+          "title": "Commands",
+          "layout": "3D!2b0f09d"
+        },
+        {
+          "title": "Debug",
+          "layout": {
+            "first": "map!3wo7xzx",
+            "second": "3D!2d5i56h",
+            "direction": "row",
+            "splitPercentage": 29.39958592132505
+          }
+        }
+      ]
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": {
+    "speed": 1
+  },
+  "layout": "Tab!2cablzg"
+}

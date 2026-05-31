@@ -36,34 +36,17 @@ git submodule update --init --recursive
 
 > **ℹ️INFO:** If you would rather clone ADORe anonymously over https please review the [Anonymous Cloning 🔗](../system_and_development/anonymous_cloning.md) guide.
 
-## Building ADORe Developer Environment
+## Building ADORe
 > **⚠️ WARNING:**
-> To use the ADORe developer environment you must have Docker installed.
+> To use ADORe you must have Docker, and GNU Make installed and configured for you user.
 
-To have the easiest entry you can [install just](https://github.com/casey/just)
-
-and run:
+Build the ADORe Docker context, known as ADORe CLI, in the base of the ADORe repository:
 ```bash
-just dev
+make build
 ```
 
-Alternatively, simple call
-
-```bash
-.docker/scripts/run_dev.sh
-```
-
-This will create and the developer environment where you can build all relevant packages with
-
-```bash
-just build
-```
-
-The full command list is available with
-
-```bash
-just help
-```
+> **ℹ️INFO:** On first run of the ADORe CLI the entire system will be built. 
+> Initial build can take 10-15 minutes depending on system and network.
 
 > **⚠️ WARNING:**
 > Building ADORe **will** fail until all submodules have been properly initialized. 
@@ -72,8 +55,23 @@ just help
 > Do not proceed with building ADORe until `git submodule update --init --receive`
 > finishes without error. 
 
+## Running ADORe
+After cloning and satisfying all system prerequisites and building ADORe
+you can start the ADORe CLI interactive shell docker context.
+To do this navigate to the root of the ADORe repository directory
+and run the following command:
+```bash
+make cli
+```
+
+> **✅ SUCCESS:**
+> If you are greeted with the following ADORe CLI car then you have successfully setup ADORe:
+```
+            ____ 
+         __/  |_\__
+        |           -. 
+  ......'-(_)---(_)--' 
+```
+
+
 Next proceed to [Running Your First Scenario 🔗](running_your_first_scenario.md) 
-
-## Using in an existing ROS2 project
-
-The ADORe packages adore_(libraries/ros2_conversions/ros2_msgs/ros2_nodes/scenarios) can all be used directly in your existing ros2 project by pasting or symlining them into you ros2/colcon workspace.

@@ -12,18 +12,90 @@
 # ********************************************************************************
 
 import os
+import sys
 import subprocess
 import threading
 import time
 import json
+import hashlib
+import logging
+import queue
 from datetime import datetime, timezone
 from collections import deque, defaultdict
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, Response
 from flask_cors import CORS
 import signal
 import psutil
 import argparse
 from flask import send_from_directory
+
+
+# ── Log broadcaster for the model checker log tab ────────────────────────────
+class _LogBroadcaster:
+    def __init__(self, maxlen=5000):
+        self._lock = threading.Lock()
+        self._clients = []
+        self._buffer = []
+        self._maxlen = maxlen
+
+    def write(self, text, stream='stdout'):
+        msg = json.dumps({
+            'text': text.rstrip(),
+            'stream': stream,
+            'time': datetime.now().strftime('%H:%M:%S'),
+        })
+        with self._lock:
+            self._buffer.append(msg)
+            if len(self._buffer) > self._maxlen:
+                self._buffer.pop(0)
+            for q in list(self._clients):
+                try:
+                    q.put_nowait(msg)
+                except Exception:
+                    pass
+
+    def subscribe(self):
+        q = queue.Queue(maxsize=500)
+        with self._lock:
+            for line in self._buffer[-200:]:
+                try:
+                    q.put_nowait(line)
+                except Exception:
+                    pass
+            self._clients.append(q)
+        return q
+
+    def unsubscribe(self, q):
+        with self._lock:
+            try:
+                self._clients.remove(q)
+            except ValueError:
+                pass
+
+
+_adore_log_broadcaster = _LogBroadcaster()
+
+
+class _BroadcastLogHandler(logging.Handler):
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            stream = 'stderr' if record.levelno >= logging.WARNING else 'stdout'
+            _adore_log_broadcaster.write(msg, stream)
+        except Exception:
+            pass
+
+
+def _install_adore_log_handler():
+    handler = _BroadcastLogHandler()
+    handler.setFormatter(logging.Formatter('%(asctime)s %(name)s %(levelname)s %(message)s',
+                                           datefmt='%H:%M:%S'))
+    root = logging.getLogger()
+    if not any(isinstance(h, _BroadcastLogHandler) for h in root.handlers):
+        root.addHandler(handler)
+
+
+_install_adore_log_handler()
 
 
 model_check_blueprint = None
@@ -34,17 +106,19 @@ try:
     from adore_model_checker.model_checker_api import get_model_check_blueprint, stop_model_check_worker as _stop_model_check_worker
     stop_model_check_worker = _stop_model_check_worker
     print("✓ ADORe Model Checker library found")
-except ImportError as e:
-    print(f"⚠ Warning: ADORe Model Checker library not found: {e}")
+except (ImportError, RuntimeError) as e:
+    print(f"⚠ Warning: ADORe Model Checker library not available: {e}")
     print("⚠ Model checking functionality will be disabled")
-    print("⚠ To enable model checking, please install the adore_model_checker library")
+    print("⚠ Ensure ROS is sourced and adore_model_checker is installed to enable model checking")
 
 try:
     from ros2tools.ros2api import *
+    from ros2tools import ROS2Tools
     print("✓ ros2tools library found")
 except ImportError as e:
     print(f"⚠ Warning: ros2tools library not found: {e}")
     print("⚠ ros2tools will be disabled")
+    ROS2Tools = None
 
 try:
     import sys
@@ -56,14 +130,32 @@ except ImportError as e:
     print("⚠ ROS topic functionality will be limited")
     ROSMarshaller = None
 
-app = Flask(__name__)
+_HERE = os.path.dirname(os.path.abspath(__file__))
+app = Flask(__name__,
+            template_folder=os.path.join(_HERE, 'templates'),
+            static_folder=os.path.join(_HERE, 'static'))
 CORS(app)
+
+# Register hardware monitor blueprint
+# adore_api.py lives at tools/adore_api/adore_api.py
+# hardware_monitor lives at ros2_workspace/src/adore_interfaces/hardware_monitor/
+_HW_MONITOR_PATH = os.path.normpath(
+    os.path.join(_HERE, '..', '..', 'ros2_workspace', 'src', 'adore_interfaces', 'hardware_monitor')
+)
+if _HW_MONITOR_PATH not in sys.path:
+    sys.path.insert(0, _HW_MONITOR_PATH)
+try:
+    from hardware_monitor.hardware_monitor_api import get_hardware_monitor_blueprint as _get_hw_bp
+    app.register_blueprint(_get_hw_bp())
+    print(f"✓ Hardware monitor blueprint registered (path: {_HW_MONITOR_PATH})")
+except Exception as _hw_err:
+    print(f"✗ Hardware monitor blueprint not available: {_hw_err}")
 
 LOG_DIRECTORY = None
 
 stored_positions = {
     'start': None,
-    'goal': None
+    'goals': []
 }
 
 
@@ -341,6 +433,11 @@ class TopicManager:
                         'data': json.loads(json_data) if isinstance(json_data, str) else json_data
                     }
                     messages_queue.append(message_data)
+                    for listener in self.subscribers.get(topic, {}).get('listeners', []):
+                        try:
+                            listener(json_data, topic_name, datatype)
+                        except Exception:
+                            pass
                 except Exception as e:
                     print(f"Error processing message for topic {topic}: {e}")
 
@@ -411,6 +508,8 @@ class ScenarioManager:
         self.output_lock = threading.Lock()
         self.scenario_start_time = None
         self.loop_active = False
+        self.loop_restarting = False
+        self.current_scenario_is_file = True
         self.model_check_enabled = True
         self.model_check_config = "config/default.yaml"
         self.current_model_check_run_id = None
@@ -460,7 +559,7 @@ class ScenarioManager:
             return {"success": False, "message": f"Error saving scenario: {str(e)}"}
 
     def start_model_check_then_scenario(self, scenario_input, is_file=True, model_check_enabled=True, model_check_config="config/default.yaml"):
-        """Start model checking first, then scenario after 5 second delay"""
+        """Start scenario first, wait for ROS nodes to publish, then start model checker"""
         if self.current_process and self.current_process.poll() is None:
             return {"success": False, "message": "Scenario already running"}
 
@@ -469,11 +568,21 @@ class ScenarioManager:
                 self.waiting_for_model_check = False
                 self.current_model_check_run_id = None
 
-            # Step 1: Start model checking if enabled
+            # Step 1: Start the scenario
+            print("Starting scenario...")
+            scenario_result = self.start_scenario(scenario_input, is_file)
+            if not scenario_result["success"]:
+                return scenario_result
+
             if model_check_enabled and model_check_blueprint is not None:
-                print("Starting model checking first...")
-                model_check_result = self._start_model_check(
-                    model_check_config)
+                # Wait for ROS nodes to come up and begin publishing before
+                # the model checker opens its monitoring window
+                print("Waiting 5 seconds for ROS nodes to publish...")
+                time.sleep(5)
+
+                # Step 2: Start model checking
+                print("Starting model checking...")
+                model_check_result = self._start_model_check(model_check_config)
                 print(f"Model check start result: {model_check_result}")
 
                 if model_check_result["success"]:
@@ -482,19 +591,16 @@ class ScenarioManager:
                         with self.model_check_lock:
                             self.current_model_check_run_id = run_id
                             self.waiting_for_model_check = True
-                        print(
-                            f"Model checking started with run ID: {self.current_model_check_run_id}")
+                        print(f"Model checking started with run ID: {self.current_model_check_run_id}")
                     else:
-                        print(
-                            "Error: Model check start succeeded but no run ID returned")
+                        print("Error: Model check start succeeded but no run ID returned")
                         return {
                             "success": False,
                             "message": "Model check start succeeded but no run ID returned",
                             "debug_info": model_check_result
                         }
                 else:
-                    error_msg = model_check_result.get(
-                        'message', 'Unknown error')
+                    error_msg = model_check_result.get('message', 'Unknown error')
                     print(f"Failed to start model checking: {error_msg}")
                     return {
                         "success": False,
@@ -502,19 +608,13 @@ class ScenarioManager:
                         "debug_info": model_check_result
                     }
 
-                # Wait 5 seconds before starting scenario
-                print("Waiting 5 seconds before starting scenario...")
-                time.sleep(5)
+                scenario_result['model_check_result'] = model_check_result
             else:
                 if not model_check_enabled:
                     print("Model checking disabled")
                 if model_check_blueprint is None:
                     print("Model check blueprint not available")
 
-            # Step 2: Start the scenario
-            print("Starting scenario...")
-            scenario_result = self.start_scenario(scenario_input, is_file)
-            scenario_result['model_check_result'] = model_check_result
             return scenario_result
 
         except Exception as e:
@@ -625,23 +725,27 @@ class ScenarioManager:
                 cmd = ["ros2", "launch", full_path]
                 cwd = None
                 self.current_scenario = scenario_input
+                self.current_scenario_is_file = True
 
                 print(
                     f"[ScenarioManager] Starting scenario via ros2 launch: "
                     f"{full_path} (base_directory='{self.base_directory}')"
                 )
             else:
-                # Custom launch content passed directly
-                temp_file = os.path.join(
-                    self.base_directory, "temp_custom_scenario.launch.py"
-                )
+                # Always write the temp file into simulation_scenarios/ so
+                # that sys.path.append(os.path.dirname(__file__)) inside the
+                # launch file resolves position.py, simulated_vehicle.py etc.
+                scenario_dir = os.path.join(self.base_directory, "simulation_scenarios")
+                os.makedirs(scenario_dir, exist_ok=True)
+                temp_file = os.path.join(scenario_dir, "temp_custom_scenario.launch.py")
                 full_path = os.path.abspath(temp_file)
 
                 with open(full_path, "w") as f:
                     f.write(scenario_input)
 
                 self.current_scenario_content = scenario_input
-                self.current_scenario = "temp_custom_scenario.launch.py"
+                self.current_scenario = os.path.relpath(full_path, self.base_directory)
+                self.current_scenario_is_file = False
 
                 cmd = ["ros2", "launch", full_path]
                 cwd = None
@@ -650,6 +754,7 @@ class ScenarioManager:
                     f"[ScenarioManager] Starting custom scenario from temp file: {full_path}"
                 )
 
+            scenario_env = _source_workspace_env()
             self.current_process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
@@ -657,7 +762,17 @@ class ScenarioManager:
                 universal_newlines=True,
                 bufsize=1,
                 cwd=cwd,
+                env=scenario_env,
             )
+
+            time.sleep(0.5)
+            if self.current_process.poll() is not None:
+                self.status = "failed"
+                output = self.current_process.stdout.read()
+                return {
+                    "success": False,
+                    "message": f"Scenario process exited immediately (rc={self.current_process.returncode}): {output}",
+                }
 
             self.status = "running"
             self.scenario_start_time = time.time()
@@ -775,6 +890,9 @@ class ScenarioManager:
 
             self.status = "idle"
             self.current_process = None
+            self.loop_mode = False
+            self.loop_active = False
+            self.loop_restarting = False
             return {"success": True, "message": f"Halted {len(ros2_pids_to_kill)} ROS2 processes"}
 
         except Exception as e:
@@ -867,13 +985,14 @@ class ScenarioManager:
             "scenario_content": self.current_scenario_content,
             "loop_mode": self.loop_mode,
             "loop_delay": self.loop_delay,
+            "loop_restarting": self.loop_restarting,
             "default_runtime": self.default_runtime,
             "runtime": runtime,
             "pid": self.current_process.pid if self.current_process else None,
             "model_check_enabled": self.model_check_enabled,
             "model_check_config": self.model_check_config,
             "waiting_for_model_check": self.waiting_for_model_check,
-            "current_model_check_run_id": self.current_model_check_run_id  # Add this line
+            "current_model_check_run_id": self.current_model_check_run_id
         }
 
     def set_loop_mode(self, enabled, delay=0, runtime=60, model_check_enabled=True, model_check_config="config/default.yaml"):
@@ -904,96 +1023,353 @@ class ScenarioManager:
                 with self.output_lock:
                     self.output_buffer.append(formatted_line)
 
+    def _halt_process_only(self):
+        """Kill current process and ROS nodes without clearing loop state."""
+        try:
+            result = subprocess.run(["ps", "aux"], capture_output=True, text=True, check=False)
+            pids = []
+            for line in result.stdout.strip().split('\n')[1:]:
+                parts = line.split()
+                if len(parts) < 11:
+                    continue
+                cmd = ' '.join(parts[10:])
+                if not any(kw in cmd.lower() for kw in ['ros2 launch', 'ros2 run', 'ros2 bag', 'launch.py']):
+                    continue
+                if any(ex in cmd.lower() for ex in ['docker', 'containerd', 'adore-cli-main', '/bin/bash', '/bin/zsh']):
+                    continue
+                pids.append(parts[1])
+            for pid in pids:
+                subprocess.run(["kill", "-TERM", pid], check=False, timeout=5)
+            time.sleep(2)
+            for pid in pids:
+                subprocess.run(["kill", "-KILL", pid], check=False, timeout=5)
+        except Exception:
+            pass
+
+        if self.current_process:
+            try:
+                self.current_process.terminate()
+                self.current_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.current_process.kill()
+                self.current_process.wait()
+            except Exception:
+                pass
+
+        self.status = "idle"
+        self.current_process = None
+
+    def _loop_restart(self, reason):
+        """Halt, wait for model check, delay, then restart. Runs inside _loop_monitor."""
+        self.loop_restarting = True
+        try:
+            print(f"Loop: {reason}, halting...")
+            self._halt_process_only()
+
+            if self.waiting_for_model_check:
+                print("Loop: Waiting for model check to complete...")
+                max_wait = 300
+                wait_start = time.time()
+                while self.waiting_for_model_check and (time.time() - wait_start) < max_wait:
+                    if self.is_model_check_complete():
+                        break
+                    time.sleep(2)
+                with self.model_check_lock:
+                    self.waiting_for_model_check = False
+
+            time.sleep(2)
+
+            if not self.loop_mode or not self.loop_active:
+                return
+
+            if self.loop_delay > 0:
+                print(f"Loop: Waiting {self.loop_delay}s before restart...")
+                time.sleep(self.loop_delay)
+
+            if not self.loop_mode or not self.loop_active:
+                return
+
+            scenario = self.current_scenario
+            scenario_content = self.current_scenario_content
+            is_file = self.current_scenario_is_file
+
+            print(f"Loop: Restarting scenario: {scenario}")
+            self.start_model_check_then_scenario(
+                scenario if is_file else scenario_content,
+                is_file=is_file,
+                model_check_enabled=self.model_check_enabled,
+                model_check_config=self.model_check_config
+            )
+        finally:
+            self.loop_restarting = False
+
     def _loop_monitor(self):
         while self.loop_active:
-            if self.loop_mode and self.current_scenario:
-                # Check if scenario is running
+            if self.loop_mode and self.current_scenario and not self.loop_restarting:
                 if self.current_process and self.current_process.poll() is None:
-                    # Check if runtime has been exceeded
                     if self.scenario_start_time and (time.time() - self.scenario_start_time) >= self.default_runtime:
-                        print(
-                            f"Loop: Runtime ({self.default_runtime}s) reached, halting...")
-                        self.halt_all()
-
-                        # Wait for model checking to complete if it's running
-                        if self.waiting_for_model_check:
-                            print("Loop: Waiting for model checking to complete...")
-                            max_wait_time = 300  # 5 minutes max wait
-                            wait_start = time.time()
-
-                            while self.waiting_for_model_check and (time.time() - wait_start) < max_wait_time:
-                                if self.is_model_check_complete():
-                                    print("Loop: Model checking completed")
-                                    break
-                                time.sleep(2)
-
-                            if self.waiting_for_model_check:
-                                print(
-                                    "Loop: Model checking timeout, proceeding anyway")
-                                with self.model_check_lock:
-                                    self.waiting_for_model_check = False
-
-                        time.sleep(2)
-
-                        if self.loop_mode and self.current_scenario:
-                            print(
-                                f"Loop: Waiting {self.loop_delay}s before restart...")
-                            time.sleep(self.loop_delay)
-                            print(
-                                f"Loop: Starting scenario: {self.current_scenario}")
-                            self.start_model_check_then_scenario(
-                                self.current_scenario,
-                                is_file=True,
-                                model_check_enabled=self.model_check_enabled,
-                                model_check_config=self.model_check_config
-                            )
-
+                        self._loop_restart(f"runtime ({self.default_runtime}s) reached")
                 elif self.current_process and self.current_process.poll() is not None:
-                    print(
-                        f"Loop: Process ended, waiting for model check and restarting after {self.loop_delay}s...")
-
-                    # Wait for model checking to complete
-                    if self.waiting_for_model_check:
-                        print(
-                            "Loop: Waiting for model checking to complete after scenario end...")
-                        max_wait_time = 300
-                        wait_start = time.time()
-
-                        while self.waiting_for_model_check and (time.time() - wait_start) < max_wait_time:
-                            if self.is_model_check_complete():
-                                print(
-                                    "Loop: Model checking completed after scenario end")
-                                break
-                            time.sleep(2)
-
-                        if self.waiting_for_model_check:
-                            print("Loop: Model checking timeout after scenario end")
-                            with self.model_check_lock:
-                                self.waiting_for_model_check = False
-
-                    self.halt_all()
-                    time.sleep(2)
-
-                    if self.loop_mode and self.current_scenario:
-                        time.sleep(self.loop_delay)
-                        self.start_model_check_then_scenario(
-                            self.current_scenario,
-                            is_file=True,
-                            model_check_enabled=self.model_check_enabled,
-                            model_check_config=self.model_check_config
-                        )
-
+                    self._loop_restart("process ended")
                 elif not self.current_process:
-                    print(
-                        f"Loop: No process running, starting scenario: {self.current_scenario}")
+                    scenario = self.current_scenario
+                    scenario_content = self.current_scenario_content
+                    is_file = self.current_scenario_is_file
+                    print(f"Loop: No process running, starting scenario: {scenario}")
                     self.start_model_check_then_scenario(
-                        self.current_scenario,
-                        is_file=True,
+                        scenario if is_file else scenario_content,
+                        is_file=is_file,
                         model_check_enabled=self.model_check_enabled,
                         model_check_config=self.model_check_config
                     )
 
             time.sleep(1)
+
+
+class WorkspaceMonitor:
+    """
+    Watches ros2_workspace/build for changes and re-sources
+    ros2_workspace/install/setup.bash whenever the build directory is mutated.
+
+    The environment snapshot produced by sourcing setup.bash is injected into
+    os.environ so that all subsequent subprocess calls (ros2 launch, ros2 bag,
+    etc.) inherit the updated ROS environment without restarting the API.
+    """
+
+    POLL_INTERVAL = 2.0
+
+    def __init__(self, workspace_root: str):
+        self.workspace_root = workspace_root
+        self.build_dir = os.path.join(workspace_root, "ros2_workspace", "build")
+        self.install_dir = os.path.join(workspace_root, "ros2_workspace", "install")
+        self.setup_script = os.path.join(self.install_dir, "setup.bash")
+
+        self._lock = threading.Lock()
+        self._last_snapshot: str | None = None
+        self._sourced_at: float | None = None
+        self._thread: threading.Thread | None = None
+        self._running = False
+
+    # ------------------------------------------------------------------
+    # Public interface
+    # ------------------------------------------------------------------
+
+    def start(self):
+        self._running = True
+        self._thread = threading.Thread(target=self._poll_loop, daemon=True, name="workspace-monitor")
+        self._thread.start()
+        print(f"✓ Workspace monitor watching: {self.build_dir}")
+
+    def stop(self):
+        self._running = False
+
+    def check_build_ready(self) -> dict | None:
+        """
+        Returns an error dict (suitable for jsonify) when the build directory
+        is absent or empty, or None when everything looks fine.
+        """
+        if not os.path.isdir(self.build_dir):
+            return {
+                "success": False,
+                "error": "workspace_not_built",
+                "message": (
+                    f"ROS 2 workspace build directory not found: {self.build_dir}. "
+                    "Run `colcon build` inside ros2_workspace to fix this."
+                ),
+            }
+
+        entries = [e for e in os.scandir(self.build_dir) if not e.name.startswith(".")]
+        if not entries:
+            return {
+                "success": False,
+                "error": "workspace_not_built",
+                "message": (
+                    f"ROS 2 workspace build directory is empty: {self.build_dir}. "
+                    "Run `colcon build` inside ros2_workspace to fix this."
+                ),
+            }
+
+        return None
+
+    def get_status(self) -> dict:
+        with self._lock:
+            return {
+                "build_dir": self.build_dir,
+                "build_dir_exists": os.path.isdir(self.build_dir),
+                "install_dir_exists": os.path.isdir(self.install_dir),
+                "setup_script_exists": os.path.isfile(self.setup_script),
+                "last_sourced_at": self._sourced_at,
+                "monitoring": self._running,
+            }
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _snapshot(self) -> str:
+        """
+        Produce a fingerprint of the build directory based on the mtimes and
+        sizes of all regular files.  Lightweight enough to run every few seconds.
+        """
+        if not os.path.isdir(self.build_dir):
+            return ""
+
+        hasher = hashlib.md5()
+        for root, dirs, files in os.walk(self.build_dir):
+            dirs.sort()
+            for fname in sorted(files):
+                path = os.path.join(root, fname)
+                try:
+                    st = os.stat(path)
+                    hasher.update(f"{path}:{st.st_mtime}:{st.st_size}".encode())
+                except OSError:
+                    pass
+        return hasher.hexdigest()
+
+    def _source_setup(self):
+        if not os.path.isfile(self.setup_script):
+            print(f"⚠  Workspace setup script not found: {self.setup_script}")
+            return
+
+        try:
+            result = subprocess.run(
+                ["bash", "-c", f"source '{self.setup_script}' && env -0"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            if result.returncode != 0:
+                print(f"⚠  Failed to source workspace setup: {result.stderr.strip()}")
+                return
+
+            new_env = {}
+            for entry in result.stdout.split("\0"):
+                if "=" in entry:
+                    k, _, v = entry.partition("=")
+                    new_env[k] = v
+
+            os.environ.update(new_env)
+
+            with self._lock:
+                self._sourced_at = time.time()
+
+            print(f"✓ Workspace re-sourced: {self.setup_script}")
+        except subprocess.TimeoutExpired:
+            print("⚠  Timeout sourcing workspace setup script")
+        except Exception as e:
+            print(f"⚠  Error sourcing workspace setup script: {e}")
+
+    def _poll_loop(self):
+        # Source immediately on startup if the workspace already exists
+        initial = self._snapshot()
+        if initial:
+            self._source_setup()
+
+        with self._lock:
+            self._last_snapshot = initial
+
+        while self._running:
+            time.sleep(self.POLL_INTERVAL)
+            try:
+                current = self._snapshot()
+                with self._lock:
+                    changed = current != self._last_snapshot
+                    self._last_snapshot = current
+
+                if changed and current:
+                    print("Workspace build directory changed, re-sourcing install/setup.bash...")
+                    self._source_setup()
+            except Exception as e:
+                print(f"⚠  Workspace monitor error: {e}")
+
+
+workspace_monitor: WorkspaceMonitor | None = None
+
+
+def _source_workspace_env() -> dict:
+    """
+    Source ros2_workspace/install/setup.bash (falling back to setup.sh) and
+    return a copy of the environment with the workspace overlaid.  Called
+    immediately before every scenario Popen so the child always inherits a
+    current workspace environment regardless of when the monitor last ran.
+    """
+    workspace_root = os.environ.get(
+        'WORKSPACE_ROOT',
+        os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    )
+    install_dir = os.path.join(workspace_root, 'ros2_workspace', 'install')
+
+    for candidate in ('setup.bash', 'setup.sh'):
+        script = os.path.join(install_dir, candidate)
+        if os.path.isfile(script):
+            break
+    else:
+        print('⚠  Workspace setup script not found — launching with current environment')
+        return dict(os.environ)
+
+    try:
+        result = subprocess.run(
+            ['bash', '-c', f"source '{script}' && env -0"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if result.returncode != 0:
+            print(f'⚠  Failed to source workspace setup: {result.stderr.strip()}')
+            return dict(os.environ)
+
+        env = dict(os.environ)
+        for entry in result.stdout.split('\0'):
+            if '=' in entry:
+                k, _, v = entry.partition('=')
+                env[k] = v
+        print(f'✓ Workspace sourced for scenario: {script}')
+        return env
+    except subprocess.TimeoutExpired:
+        print('⚠  Timeout sourcing workspace setup script')
+        return dict(os.environ)
+    except Exception as e:
+        print(f'⚠  Error sourcing workspace setup script: {e}')
+        return dict(os.environ)
+
+
+def _workspace_guard():
+    """
+    Return a 503-ready error dict if the workspace build dir is absent or
+    empty, or None when ready.  Works even before WorkspaceMonitor is started
+    by falling back to a direct filesystem check using WORKSPACE_ROOT.
+    """
+    if workspace_monitor is not None:
+        return workspace_monitor.check_build_ready()
+
+    workspace_root = os.environ.get(
+        'WORKSPACE_ROOT',
+        os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    )
+    build_dir = os.path.join(workspace_root, 'ros2_workspace', 'build')
+
+    if not os.path.isdir(build_dir):
+        return {
+            "success": False,
+            "error": "workspace_not_built",
+            "message": (
+                f"ROS 2 workspace build directory not found: {build_dir}. "
+                "Run `colcon build` inside ros2_workspace to fix this."
+            ),
+        }
+
+    entries = [e for e in os.scandir(build_dir) if not e.name.startswith('.')]
+    if not entries:
+        return {
+            "success": False,
+            "error": "workspace_not_built",
+            "message": (
+                f"ROS 2 workspace build directory is empty: {build_dir}. "
+                "Run `colcon build` inside ros2_workspace to fix this."
+            ),
+        }
+
+    return None
 
 
 scenario_manager = ScenarioManager()
@@ -1004,10 +1380,6 @@ bag_manager = None
 def index():
     return render_template('index.html', host=request.host)
 
-
-@app.route('/static/<path:filename>')
-def serve_static(filename):
-    return send_from_directory('static', filename)
 
 
 @app.route('/api_reference.md')
@@ -1023,19 +1395,47 @@ def goal_picker():
     return render_template('goal_picker.html')
 
 
+@app.route('/api/scenario/template')
+def get_scenario_template():
+    result = scenario_manager.get_scenario_content('simulation_scenarios/template.launch.py')
+    if not result['success']:
+        result['path_checked'] = os.path.join(scenario_manager.base_directory, 'simulation_scenarios', 'template.launch.py')
+        return jsonify(result), 404
+    return jsonify(result)
+
+
 @app.route('/api/status')
 def api_status():
+    ws_status = workspace_monitor.get_status() if workspace_monitor else None
+    build_error = _workspace_guard()
     return jsonify({
         "adore_api": "running",
         "model_checker_available": model_check_blueprint is not None,
         "ros_marshaller_available": ROSMarshaller is not None,
-        "bag_recording_available": bag_manager is not None
+        "bag_recording_available": bag_manager is not None,
+        "workspace": ws_status,
+        "workspace_ready": build_error is None,
     })
+
+
+@app.route('/api/workspace/status')
+def workspace_status():
+    if workspace_monitor is None:
+        return jsonify({"monitoring": False, "message": "Workspace monitor not initialised"}), 503
+    status = workspace_monitor.get_status()
+    build_error = workspace_monitor.check_build_ready()
+    status["ready"] = build_error is None
+    if build_error:
+        status["error"] = build_error["message"]
+    return jsonify(status)
 
 
 @app.route('/api/scenario/start', methods=['POST'])
 def start_scenario_route():
-    # Be tolerant if client sends no/invalid JSON
+    err = _workspace_guard()
+    if err:
+        return jsonify(err), 503
+
     data = request.get_json(silent=True) or {}
 
     scenario_input = data.get(
@@ -1049,9 +1449,6 @@ def start_scenario_route():
 
     if not scenario_input:
         return jsonify({"success": False, "message": "No scenario provided"}), 400
-
-    # Currently you’re explicitly disabling model checking here
-    model_check_enabled = False
 
     if model_check_enabled:
         result = scenario_manager.start_model_check_then_scenario(
@@ -1074,6 +1471,9 @@ def stop_scenario():
 
 @app.route('/api/scenario/restart', methods=['POST'])
 def restart_scenario():
+    err = _workspace_guard()
+    if err:
+        return jsonify(err), 503
     result = scenario_manager.restart_scenario()
     return jsonify(result)
 
@@ -1199,8 +1599,8 @@ def set_positions():
 
     if 'start' in data:
         stored_positions['start'] = data['start']
-    if 'goal' in data:
-        stored_positions['goal'] = data['goal']
+    if 'goals' in data:
+        stored_positions['goals'] = data['goals']
 
     return jsonify({"success": True, "message": "Positions stored successfully"})
 
@@ -1213,7 +1613,7 @@ def get_positions():
 @app.route('/api/positions/clear', methods=['POST'])
 def clear_positions():
     global stored_positions
-    stored_positions = {'start': None, 'goal': None}
+    stored_positions = {'start': None, 'goals': []}
     return jsonify({"success": True, "message": "Positions cleared"})
 
 
@@ -1302,24 +1702,51 @@ def publish_to_topic():
         return jsonify({"success": False, "message": f"Failed to publish message: {str(e)}"}), 500
 
 
+@app.route('/api/ros2/nodes/running')
+def list_running_nodes():
+    try:
+        nodes = ROS2Tools.get_nodes() if ROS2Tools else []
+        return jsonify({"success": True, "running_nodes": nodes, "count": len(nodes)})
+    except Exception as e:
+        return jsonify({"success": False, "running_nodes": [], "count": 0, "message": str(e)}), 500
+
+
 @app.route('/api/topic/list')
 def list_active_topics():
     try:
         stats = topic_manager.get_stats()
-
+        topic_datatypes = {}
         system_topics = []
-        try:
-            result = subprocess.run(
-                ["ros2", "topic", "list"], capture_output=True, text=True, check=True)
-            system_topics = [t.strip()
-                             for t in result.stdout.split('\n') if t.strip()]
-        except:
-            pass
-
+        if ROS2Tools:
+            try:
+                topic_datatypes = ROS2Tools.get_topics()
+                system_topics = sorted(topic_datatypes.keys())
+            except Exception as e:
+                logging.warning(f"ROS2Tools.get_topics() failed: {e}")
+        if not system_topics:
+            # Fallback: raw subprocess when ros2tools unavailable or returned nothing
+            try:
+                r = subprocess.run(["ros2", "topic", "list", "-t"],
+                                   capture_output=True, text=True, timeout=8)
+                for line in r.stdout.splitlines():
+                    line = line.strip()
+                    if not line:
+                        continue
+                    if " [" in line:
+                        topic, rest = line.split(" [", 1)
+                        topic = topic.strip()
+                        system_topics.append(topic)
+                        topic_datatypes[topic] = rest.rstrip("]").strip()
+                    else:
+                        system_topics.append(line)
+                system_topics.sort()
+            except Exception:
+                pass
         return jsonify({
             "success": True,
             "managed_topics": stats,
-            "system_topics": system_topics
+            "system_topics": system_topics,
+            "topic_datatypes": topic_datatypes
         })
     except Exception as e:
         return jsonify({"success": False, "message": f"Failed to list topics: {str(e)}"}), 500
@@ -1327,14 +1754,15 @@ def list_active_topics():
 
 @app.route('/api/topic/info/<path:topic_name>')
 def get_topic_info(topic_name):
-    if not ROSMarshaller:
-        return jsonify({"success": False, "message": "ROS functionality not available"}), 500
-
     try:
         if not topic_name.startswith('/'):
             topic_name = '/' + topic_name
 
-        datatype = ROSMarshaller.get_datatype(topic_name)
+        datatype = None
+        if ROS2Tools:
+            datatype = ROS2Tools.get_topic_datatype(topic_name)
+        elif ROSMarshaller:
+            datatype = ROSMarshaller.get_datatype(topic_name)
 
         managed = False
         with topic_manager.lock:
@@ -1346,7 +1774,6 @@ def get_topic_info(topic_name):
             "datatype": datatype,
             "managed": managed
         })
-
     except Exception as e:
         return jsonify({"success": False, "message": f"Failed to get topic info: {str(e)}"}), 500
 
@@ -1365,7 +1792,7 @@ def start_scenario_model_checked():
 
     Request JSON Parameters:
         scenario (str, optional): Name of the launch file to run. 
-            Default: "adore_simulation_scenarios/simulation_test.launch.py"
+            Default: "adore_scenarios/simulation_scenarios/simulation_test.launch.py"
         duration (int|float, optional): How long to run the scenario in seconds.
             Must be a positive number. Default: 5
 
@@ -1412,7 +1839,7 @@ def start_scenario_model_checked():
     """
     data = request.json or {}
     scenario = data.get(
-        'scenario', 'adore_simulation_scenarios/simulation_test.launch.py')
+        'scenario', 'simulation_scenarios/simulation_test.launch.py')
     duration = data.get('duration', 5)
 
     if not isinstance(duration, (int, float)) or duration <= 0:
@@ -1649,6 +2076,1015 @@ def start_scenario_model_checked():
         })
 
 
+@app.route('/model-checker/dashboard')
+def model_check_dashboard():
+    here = os.path.dirname(os.path.abspath(__file__))
+    candidates = [
+        # Dev layout: tools/adore_api/../../vendor/adore_model_checker/
+        os.path.normpath(os.path.join(here, '..', '..', 'vendor', 'adore_model_checker', 'adore_model_checker_dashboard.html')),
+        # Dev layout: inside the package subdir
+        os.path.normpath(os.path.join(here, '..', '..', 'vendor', 'adore_model_checker', 'adore_model_checker', 'adore_model_checker_dashboard.html')),
+        os.path.join(here, 'adore_model_checker_dashboard.html'),
+    ]
+    html = None
+    for path in candidates:
+        if os.path.exists(path):
+            with open(path, 'r') as fh:
+                html = fh.read()
+            break
+
+    if html is None:
+        try:
+            from importlib.resources import files
+            resource = files('adore_model_checker').joinpath('adore_model_checker_dashboard.html')
+            if resource.is_file():
+                html = resource.read_text(encoding='utf-8')
+        except Exception:
+            pass
+
+    if html is None:
+        return "Model Checker dashboard not found", 404
+
+    inject = (
+        "<script>"
+        "window.ADORE_API_BASE = window.location.protocol + '//' + window.location.host + '/api/model_checker';"
+        "</script>"
+    )
+    html = html.replace('</head>', inject + '\n</head>', 1)
+    return Response(html, mimetype='text/html')
+
+
+_mc_continuous_disabled = {'props': set()}
+
+
+@app.route('/api/model_checker/continuous/disabled', methods=['POST'])
+def mc_set_disabled():
+    data = request.get_json(silent=True) or {}
+    _mc_continuous_disabled['props'] = set(data.get('disabled_propositions', []))
+    return jsonify({'ok': True})
+
+
+@app.route('/api/model_checker/continuous/violations/filtered')
+def mc_filtered_violations():
+    from flask import current_app
+    fn = current_app.view_functions.get('model_check_blueprint.continuous_violations')
+    if fn is None:
+        return jsonify({'error': 'Continuous monitoring not available'}), 404
+    try:
+        resp = fn()
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    disabled = _mc_continuous_disabled['props']
+    if not disabled:
+        return resp
+
+    import json as _json
+    try:
+        body = _json.loads(resp.get_data(as_text=True))
+        body['violations'] = [v for v in body.get('violations', [])
+                              if v.get('proposition') not in disabled]
+        body['count'] = len(body['violations'])
+        return jsonify(body)
+    except Exception:
+        return resp
+
+
+@app.route('/api/model_checker/continuous/<path:subpath>', methods=['GET', 'POST', 'OPTIONS'])
+def proxy_continuous(subpath):
+    from flask import current_app
+    parts = subpath.split('/')
+    base = parts[0]
+    endpoint = f'model_check_blueprint.continuous_{base}'
+    fn = current_app.view_functions.get(endpoint)
+    if fn is None:
+        return jsonify({'error': f'Unknown endpoint: /continuous/{subpath}'}), 404
+    try:
+        return fn(*parts[1:]) if len(parts) > 1 else fn()
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/model_checker/result/<int:run_id>')
+def proxy_result(run_id):
+    from flask import current_app
+    fn = current_app.view_functions.get('model_check_blueprint.get_result')
+    if fn is None:
+        return jsonify({'error': 'Result endpoint not available'}), 404
+    try:
+        return fn(run_id)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+def _mc_config_dir():
+    candidates = [
+        os.environ.get('ADORE_CONFIG_DIR'),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                     '..', '..', 'vendor', 'adore_model_checker', 'config'),
+    ]
+    for path in candidates:
+        if path:
+            os.makedirs(path, exist_ok=True)
+            _mc_seed_default(path)
+            return path
+    raise RuntimeError("Cannot determine model checker config directory")
+
+
+def _mc_seed_default(config_dir):
+    """Copy the canonical package default.yaml into config_dir if not already present."""
+    dest = os.path.join(config_dir, 'default.yaml')
+    if os.path.exists(dest):
+        return
+
+    content = _mc_load_package_default_yaml()
+    if content:
+        with open(dest, 'w') as f:
+            f.write(content)
+        return
+
+    raise RuntimeError(
+        "Cannot locate adore_model_checker/config/default.yaml — "
+        "ensure the package is installed correctly."
+    )
+
+
+def _mc_load_package_default_yaml():
+    """Return the canonical default.yaml content from the package, or None on failure."""
+    try:
+        from importlib.resources import files
+        resource = files('adore_model_checker').joinpath('config/default.yaml')
+        if resource.is_file():
+            return resource.read_text(encoding='utf-8')
+    except Exception:
+        pass
+
+    here = os.path.dirname(os.path.abspath(__file__))
+    for candidate in [
+        os.path.normpath(os.path.join(here, '..', '..', 'vendor', 'adore_model_checker', 'adore_model_checker', 'config', 'default.yaml')),
+        os.path.normpath(os.path.join(here, '..', '..', 'vendor', 'adore_model_checker', 'config', 'default.yaml')),
+    ]:
+        if os.path.exists(candidate):
+            with open(candidate, 'r') as f:
+                return f.read()
+
+    return None
+
+
+# ── ROS Workspace Build Management ──────────────────────────────────────────
+
+_workspace_build_procs: dict = {}
+_workspace_build_results: dict = {}  # target -> exit code, populated after process exits
+_workspace_build_broadcaster = _LogBroadcaster(maxlen=5000)
+
+
+def _get_ros2_workspace_dir():
+    workspace_root = os.environ.get(
+        'WORKSPACE_ROOT',
+        os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    )
+    return os.path.join(workspace_root, 'ros2_workspace')
+
+
+@app.route('/api/ros_workspace/status')
+def ros_workspace_status():
+    ws_dir = _get_ros2_workspace_dir()
+    build_dir = os.path.join(ws_dir, 'build')
+    install_dir = os.path.join(ws_dir, 'install')
+    src_dir = os.path.join(ws_dir, 'src')
+    makefile_exists = os.path.isfile(os.path.join(ws_dir, 'Makefile'))
+    running = {k: (p.poll() is None) for k, p in _workspace_build_procs.items()}
+
+    # Quick package counts without full mtime scan
+    total_pkgs = 0
+    built_pkgs = 0
+    if os.path.isdir(src_dir):
+        for pkg_path in _find_packages(src_dir):
+            total_pkgs += 1
+            if os.path.isdir(os.path.join(build_dir, os.path.basename(pkg_path))):
+                built_pkgs += 1
+
+    return jsonify({
+        'workspace_dir': ws_dir,
+        'workspace_exists': os.path.isdir(ws_dir),
+        'makefile_exists': makefile_exists,
+        'build_dir_exists': os.path.isdir(build_dir),
+        'install_dir_exists': os.path.isdir(install_dir),
+        'running': running,
+        'exit_codes': dict(_workspace_build_results),
+        'total_packages': total_pkgs,
+        'built_packages': built_pkgs,
+    })
+
+
+# Extensions and directories to skip when scanning source mtimes
+_SRC_SKIP_DIRS = frozenset({'.git', '__pycache__', '.cache', 'node_modules', '.eggs', 'dist', 'build', 'install', 'log'})
+_SRC_SKIP_EXTS = frozenset({'.pyc', '.pyo'})
+
+# Track packages colcon has reported as unknown so we can exclude them from auto-rebuild
+_colcon_unknown_packages: set = set()
+
+
+def _max_mtime(root: str, skip_dirs: frozenset) -> float:
+    best = 0.0
+    try:
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames
+                           if d not in skip_dirs and not d.endswith('.egg-info')]
+            for fname in filenames:
+                if os.path.splitext(fname)[1] in _SRC_SKIP_EXTS:
+                    continue
+                try:
+                    mt = os.stat(os.path.join(dirpath, fname)).st_mtime
+                    if mt > best:
+                        best = mt
+                except OSError:
+                    pass
+    except OSError:
+        pass
+    return best
+
+
+def _find_packages(src_dir: str) -> list:
+    """Recursively find all directories containing package.xml under src_dir."""
+    found = []
+    try:
+        for dirpath, dirnames, filenames in os.walk(src_dir):
+            # Don't descend into hidden dirs or known non-source dirs
+            dirnames[:] = sorted(d for d in dirnames
+                                 if not d.startswith('.') and d not in ('build', 'install', 'log', '__pycache__'))
+            if 'package.xml' in filenames:
+                found.append(dirpath)
+                # Don't recurse into a package — packages don't nest inside packages
+                dirnames.clear()
+    except OSError:
+        pass
+    return found
+
+
+def _package_info(name: str, src_path: str, build_dir: str) -> dict:
+    pkg_build_dir = os.path.join(build_dir, name)
+    built = os.path.isdir(pkg_build_dir)
+    stale = False
+    if built:
+        src_mtime = _max_mtime(src_path, _SRC_SKIP_DIRS)
+        build_mtime = _max_mtime(pkg_build_dir, frozenset())
+        stale = src_mtime > build_mtime and src_mtime > 0
+    return {
+        'name': name,
+        'path': src_path,
+        'built': built,
+        'stale': stale,
+        'colcon_unknown': name in _colcon_unknown_packages,
+    }
+
+
+@app.route('/api/ros_workspace/packages')
+def ros_workspace_packages():
+    ws_dir = _get_ros2_workspace_dir()
+    src_dir = os.path.join(ws_dir, 'src')
+    build_dir = os.path.join(ws_dir, 'build')
+
+    packages = []
+    if os.path.isdir(src_dir):
+        for pkg_path in _find_packages(src_dir):
+            name = os.path.basename(pkg_path)
+            packages.append(_package_info(name, pkg_path, build_dir))
+        packages.sort(key=lambda p: p['name'])
+
+    built_count = sum(1 for p in packages if p['built'])
+    return jsonify({'packages': packages, 'total': len(packages), 'built_count': built_count})
+
+
+@app.route('/api/ros_workspace/build_package', methods=['POST'])
+def ros_workspace_build_package():
+    data = request.get_json(silent=True) or {}
+    package = data.get('package', '').strip()
+    if not package or '/' in package or package.startswith('.'):
+        return jsonify({'success': False, 'message': 'Invalid package name'}), 400
+    return jsonify(_run_workspace_make(f'__pkg__{package}'))
+
+
+def _run_workspace_make(target: str):
+    ws_dir = _get_ros2_workspace_dir()
+    if not os.path.isdir(ws_dir):
+        return {'success': False, 'message': f'Workspace directory not found: {ws_dir}'}
+    existing = _workspace_build_procs.get(target)
+    if existing and existing.poll() is None:
+        return {'success': False, 'message': f'{target} already running'}
+
+    # __pkg__<name> targets use colcon instead of make
+    if target.startswith('__pkg__'):
+        package = target[len('__pkg__'):]
+        cmd = ['colcon', 'build', '--packages-select', package]
+        label = f'colcon build --packages-select {package}'
+    else:
+        cmd = ['make', target]
+        label = f'make {target}'
+
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=ws_dir,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            bufsize=1,
+        )
+        _workspace_build_procs[target] = proc
+
+        def _stream():
+            _workspace_build_broadcaster.write(f'=== {label} started ===', 'stdout')
+            unknown_warned = False
+            for line in iter(proc.stdout.readline, ''):
+                if line:
+                    stripped = line.rstrip()
+                    _workspace_build_broadcaster.write(stripped, 'stdout')
+                    # Detect colcon "ignoring unknown package '<name>'" and record it
+                    if 'ignoring unknown package' in stripped and target.startswith('__pkg__'):
+                        pkg_name = target[len('__pkg__'):]
+                        _colcon_unknown_packages.add(pkg_name)
+                        unknown_warned = True
+            rc = proc.wait()
+            _workspace_build_results[target] = rc
+            _workspace_build_broadcaster.write(
+                f'=== {label} exited (rc={rc}) ===',
+                'stdout' if rc == 0 else 'stderr'
+            )
+
+        threading.Thread(target=_stream, daemon=True).start()
+        return {'success': True, 'message': f'{label} started'}
+    except Exception as e:
+        return {'success': False, 'message': str(e)}
+
+
+@app.route('/api/ros_workspace/clean', methods=['POST'])
+def ros_workspace_clean():
+    return jsonify(_run_workspace_make('clean'))
+
+
+@app.route('/api/ros_workspace/ccache/stats')
+def ccache_stats():
+    try:
+        r = subprocess.run(['ccache', '-s', '-v'], capture_output=True, text=True, timeout=10)
+        if r.returncode != 0:
+            r2 = subprocess.run(['ccache', '-s'], capture_output=True, text=True, timeout=10)
+            raw = r2.stdout.strip() or r2.stderr.strip()
+            return jsonify({'available': True, 'raw': raw, 'verbose': False})
+        return jsonify({'available': True, 'raw': r.stdout.strip(), 'verbose': True})
+    except FileNotFoundError:
+        return jsonify({'available': False, 'message': 'ccache not found'})
+    except Exception as e:
+        return jsonify({'available': False, 'message': str(e)}), 500
+
+
+@app.route('/api/ros_workspace/ccache/clear', methods=['POST'])
+def ccache_clear():
+    try:
+        r = subprocess.run(['ccache', '-C'], capture_output=True, text=True, timeout=30)
+        if r.returncode != 0:
+            return jsonify({'success': False, 'message': r.stderr.strip() or 'ccache -C failed'}), 500
+        return jsonify({'success': True, 'message': r.stdout.strip() or 'Cache cleared'})
+    except FileNotFoundError:
+        return jsonify({'success': False, 'message': 'ccache not found'}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/ros_workspace/build', methods=['POST'])
+def ros_workspace_build():
+    return jsonify(_run_workspace_make('build'))
+
+
+@app.route('/api/ros_workspace/log/stream')
+def ros_workspace_log_stream():
+    def generate():
+        q = _workspace_build_broadcaster.subscribe()
+        try:
+            yield 'retry: 3000\n\n'
+            while True:
+                try:
+                    msg = q.get(timeout=20)
+                    yield f'data: {msg}\n\n'
+                except queue.Empty:
+                    yield ': keepalive\n\n'
+        except GeneratorExit:
+            pass
+        finally:
+            _workspace_build_broadcaster.unsubscribe(q)
+
+    return Response(
+        generate(),
+        mimetype='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'},
+    )
+
+
+# ── ROS Topics extended API ──────────────────────────────────────────────────
+
+@app.route('/api/topic/hz', methods=['POST'])
+def topic_hz():
+    data = request.get_json(silent=True) or {}
+    topic = data.get('topic', '').strip()
+    if not topic:
+        return jsonify({'success': False, 'message': 'topic required'}), 400
+    if not ROS2Tools:
+        return jsonify({'success': False, 'message': 'ros2tools not available'}), 500
+    try:
+        output = ROS2Tools.topic_hz(topic)
+        return jsonify({'success': True, 'topic': topic, 'output': output})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/topic/echo', methods=['POST'])
+def topic_echo_once():
+    data = request.get_json(silent=True) or {}
+    topic = data.get('topic', '').strip()
+    if not topic:
+        return jsonify({'success': False, 'message': 'topic required'}), 400
+
+    if ROSMarshaller:
+        received = []
+        done = threading.Event()
+
+        def _cb(json_str, _topic, _dtype):
+            if not done.is_set():
+                received.append(json_str)
+                done.set()
+
+        try:
+            sub = ROSMarshaller.subscribe(topic, _cb)
+            done.wait(timeout=10)
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500
+
+        if received:
+            try:
+                msg = json.loads(received[0])
+                msg.pop('topic', None)
+                msg.pop('datatype', None)
+                return jsonify({'success': True, 'topic': topic, 'msg': msg})
+            except Exception:
+                pass
+
+        return jsonify({'success': False, 'message': 'Timeout waiting for message'}), 504
+
+    try:
+        result = subprocess.run(
+            ['ros2', 'topic', 'echo', '--once', topic],
+            capture_output=True, text=True, timeout=10
+        )
+        raw = result.stdout.strip() or result.stderr.strip()
+        return jsonify({'success': True, 'topic': topic, 'raw': raw})
+    except subprocess.TimeoutExpired:
+        return jsonify({'success': False, 'message': 'Timeout waiting for message'}), 504
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/topic/empty_message', methods=['POST'])
+def topic_empty_message():
+    data = request.get_json(silent=True) or {}
+    datatype = data.get('datatype', '').strip()
+    if not datatype:
+        return jsonify({'success': False, 'message': 'datatype required'}), 400
+
+    # Try ros2tools first (handles fallback to interface show internally)
+    if ROS2Tools:
+        try:
+            proto = ROS2Tools.get_interface_proto(datatype)
+            if proto and isinstance(proto, dict):
+                return jsonify({'success': True, 'datatype': datatype, 'msg': proto})
+        except Exception as e:
+            logging.warning(f'ROS2Tools.get_interface_proto failed: {e}')
+
+    # Direct subprocess: try ros2 interface proto then fall back to interface show
+    import yaml as _yaml
+
+    def _build_proto_from_show(dtype):
+        r2 = subprocess.run(
+            ['ros2', 'interface', 'show', dtype],
+            capture_output=True, text=True, timeout=20
+        )
+        if r2.returncode != 0 or not r2.stdout.strip():
+            return None
+        return _parse_interface_to_proto(r2.stdout.strip())
+
+    def _parse_interface_to_proto(text):
+        """Build a zero-value dict from ros2 interface show output."""
+        PRIM = {
+            'bool': False, 'byte': 0, 'char': 0,
+            'float32': 0.0, 'float64': 0.0,
+            'int8': 0, 'uint8': 0, 'int16': 0, 'uint16': 0,
+            'int32': 0, 'uint32': 0, 'int64': 0, 'uint64': 0,
+            'string': '', 'wstring': '',
+        }
+        result = {}
+        lines = [l for l in text.splitlines() if l.strip() and not l.strip().startswith('#')]
+        for line in lines:
+            if line.startswith(' ') or line.startswith('	'):
+                continue  # skip nested lines — handled by ros2tools parse
+            parts = line.strip().split()
+            if len(parts) < 2:
+                continue
+            dtype_part, label = parts[0], parts[1]
+            if '=' in label or '=' in dtype_part:
+                continue  # constant
+            is_array = '[]' in dtype_part or (len(parts) > 2 and '[' in parts[0])
+            base_type = dtype_part.replace('[]', '').split('[')[0]
+            if is_array:
+                result[label] = []
+            elif base_type in PRIM:
+                result[label] = PRIM[base_type]
+            else:
+                result[label] = {}  # nested object placeholder
+        return result if result else None
+
+    try:
+        r = subprocess.run(
+            ['ros2', 'interface', 'proto', datatype],
+            capture_output=True, text=True, timeout=20
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            parsed = _yaml.safe_load(r.stdout)
+            if parsed and isinstance(parsed, dict):
+                return jsonify({'success': True, 'datatype': datatype, 'msg': parsed})
+    except subprocess.TimeoutExpired:
+        pass
+    except Exception:
+        pass
+
+    # Last resort: build from interface show
+    try:
+        proto = _build_proto_from_show(datatype)
+        if proto:
+            return jsonify({'success': True, 'datatype': datatype, 'msg': proto})
+        err = f'Could not build prototype for {datatype}'
+        return jsonify({'success': False, 'message': err}), 500
+    except subprocess.TimeoutExpired:
+        return jsonify({'success': False, 'message': 'Timeout fetching interface'}), 504
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+# ── Publish session registry ────────────────────────────────────────────────
+# Each entry: {'proc': Popen|None, 'stop': Event, 'datatype': str, 'mode': str}
+_publish_sessions = {}
+_publish_sessions_lock = threading.Lock()
+
+_MSG_STRIP = frozenset(('topic', 'datatype', 'WARNING', 'WARN', 'ERROR', 'INFO', 'DEBUG'))
+
+
+def _clean_msg(msg):
+    if isinstance(msg, dict):
+        return {k: v for k, v in msg.items() if k not in _MSG_STRIP}
+    return msg
+
+
+def _resolve_datatype(topic, datatype):
+    if datatype:
+        return datatype
+    dt = ROSMarshaller.get_datatype(topic) if ROSMarshaller else None
+    if ROS2Tools and not dt:
+        dt = ROS2Tools.get_topic_datatype(topic)
+    return dt
+
+
+def _stop_session(topic):
+    """Stop any active publish session for a topic."""
+    with _publish_sessions_lock:
+        entry = _publish_sessions.pop(topic, None)
+    if not entry:
+        return
+    entry['stop'].set()
+    if entry.get('proc'):
+        ROSMarshaller.stop_persistent(entry['proc'])
+
+
+@app.route('/api/topic/publish_timed', methods=['POST'])
+def publish_timed():
+    if not ROSMarshaller:
+        return jsonify({'success': False, 'message': 'ROS functionality not available'}), 500
+
+    data = request.get_json(silent=True) or {}
+    topic = data.get('topic', '').strip()
+    message_data = data.get('data')
+    datatype = data.get('datatype', '').strip()
+    frequency = data.get('frequency', 0)
+    action = data.get('action', 'publish')
+
+    if action == 'stop':
+        _stop_session(topic)
+        return jsonify({'success': True, 'message': f'Stopped publishing to {topic}'})
+
+    if not topic or message_data is None:
+        return jsonify({'success': False, 'message': 'topic and data required'}), 400
+
+    message_data = _clean_msg(message_data)
+
+    datatype = _resolve_datatype(topic, datatype)
+    if not datatype:
+        return jsonify({'success': False, 'message': f'Could not determine datatype for {topic}'}), 400
+
+    _stop_session(topic)
+
+    if frequency and float(frequency) > 0:
+        hz = float(frequency)
+        stop_event = threading.Event()
+        try:
+            proc = ROSMarshaller.publish_persistent(topic, datatype, message_data, hz)
+            with _publish_sessions_lock:
+                _publish_sessions[topic] = {'proc': proc, 'stop': stop_event,
+                                             'datatype': datatype, 'mode': 'persistent'}
+        except Exception as e:
+            return jsonify({'success': False, 'message': str(e)}), 500
+        return jsonify({'success': True, 'message': f'Publishing to {topic} at {hz} Hz',
+                        'topic': topic, 'datatype': datatype})
+
+    try:
+        ROSMarshaller.publish(json.dumps(message_data), topic, datatype)
+        return jsonify({'success': True, 'message': f'Published to {topic}',
+                        'topic': topic, 'datatype': datatype})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/topic/publish_batch', methods=['POST'])
+def publish_batch():
+    """
+    Publish a sequence of messages (batch/replay) with optional looping.
+
+    JSON body:
+      topic     str           target topic
+      datatype  str           message type (optional, auto-detected if omitted)
+      messages  list[dict]    ordered message list
+      frequency float         publish rate Hz (default 1.0)
+      loop      bool          repeat the sequence indefinitely (default false)
+
+    Or send raw JSONL as text/plain body (one JSON object per line).
+    POST /api/topic/publish_batch?topic=...&datatype=...&frequency=1&loop=true
+
+    Returns immediately; the batch runs in a background thread.
+    Use POST /api/topic/publish_timed  {action: stop, topic: ...} to cancel.
+    """
+    if not ROSMarshaller:
+        return jsonify({'success': False, 'message': 'ROS functionality not available'}), 500
+
+    ct = request.content_type or ''
+    if 'application/json' in ct:
+        data = request.get_json(silent=True) or {}
+        topic = data.get('topic', request.args.get('topic', '')).strip()
+        datatype = data.get('datatype', request.args.get('datatype', '')).strip()
+        messages = data.get('messages', [])
+        frequency = float(data.get('frequency', request.args.get('frequency', 1)))
+        loop = bool(data.get('loop', request.args.get('loop', 'false').lower() == 'true'))
+    else:
+        # Raw JSONL body
+        topic = request.args.get('topic', '').strip()
+        datatype = request.args.get('datatype', '').strip()
+        frequency = float(request.args.get('frequency', 1))
+        loop = request.args.get('loop', 'false').lower() == 'true'
+        messages = []
+        for line in request.get_data(as_text=True).splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                messages.append(json.loads(line))
+            except Exception:
+                pass
+
+    if not topic:
+        return jsonify({'success': False, 'message': 'topic required'}), 400
+    if not messages:
+        return jsonify({'success': False, 'message': 'no messages provided'}), 400
+
+    datatype = _resolve_datatype(topic, datatype)
+    if not datatype:
+        return jsonify({'success': False, 'message': f'Could not determine datatype for {topic}'}), 400
+
+    messages = [_clean_msg(m) for m in messages]
+    interval = 1.0 / frequency if frequency > 0 else 1.0
+    _stop_session(topic)
+
+    stop_event = threading.Event()
+    with _publish_sessions_lock:
+        _publish_sessions[topic] = {'proc': None, 'stop': stop_event,
+                                     'datatype': datatype, 'mode': 'batch',
+                                     'count': len(messages), 'loop': loop}
+
+    def _batch_loop():
+        iteration = 0
+        while not stop_event.is_set():
+            for msg in messages:
+                if stop_event.is_set():
+                    break
+                try:
+                    ROSMarshaller.publish(json.dumps(msg), topic, datatype)
+                except Exception as e:
+                    logging.error(f'Batch publish error on {topic}: {e}')
+                stop_event.wait(interval)
+            iteration += 1
+            if not loop:
+                break
+        with _publish_sessions_lock:
+            _publish_sessions.pop(topic, None)
+        logging.info(f'Batch publish complete: {topic} ({iteration} iteration(s))')
+
+    t = threading.Thread(target=_batch_loop, daemon=True)
+    t.start()
+
+    return jsonify({
+        'success': True,
+        'topic': topic,
+        'datatype': datatype,
+        'messages': len(messages),
+        'frequency': frequency,
+        'loop': loop,
+        'message': f'Batch started: {len(messages)} messages at {frequency} Hz{"  (looping)" if loop else ""}'
+    })
+
+
+@app.route('/api/topic/publish_status')
+def publish_status():
+    with _publish_sessions_lock:
+        active = {}
+        for t, v in list(_publish_sessions.items()):
+            proc = v.get('proc')
+            alive = (proc is None or proc.poll() is None) and not v['stop'].is_set()
+            if alive:
+                active[t] = {
+                    'datatype': v['datatype'],
+                    'mode': v.get('mode', 'unknown'),
+                    'loop': v.get('loop', False),
+                    'count': v.get('count'),
+                }
+    return jsonify({'active': active})
+
+
+@app.route('/api/topic/interface_types')
+def list_interface_types():
+    """Return all installed ROS message types, merging installed types with active topic datatypes."""
+    types = set()
+
+    # Active topic datatypes — always available, fast
+    try:
+        if ROS2Tools:
+            td = ROS2Tools.get_topics()
+            types.update(v for v in td.values() if v)
+        else:
+            r = subprocess.run(['ros2', 'topic', 'list', '-t'],
+                               capture_output=True, text=True, timeout=8)
+            for line in r.stdout.splitlines():
+                if ' [' in line:
+                    types.add(line.split(' [', 1)[1].rstrip(']').strip())
+    except Exception:
+        pass
+
+    # All installed message types
+    try:
+        if ROS2Tools:
+            types.update(ROS2Tools.get_message_types())
+        else:
+            r = subprocess.run(['ros2', 'interface', 'list', '--only-msgs'],
+                               capture_output=True, text=True, timeout=15)
+            if r.returncode == 0:
+                types.update(t.strip() for t in r.stdout.splitlines() if t.strip())
+    except Exception:
+        pass
+
+    return jsonify({'types': sorted(types)})
+
+
+@app.route('/api/topic/stream')
+def topic_stream():
+    topic = request.args.get('topic', '').strip()
+    try:
+        max_hz = min(float(request.args.get('max_hz', 10)), 20.0)
+    except ValueError:
+        max_hz = 10.0
+    min_interval = 1.0 / max_hz if max_hz > 0 else 0.1
+
+    if not topic:
+        return Response('data: {"error":"topic required"}\n\n', mimetype='text/event-stream')
+
+    if not ROSMarshaller:
+        return Response('data: {"error":"ROSMarshaller not available"}\n\n', mimetype='text/event-stream')
+
+    def generate():
+        # Per-client queue; callback posts here, generator drains and throttles.
+        client_q = queue.Queue(maxsize=200)
+
+        def _callback(json_data, _topic_name, _datatype):
+            try:
+                parsed = json.loads(json_data) if isinstance(json_data, str) else json_data
+                # Drop oldest rather than blocking if client is slow
+                if client_q.full():
+                    try:
+                        client_q.get_nowait()
+                    except queue.Empty:
+                        pass
+                client_q.put_nowait(parsed)
+            except Exception:
+                pass
+
+        # Reuse the shared TopicManager subscriber so ROSMarshaller only
+        # spawns one ros2 topic echo process per topic regardless of how
+        # many SSE clients are connected.  We register our callback on top
+        # of the existing deque-based subscriber.
+        with topic_manager.lock:
+            topic_manager.get_or_create_subscriber(topic)
+            topic_manager.subscribers[topic]['last_access'] = time.time()
+            listeners = topic_manager.subscribers[topic].setdefault('listeners', [])
+            listeners.append(_callback)
+
+        try:
+            yield 'retry: 3000\n\n'
+
+            pending = None
+            dropped = 0
+            last_emit = 0.0
+
+            while True:
+                # Non-blocking drain — keep only the latest message
+                while True:
+                    try:
+                        item = client_q.get_nowait()
+                        if pending is not None:
+                            dropped += 1
+                        pending = item
+                    except queue.Empty:
+                        break
+
+                now = time.monotonic()
+                if pending is not None and now - last_emit >= min_interval:
+                    payload = json.dumps({
+                        'msg': pending,
+                        'time': datetime.now().strftime('%H:%M:%S'),
+                        'dropped': dropped,
+                    })
+                    pending = None
+                    dropped = 0
+                    last_emit = now
+                    yield f'data: {payload}\n\n'
+                else:
+                    try:
+                        item = client_q.get(timeout=20)
+                        if pending is not None:
+                            dropped += 1
+                        pending = item
+                    except queue.Empty:
+                        yield ': keepalive\n\n'
+
+        except GeneratorExit:
+            pass
+        finally:
+            with topic_manager.lock:
+                if topic in topic_manager.subscribers:
+                    listeners = topic_manager.subscribers[topic].get('listeners', [])
+                    try:
+                        listeners.remove(_callback)
+                    except ValueError:
+                        pass
+
+    return Response(
+        generate(),
+        mimetype='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'},
+    )
+
+
+def _mc_safe_name(name):
+    return (name and os.sep not in name and not name.startswith('.')
+            and name.lower().endswith(('.yaml', '.yml')))
+
+
+@app.route('/api/model_checker/configs', methods=['GET'])
+def mc_configs_list():
+    try:
+        cdir = _mc_config_dir()
+        configs = []
+        for fname in sorted(os.listdir(cdir)):
+            if not fname.lower().endswith(('.yaml', '.yml')):
+                continue
+            fpath = os.path.join(cdir, fname)
+            stat = os.stat(fpath)
+            configs.append({
+                'name': fname,
+                'size': stat.st_size,
+                'modified': datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+            })
+        return jsonify({'configs': configs})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/model_checker/configs/<path:name>', methods=['GET'])
+def mc_config_get(name):
+    if not _mc_safe_name(name):
+        return jsonify({'error': 'Invalid filename'}), 400
+    path = os.path.join(_mc_config_dir(), name)
+    if not os.path.exists(path):
+        return jsonify({'error': 'Not found'}), 404
+    with open(path) as f:
+        return jsonify({'name': name, 'content': f.read()})
+
+
+@app.route('/api/model_checker/configs', methods=['POST'])
+def mc_config_save():
+    data = request.get_json(silent=True) or {}
+    name = data.get('name', '').strip()
+    content = data.get('content', '')
+    if not _mc_safe_name(name):
+        return jsonify({'error': 'Invalid filename'}), 400
+    with open(os.path.join(_mc_config_dir(), name), 'w') as f:
+        f.write(content)
+    return jsonify({'success': True, 'name': name})
+
+
+@app.route('/api/model_checker/configs/<path:name>', methods=['DELETE'])
+def mc_config_delete(name):
+    if not _mc_safe_name(name):
+        return jsonify({'error': 'Invalid filename'}), 400
+    path = os.path.join(_mc_config_dir(), name)
+    if not os.path.exists(path):
+        return jsonify({'error': 'Not found'}), 404
+    os.remove(path)
+    return jsonify({'success': True})
+
+
+def _mc_history_dir():
+    candidates = [
+        os.environ.get('ADORE_HISTORY_DIR'),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                     '..', '..', 'vendor', 'adore_model_checker', 'history'),
+    ]
+    for path in candidates:
+        if path:
+            os.makedirs(path, exist_ok=True)
+            return path
+    raise RuntimeError("Cannot determine history directory")
+
+
+@app.route('/api/model_checker/history')
+def mc_history_list():
+    try:
+        hdir = _mc_history_dir()
+        runs = []
+        for fname in sorted(os.listdir(hdir), reverse=True):
+            if not fname.startswith('run_') or not fname.endswith('.json'):
+                continue
+            try:
+                with open(os.path.join(hdir, fname)) as f:
+                    d = json.load(f)
+                runs.append({
+                    'run_id': d.get('run_id'),
+                    'status': d.get('status'),
+                    'overall_result': (d.get('results') or {}).get('SUMMARY', {}).get('overall_result'),
+                    'config_file': d.get('config_file'),
+                    'completed_at': d.get('completed_at'),
+                })
+            except Exception:
+                pass
+        return jsonify({'runs': runs})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/model_checker/history/<int:run_id>/log')
+def mc_history_log(run_id):
+    log_path = os.path.join(_mc_history_dir(), f'run_{run_id}.log')
+    if not os.path.exists(log_path):
+        return jsonify({'log': None})
+    with open(log_path) as f:
+        return jsonify({'log': f.read()})
+
+
+@app.route('/api/model_checker/logs/stream')
+def mc_logs_stream():
+    def generate():
+        q = _adore_log_broadcaster.subscribe()
+        try:
+            yield 'retry: 3000\n\n'
+            while True:
+                try:
+                    msg = q.get(timeout=20)
+                    yield f'data: {msg}\n\n'
+                except queue.Empty:
+                    yield ': keepalive\n\n'
+        except GeneratorExit:
+            pass
+        finally:
+            _adore_log_broadcaster.unsubscribe(q)
+
+    return Response(
+        generate(),
+        mimetype='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'},
+    )
+
+
 @app.route('/api/model_check/debug', methods=['GET'])
 def debug_model_check():
     """Debug endpoint to check model checker status"""
@@ -1692,18 +3128,28 @@ def debug_model_check():
 
 
 def main():
-    global LOG_DIRECTORY, bag_manager, model_check_blueprint
+    global LOG_DIRECTORY, bag_manager, model_check_blueprint, workspace_monitor
 
     parser = argparse.ArgumentParser(description='ADORe API Server')
     parser.add_argument('--log-directory', type=str,
                         help='Directory for logs and bag recordings')
     parser.add_argument('--port', type=str,
                         help='TCP listining port. DEFAULT: 8888')
+    parser.add_argument('--workspace-root', type=str,
+                        help='Repository root containing ros2_workspace/. Defaults to two levels above this script.')
 
     args = parser.parse_args()
 
     LOG_DIRECTORY = args.log_directory or os.environ.get('LOG_DIRECTORY')
     PORT = args.port or 8888
+
+    workspace_root = (
+        args.workspace_root
+        or os.environ.get('WORKSPACE_ROOT')
+        or os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    )
+    workspace_monitor = WorkspaceMonitor(workspace_root)
+    workspace_monitor.start()
 
     if LOG_DIRECTORY:
         os.makedirs(LOG_DIRECTORY, exist_ok=True)
@@ -1714,10 +3160,21 @@ def main():
 
     # Register model checker blueprint
     try:
-        from adore_model_checker.model_checker_api import get_model_check_blueprint
+        from adore_model_checker.model_checker_api import get_model_check_blueprint, _get_api
         model_check_blueprint = get_model_check_blueprint()
         app.register_blueprint(model_check_blueprint)
         print("✓ Model checker API blueprint registered successfully")
+
+        # Patch the installed model_checker module so ContinuousMonitorEngine
+        # never tries to create a history directory inside the read-only package tree.
+        try:
+            import adore_model_checker.model_checker as _mc_mod
+            _mc_history_path = os.path.join(_get_api().log_directory, 'continuous')
+            os.makedirs(_mc_history_path, exist_ok=True)
+            _mc_mod._history_dir = lambda: _mc_history_path
+            print(f"✓ Model checker history dir set to: {_mc_history_path}")
+        except Exception as _patch_err:
+            print(f"⚠ Could not patch model checker history dir: {_patch_err}")
 
         # Test the API is working
         with app.test_client() as client:
@@ -1746,7 +3203,8 @@ def main():
 
     print(f"\n🚀 Starting ADORe API server on http://0.0.0.0:{PORT}")
     print(f"📊 API status available at: http://localhost:{PORT}/api/status")
-    app.run(debug=True, host='0.0.0.0', port=PORT)
+    print(f"🔧 Workspace status at: http://localhost:{PORT}/api/workspace/status")
+    app.run(debug=False, use_reloader=False, host='0.0.0.0', port=PORT)
 
 
 if __name__ == '__main__':

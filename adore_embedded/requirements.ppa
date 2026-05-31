@@ -1,0 +1,6 @@
+# PPA requirements for adore_embedded.
+# One PPA per line in the format: ppa:<owner>/<name>
+# These are added to apt sources at build time via install_requirements.sh.
+# Add any PPAs required by the embedded runtime that are not declared
+# in a ROS package's own requirements.ppa file.
+# Environment variables (e.g. ${ROS_DISTRO}) are expanded at build time via envsubst.

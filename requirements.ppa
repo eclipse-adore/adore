@@ -1,0 +1,6 @@
+## User APT/system PPAs for the ADORe cli
+
+# Add any necessary APT PPA dependencies here, one dependency per line 
+
+## Required to install helix editor see: http://docs.helix-editor.com/package-managers.html#ubuntudebian
+ppa:maveonair/helix-editor

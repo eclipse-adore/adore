@@ -1,0 +1,11 @@
+## Add all APT system dependencies required to run this node here
+## One requirement/dependency per line.
+# The tool "envsubst" is used to preprocess all requirements files.
+# The environment variable '${ROS_DISTRO}' is provided by the environment.
+# The ADORe CLI docker context must be rebuilt on changes to this file, invoke
+# `make build` on the top level repository directory to apply these changes.
+ros-${ROS_DISTRO}-ament-cmake
+ros-${ROS_DISTRO}-rclcpp
+ros-${ROS_DISTRO}-std-msgs
+ros-${ROS_DISTRO}-ament-lint-auto
+ros-${ROS_DISTRO}-ament-cmake-gtest

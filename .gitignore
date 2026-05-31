@@ -1,14 +1,24 @@
-.zsh_history
+ros2_workspace/colcon_defaults.yaml
+**.zsh_history
 **/build
 **/.tmp
 build
 **.jpg
 **.log
+**.zip
 deploy.env
 libraries/cmake/ignore/ignore.log
 .log
 plugins/*
 !plugins/.gitkeep
+adore_embedded/context/
+adore_embedded/packages/
+adore_embedded/build/
+**.rej
+**.orig
+ros2_workspace/src/vendor/adore_extended
+Function
+tools/adore_api/scenario_manager_state.json
 
 **.vscode
 .colcon_workspace/build
@@ -17,6 +27,11 @@ plugins/*
 .colcon_workspace/src/
 **__pycache__**
 *.pyc
+**.tar.gz
+**.orj
+**.rej
+
+ros2_workspace/colcon_defaults.yaml
 
 ### C++ ###
 # Prerequisites

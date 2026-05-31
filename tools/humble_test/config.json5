@@ -1,0 +1,20 @@
+{
+  mode: "client",
+
+  connect: {
+    endpoints: ["tcp/127.0.0.1:7446"],
+  },
+
+  scouting: {
+    multicast: {
+      enabled: false,
+    },
+  },
+
+  transport: {
+    shared_memory: {
+      enabled: false,
+    },
+  },
+}
+

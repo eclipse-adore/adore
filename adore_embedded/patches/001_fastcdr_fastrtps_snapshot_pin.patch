@@ -1,0 +1,46 @@
+# PATCH: 001_fastcdr_fastrtps_snapshot_pin.patch
+#
+# PROBLEM:
+#   ros-jazzy-fastcdr (2.2.7-1noble.20260225.051855) ships a binary built from a
+#   source snapshot where Cdr::serialize(uint8_t const&) was still an inline header
+#   function and therefore not exported from libfastcdr.so.2. ros-jazzy-fastrtps
+#   (2.14.6-1noble.20260303.233638) was compiled against the real v2.2.7 tag where
+#   that method became out-of-line, producing an unresolvable symbol at runtime:
+#     libfastrtps.so.2.14: undefined symbol: _ZN8eprosima7fastcdr3Cdr9serializeERKh
+#   The base image ros:jazzy-ros-core-noble ships these broken versions, and
+#   apt-get upgrade in the base stage promotes all ros-jazzy-* packages to the
+#   broken post-20260121 builds.
+#
+# FIX:
+#   After all apt operations in the base stage, pin all installed ros-jazzy-*
+#   packages to the jazzy/2026-01-28 snapshot using Pin-Priority: 1001 (above
+#   apt's downgrade threshold), force-downgrade them, then hold to prevent
+#   subsequent layers from re-upgrading.
+#
+# REMOVE WHEN:
+#   The ros-jazzy apt repo publishes a consistent set of fastcdr/fastrtps packages
+#   where all rosidl_typesupport_fastrtps_* libraries are built against the same
+#   fastcdr ABI.
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -45,6 +45,20 @@
+ 
+ RUN echo "/usr/local/lib" >> /etc/ld.so.conf.d/local.conf && ldconfig
+ 
++RUN gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys AD19BAB3CBF125EA && \
++    gpg --export AD19BAB3CBF125EA > /usr/share/keyrings/ros-snapshot-keyring.gpg && \
++    echo "deb [ signed-by=/usr/share/keyrings/ros-snapshot-keyring.gpg ] \
++        http://snapshots.ros.org/jazzy/2026-01-28/ubuntu noble main" \
++        > /etc/apt/sources.list.d/ros2-snapshot.list && \
++    printf 'Package: ros-jazzy-*\nPin: origin snapshots.ros.org\nPin-Priority: 1001\n' \
++        > /etc/apt/preferences.d/ros-snapshot-pin && \
++    apt-get update && \
++    apt-get install -y --allow-downgrades \
++        $(dpkg -l "ros-jazzy-*" | awk '/^[hi]i/{print $2}') && \
++    dpkg -l "ros-jazzy-*" | awk '/^[hi]i/{print $2}' | xargs apt-mark hold && \
++    rm /etc/apt/sources.list.d/ros2-snapshot.list \
++       /etc/apt/preferences.d/ros-snapshot-pin
++
+ # ── Workspace build stage ──────────────────────────────────────────────────────
+ # ros2_workspace is supplied as an external BuildKit build context:
+ #   docker build --build-context ros2_workspace=../ros2_workspace ...

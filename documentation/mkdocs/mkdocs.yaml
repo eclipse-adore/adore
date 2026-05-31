@@ -1,146 +1,76 @@
-site_name: ADORe
+site_name: ADORe Documentation
 repo_url: https://github.com/eclipse-adore/adore
-
 nav:
-  - Home: index.md
-  - Overview: 
-      - About: technical_reference_manual/about_adore.md
-      - Contact: technical_reference_manual/contact.md
+  - About ADORe: README.md
+  - Getting Started:
+    - Getting Started: getting_started/getting_started.md
+    - System Requirements: getting_started/system_requirements.md
+    - Anonymous Cloning: system_and_development/anonymous_cloning.md
+    - Prerequisites: getting_started/prerequisites.md
+    - Installing Docker: getting_started/installing_docker.md
+    - Running Your First Scenario In ADORe: getting_started/running_your_first_scenario.md
+  - Technical Reference Manual:
+    - Table of Contents: technical_reference_manual.md
+    - Documentation: system_and_development/documentation.md
+    - Configuring ADORe: generated/configuring_adore/configuring_adore.md
+    - ADORe Embedded: adore_embedded.md
+    - ADORe ROS Nodes: generated/ROS_NODES_SUMMARY.md
+    - ADORe ROS Messages: generated/modules/adore_ros2_msgs/README.md
+    - ADORe ROS Topics:   generated/adore_ros2_msgs/topics.md
+    - ADORe Mission Control Dashboard & REST API:
+      - About The ADORe REST API: generated/api/adore_api/README.md
+      - ADORe Mission Control Web Interface: generated/api/adore_api/adore_mission_control.md
+      - ADORE API Reference: generated/api/adore_api/api_reference.md
+      - ADORE API Examples: generated/api/adore_api/api_reference_curl_examples.md
+    - Creating A New Node: system_and_development/creating_a_new_node.md
+    - Running A Scenario In ADORe: getting_started/running_your_first_scenario.md
+    - Scenario Visualization: generated/visualization/lichtblick/README.md
+    - Scenario Model Checking: 
+        - Scenario Model Checking Quick Start: generated/adore_model_checker/model_checking_quick_start.md 
+        - Scenario Model Checking API Quick Start: generated/adore_model_checker/model_checking_api_quick_start.md 
+        - Scenario Model Checking README: generated/adore_model_checker/README.md 
+        - Scenario Model Checking With The ADORe Mission Control: system_and_development/model_checking_with_the_adore_mission_control.md
 
-  - Getting started:
-      - Getting started guide: technical_reference_manual/getting_started/getting_started.md
-      - System requirements: technical_reference_manual/getting_started/system_requirements.md
-      - Prerequisites: technical_reference_manual/getting_started/prerequisites.md
-      - Installing Docker: technical_reference_manual/getting_started/installing_docker.md
-      - Run your first scenario: technical_reference_manual/getting_started/running_your_first_scenario.md
-
-  - Code reference:
-      - Overview: generated/README.md
-      - Scenarios:
-          - ADORe scenarios: generated/adore_scenarios/README.md
-
-      - Libraries:
-          - adore_controllers: generated/adore_libraries/adore_controllers/README.md
-          - adore_dynamics: generated/adore_libraries/adore_dynamics/README.md
-          - adore_map: generated/adore_libraries/adore_map/README.md
-          - adore_math: generated/adore_libraries/adore_math/README.md
-          - adore_planning: generated/adore_libraries/adore_planning/README.md
-
-      - Nodes:
-          - decision_maker: generated/adore_ros2_nodes/decision_maker/README.md
-          - decision_maker_infrastructure: generated/adore_ros2_nodes/decision_maker_infrastructure/README.md
-          - mission_control: generated/adore_ros2_nodes/mission_control/README.md
-          - simulated_remote_operator: generated/adore_ros2_nodes/simulated_remote_operator/README.md
-          - simulated_vehicle: generated/adore_ros2_nodes/simulated_vehicle/README.md
-          - trajectory_tracker: generated/adore_ros2_nodes/trajectory_tracker/README.md
-          - visualizer: generated/adore_ros2_nodes/visualizer/README.md
-
-      - Interfaces:
-          - CARLA bridge: generated/adore_interfaces/carla_bridge/README.md
-          - SUMO bridge: generated/adore_interfaces/sumo_bridge/README.md
-
-      - Conversions:
-          - adore_dynamics_conversions: generated/adore_ros2_conversions/adore_dynamics_conversions/README.md
-          - adore_map_conversions: generated/adore_ros2_conversions/adore_map_conversions/README.md
-          - adore_math_conversions: generated/adore_ros2_conversions/adore_math_conversions/README.md
-
-      - ROS 2 messages:
-          - adore_ros2_msgs: generated/ros2_messages/adore_ros2_msgs/README.md
-
-      - Tools:
-          - ADORe API: generated/tools/adore_api/README.md
-          - ROS 2 observer: generated/tools/ros2_observer/README.md
-          - ADORe model checker: generated/tools/adore_model_checker/README.md
-
-  - System & development:
-      - ADORe CLI: technical_reference_manual/system_and_development/adore_cli.md
-      - Anonymous cloning: technical_reference_manual/system_and_development/anonymous_cloning.md
-      - Creating a ROS2 node: technical_reference_manual/system_and_development/creating_a_new_node.md
-      - Documentation system: technical_reference_manual/system_and_development/documentation_generation_system.md
-      - Scenario generation: technical_reference_manual/system_and_development/scenario_generation.md
-      - System Tests: technical_reference_manual/system_and_development/system_tests.md
-      - Unit Tests: technical_reference_manual/system_and_development/unit_testing.md
-
-  - Licensing & legal:
-      - Licensing overview: technical_reference_manual/licensing.md
-      - Software license: technical_reference_manual/software_license.md
-      - License check: technical_reference_manual/licensing/license_check.md
-      - License header templates:
-          - Template (Markdown): technical_reference_manual/licensing/license_header_template.md
-          - Template (C header): technical_reference_manual/licensing/license_header_template.h
-          - Template (Text): technical_reference_manual/licensing/license_header_template.txt
-          - Template (XML): technical_reference_manual/licensing/license_header_template.xml
-
-
+    - Interfaces to ADORe: 
+      - ADORe And CARLa: generated/carla_bridge/README.md
+      - ADORe And SUMO:  system_and_development/sumo_bridge.md
+      - ADORe And Eclipse Zenoh:  system_and_development/eclipse_zenoh.md
+      - ADORe And MQTT:  system_and_development/mqtt.md
+    - Creating A New Scenario: system_and_development/scenario_generation.md
+    - ADORe CLI: 
+        - ADORe CLI: generated/adore_cli/README.md
+        - Multi-arch Build Support: system_and_development/multiarch_support.md
+    - Testing: 
+        - System Testing: system_and_development/system_tests.md 
+        - ROS Unit Testing: system_and_development/ros_unit_testing.md
+        - C++ Library Testing: system_and_development/library_testing.md
+    - Submodules: generated/modules/modules.md
+    - Troubleshooting: problems_and_solutions.md
+    - Licensing: licensing.md
+    - Third-Party: generated/THIRD-PARTY.md
+    - Notices: generated/NOTICE.md
+    - Publicaitons: publications.md
+    - Contributing: generated/CONTRIBUTING.md
+    - Code of Conduct: generated/CODE_OF_CONDUCT.md
+    - Style Guide: styleguide.md
+  - Contact: contact.md
 
 extra:
   github_issues: "https://github.com/eclipse-adore/adore/issues"
-  social:
-  - icon: fontawesome/brands/github
-    link: https://github.com/eclipse-adore/adore
-  - icon: material/web
-    link: https://www.eclipse.org/adore/         # if you have a landing page
-
-extra_css:
-  - stylesheets/extra.css
 
 theme:
-  name: material
-  custom_dir: overrides
-  logo: img/adore_logo_white.png
-  favicon: img/DLR_Logo.svg
-  font:
-    text: Atkinson Hyperlegible Next
-    code: Anonymous Pro
-
-  # Light/dark toggle with subtle colours (tweak as you like)
+  name: material 
   palette:
-    - scheme: default
-      primary: blue grey
-      accent: teal
-      toggle:
-        icon: material/weather-night
-        name: Switch to dark mode
-    - scheme: slate
-      primary: blue grey
-      accent: teal
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to light mode
-
+    scheme: slate 
+  logo: ../img/logo.png
+  favicon: ../img/favicon.ico
   features:
-    - navigation.instant
-    - navigation.tracking
-    - navigation.top
-    - navigation.sections
-    - navigation.tabs
-    - toc.integrate
     - content.code.copy
-    - content.tabs.link
-    - content.action.view        # “View source” link
-    - search.suggest             # search suggestions
-    - search.highlight           # highlight matches in search results
-    - search.share               # shareable search URLs
-
-# Nice markdown extras powered by pymdown-extensions
-markdown_extensions:
-  - admonition
-  - attr_list
-  - def_list
-  - footnotes
-  - md_in_html
-  - toc:
-      permalink: true
-
-  - pymdownx.highlight:
-      anchor_linenums: true
-      linenums: true
-  - pymdownx.inlinehilite
-  - pymdownx.details
-  - pymdownx.superfences
-  - pymdownx.tabbed:
-      alternate_style: true
+  footer:
+    links:
+      - title: "Help"
+        url: "https://github.com/eclipse-adore/adore/issues"
 
 plugins:
   - search
-  - redirects
+  # - pdf-export

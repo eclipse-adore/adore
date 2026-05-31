@@ -8,683 +8,1152 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.min.js"></script>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            display: flex;
-            height: 100vh;
+        body { margin:0; padding:0; font-family:Arial,sans-serif; display:flex; height:100vh; }
+        #map { flex:1; height:100%; }
+        .controls { width:370px; padding:20px; background:#f5f5f5; border-left:1px solid #ddd; overflow-y:auto; box-sizing:border-box; }
+        .search-section, .settings-section, .marker-section, .stored-positions {
+            margin-bottom:16px; padding:15px; background:white; border-radius:5px; box-shadow:0 2px 5px rgba(0,0,0,0.1);
         }
-        
-        #map {
-            flex: 1;
-            height: 100%;
+        .marker-section h3 { margin:0 0 10px 0; color:#333; }
+        .search-section input { width:100%; padding:8px; border:1px solid #ddd; border-radius:3px; font-size:14px; box-sizing:border-box; }
+        .coord-display { margin:6px 0; font-family:monospace; font-size:12px; background:#f8f8f8; padding:8px; border-radius:3px; }
+        .python-code-input { width:100%; font-family:monospace; font-size:11px; background:#f0f0f0; border:1px solid #ddd; border-radius:3px; padding:8px; box-sizing:border-box; margin-top:8px; resize:none; }
+        .heading-row { display:flex; align-items:center; gap:8px; margin:8px 0; }
+        .heading-row label { font-size:12px; font-weight:600; white-space:nowrap; }
+        .heading-row input[type="number"] { width:80px; padding:4px 6px; border:1px solid #ddd; border-radius:3px; font-family:monospace; font-size:12px; }
+        .heading-row span { font-size:11px; color:#666; }
+        .mode-buttons { display:flex; gap:10px; margin-bottom:16px; }
+        .position-buttons { display:flex; gap:5px; margin-top:10px; }
+        .position-buttons button { flex:1; padding:8px; font-size:12px; }
+        .checkbox-container { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+        .search-results { max-height:150px; overflow-y:auto; border:1px solid #ddd; border-top:none; background:white; display:none; }
+        .search-result { padding:8px; cursor:pointer; border-bottom:1px solid #eee; font-size:12px; }
+        .search-result:hover { background:#f5f5f5; }
+        .stored-position { background:#f8f9fa; padding:10px; border-radius:3px; margin:5px 0; font-size:12px; font-family:monospace; }
+        .no-positions { color:#666; font-style:italic; }
+        .mode-switch-info { background:#e3f2fd; border:1px solid #2196f3; border-radius:4px; padding:10px; margin:10px 0; font-size:12px; }
+        button { padding:10px 15px; border:none; border-radius:3px; cursor:pointer; font-size:14px; }
+        button.active { background:#007cba; color:white; }
+        button:not(.active) { background:#e0e0e0; color:#333; }
+        .btn-success { background:#28a745 !important; color:white !important; }
+        .btn-primary { background:#007cba !important; color:white !important; }
+        .clear-btn { background:#dc3545 !important; color:white !important; width:100%; }
+        .start-marker { color:#28a745; }
+        .goal-marker { color:#dc3545; }
+
+        #goalNodeList { margin-top:8px; }
+        .goal-node-row {
+            display:flex; align-items:center; gap:6px;
+            background:#f8f9fa; border:1px solid #e0e0e0; border-radius:4px;
+            padding:6px 8px; margin-bottom:5px; font-size:12px; font-family:monospace;
         }
-        
-        .controls {
-            width: 350px;
-            padding: 20px;
-            background: #f5f5f5;
-            border-left: 1px solid #ddd;
-            overflow-y: auto;
+        .goal-node-index { font-weight:700; color:#dc3545; min-width:22px; text-align:center; }
+        .goal-node-coords { flex:1; color:#333; font-size:11px; line-height:1.4; }
+        .stop-toggle { display:flex; align-items:center; gap:4px; cursor:pointer; white-space:nowrap; font-family:sans-serif; }
+        .stop-toggle input[type="checkbox"] { cursor:pointer; accent-color:#e67e00; }
+        .stop-label { font-size:11px; font-weight:600; color:#e67e00; min-width:42px; }
+        .stop-label.continue { color:#888; }
+        .goal-node-del {
+            background:#dc3545 !important; color:white !important;
+            padding:2px 7px !important; font-size:11px !important;
+            border-radius:3px; cursor:pointer; border:none; flex-shrink:0;
         }
-        
-        .search-section {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        .btn-clear-goals {
+            background:#dc3545 !important; color:white !important;
+            padding:4px 10px !important; font-size:11px !important; border-radius:3px;
         }
-        
-        .search-section input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            font-size: 14px;
-            box-sizing: border-box;
-        }
-        
-        .settings-section {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .checkbox-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .marker-section {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .marker-section h3 {
-            margin: 0 0 10px 0;
-            color: #333;
-        }
-        
-        .coord-display {
-            margin: 8px 0;
-            font-family: monospace;
-            font-size: 12px;
-            background: #f8f8f8;
-            padding: 8px;
-            border-radius: 3px;
-        }
-        
-        .python-code-input {
-            width: 100%;
-            height: 80px;
-            font-family: monospace;
-            font-size: 11px;
-            background: #f0f0f0;
-            border: 1px solid #ddd;
-            border-radius: 3px;
-            padding: 8px;
-            box-sizing: border-box;
-            margin-top: 8px;
-            resize: none;
-        }
-        
-        .mode-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .position-buttons {
-            display: flex;
-            gap: 5px;
-            margin-top: 10px;
-        }
-        
-        .position-buttons button {
-            flex: 1;
-            padding: 8px;
-            font-size: 12px;
-        }
-        
-        button {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        button.active {
-            background: #007cba;
-            color: white;
-        }
-        
-        button:not(.active) {
-            background: #e0e0e0;
-            color: #333;
-        }
-        
-        .btn-success {
-            background: #28a745 !important;
-            color: white !important;
-        }
-        
-        .btn-primary {
-            background: #007cba !important;
-            color: white !important;
-        }
-        
-        .clear-btn {
-            background: #dc3545 !important;
-            color: white !important;
-            width: 100%;
-        }
-        
-        .start-marker { color: #28a745; }
-        .goal-marker { color: #dc3545; }
-        
-        .search-results {
-            max-height: 150px;
-            overflow-y: auto;
-            border: 1px solid #ddd;
-            border-top: none;
-            background: white;
-            display: none;
-        }
-        
-        .search-result {
-            padding: 8px;
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
-            font-size: 12px;
-        }
-        
-        .search-result:hover {
-            background: #f5f5f5;
-        }
-        
-        .stored-positions {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .stored-position {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 3px;
-            margin: 5px 0;
-            font-size: 12px;
-            font-family: monospace;
-        }
-        
-        .no-positions {
-            color: #666;
-            font-style: italic;
-        }
-        
-        .mode-switch-info {
-            background: #e3f2fd;
-            border: 1px solid #2196f3;
-            border-radius: 4px;
-            padding: 10px;
-            margin: 10px 0;
-            font-size: 12px;
-        }
+        .lane-status { font-size:11px; color:#666; margin-top:4px; font-style:italic; }
+        .lane-zoom-hint { font-size:11px; color:#e67e00; margin-top:4px; }
+        .goto-row { display:flex; gap:6px; margin-top:8px; }
+        .goto-row input { flex:1; padding:6px 8px; border:1px solid #ddd; border-radius:3px; font-size:12px; font-family:monospace; }
+        .goto-row button { padding:6px 10px; font-size:12px; white-space:nowrap; }
+        .goto-hint { font-size:11px; color:#888; margin-top:4px; }
     </style>
 </head>
 <body>
     <div id="map"></div>
-    
     <div class="controls">
         <h2>Map Marker Planner</h2>
-        
+
         <div class="search-section">
             <h3>Search Location</h3>
             <input type="text" id="searchInput" placeholder="Enter location..." />
             <div id="searchResults" class="search-results"></div>
+            <div class="goto-row">
+                <input type="text" id="gotoInput" placeholder="lat, lng [, zoom]" />
+                <button class="btn-primary" onclick="gotoLocation()">Go</button>
+            </div>
+            <div class="goto-hint">e.g. 52.3158, 10.5621, 17</div>
         </div>
-        
+
         <div class="settings-section">
             <h3>Settings</h3>
             <div class="checkbox-container">
                 <input type="checkbox" id="routeToggle" checked />
                 <label for="routeToggle">Draw route between markers</label>
             </div>
+            <div class="checkbox-container">
+                <input type="checkbox" id="laneToggle" checked />
+                <label for="laneToggle">Show lane overlay (zoom ≥ 16)</label>
+            </div>
+            <div id="laneStatus" class="lane-status">Zoom in to load lanes</div>
         </div>
-        
+
         <div class="mode-buttons">
             <button id="startMode" class="active">Start Point</button>
             <button id="goalMode">Goal Point</button>
         </div>
-        
+
         <div class="mode-switch-info">
-            <strong>Auto-Switch:</strong> When you place a start point, the mode automatically switches to "Goal Point" for faster workflow.
+            <strong>Auto-Switch:</strong> Placing a start point switches to Goal mode automatically.
+            Drag the <span style="color:#007bff;font-weight:600;">blue handle</span> to set heading.
+            Goal nodes are <strong>draggable</strong>. Toggle <span style="color:#e67e00;font-weight:600;">STOP</span> per node.
         </div>
-        
+
         <div class="stored-positions">
             <h3>Stored Positions</h3>
-            <div id="storedPositionsDisplay">
-                <div class="no-positions">No positions stored</div>
-            </div>
+            <div id="storedPositionsDisplay"><div class="no-positions">No positions stored</div></div>
             <div class="position-buttons">
-                <button class="btn-success" onclick="storePositions()">Store Positions</button>
-                <button class="btn-primary" onclick="loadPositions()">Load Positions</button>
-                <button class="clear-btn" onclick="clearStoredPositions()">Clear Stored</button>
+                <button class="btn-success" onclick="storePositions()">Store</button>
+                <button class="btn-primary" onclick="loadPositions()">Load</button>
+                <button class="clear-btn" onclick="clearStoredPositions()">Clear</button>
             </div>
         </div>
-        
+
         <div class="marker-section">
-            <h3 class="start-marker">🟢 Start Position</h3>
-            <div id="startCoords">
-                <div class="coord-display">Click map to place start marker</div>
+            <h3 class="start-marker">&#x1F7E2; Start Position</h3>
+            <div id="startCoords"><div class="coord-display">Click map to place start marker</div></div>
+            <div class="heading-row">
+                <label for="headingInput">Heading (psi):</label>
+                <input type="number" id="headingInput" value="0.000" step="0.01" min="-3.14159" max="3.14159" />
+                <span>rad &nbsp;|&nbsp; <span id="headingDeg">0.0</span>&deg;</span>
             </div>
-            <textarea id="startPythonCode" class="python-code-input" readonly placeholder="Click map to generate Python code..."></textarea>
+            <textarea id="startPythonCode" class="python-code-input" readonly style="height:80px;" placeholder="Click map to generate Python code..."></textarea>
         </div>
-        
+
         <div class="marker-section">
-            <h3 class="goal-marker">🔴 Goal Position</h3>
-            <div id="goalCoords">
-                <div class="coord-display">Click map to place goal marker</div>
-            </div>
-            <textarea id="goalPythonCode" class="python-code-input" readonly placeholder="Click map to generate Python code..."></textarea>
+            <h3 class="goal-marker" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>&#x1F534; Goal Positions</span>
+                <button class="btn-clear-goals" onclick="clearGoalNodes()">Clear Goals</button>
+            </h3>
+            <div id="goalNodeList"><div class="no-positions">Click map in Goal mode to add nodes</div></div>
         </div>
-        
+
         <button class="clear-btn" onclick="clearMarkers()">Clear All Markers</button>
+
+        <div class="marker-section" style="margin-top:16px;">
+            <h3 style="margin:0 0 10px 0; color:#333; display:flex; justify-content:space-between; align-items:center;">
+                Lat/Long Code
+                <button onclick="copyCode('summaryLatLong')" class="btn-primary" style="padding:4px 10px; font-size:11px;">Copy</button>
+            </h3>
+            <textarea id="summaryLatLong" class="python-code-input" readonly style="height:100px; background:#e8f4e8;" placeholder="Place markers to generate..."></textarea>
+        </div>
+
+        <div class="marker-section">
+            <h3 style="margin:0 0 10px 0; color:#333; display:flex; justify-content:space-between; align-items:center;">
+                UTM Code
+                <button onclick="copyCode('summaryUtm')" class="btn-primary" style="padding:4px 10px; font-size:11px;">Copy</button>
+            </h3>
+            <textarea id="summaryUtm" class="python-code-input" readonly style="height:100px; background:#e8f4e8;" placeholder="Place markers to generate..."></textarea>
+        </div>
     </div>
 
     <script>
-        const map = L.map('map').setView([52.5200, 13.4050], 13);
-        
+        // ── URL / location init ────────────────────────────────────────────────
+        // Priority: URL params > localStorage > hardcoded default
+        (function() {
+            const p    = new URLSearchParams(window.location.search);
+            const def  = { lat: 52.314626, lng: 10.557942, zoom: 18.0 };
+            let saved  = {};
+            try { saved = JSON.parse(localStorage.getItem('gp_view') || '{}'); } catch(e) {}
+            const lat  = parseFloat(p.get('lat'))  || saved.lat  || def.lat;
+            const lng  = parseFloat(p.get('lng'))  || saved.lng  || def.lng;
+            const zoom = parseFloat(p.get('zoom')) || saved.zoom || def.zoom;
+            window._initView = [lat, lng, zoom];
+        })();
+
+        const map = L.map('map', { maxZoom: 23 }).setView(window._initView.slice(0,2), window._initView[2]);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 23,
+            maxNativeZoom: 19
         }).addTo(map);
-        
-        let startMarker = null;
-        let goalMarker = null;
-        let currentMode = 'start';
+
+        // ── URL sync ──────────────────────────────────────────────────────────
+        function syncUrlToView() {
+            const c = map.getCenter();
+            const z = map.getZoom().toFixed(1);
+            const url = '?lat=' + c.lat.toFixed(6) + '&lng=' + c.lng.toFixed(6) + '&zoom=' + z;
+            history.replaceState(null, '', url);
+            document.getElementById('gotoInput').value = c.lat.toFixed(6) + ', ' + c.lng.toFixed(6) + ', ' + z;
+            try { localStorage.setItem('gp_view', JSON.stringify({ lat: c.lat, lng: c.lng, zoom: parseFloat(z) })); } catch(e) {}
+        }
+        map.on('moveend zoomend', syncUrlToView);
+        syncUrlToView();
+
+        function gotoLocation() {
+            const raw = document.getElementById('gotoInput').value.trim();
+            // Accept "lat, lng" or "lat, lng, zoom" — also handle degree symbols and spaces
+            const parts = raw.replace(/[°]/g, '').split(/[\s,]+/).filter(Boolean).map(Number);
+            if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) {
+                alert('Enter coordinates as: lat, lng  or  lat, lng, zoom');
+                return;
+            }
+            const lat  = parts[0];
+            const lng  = parts[1];
+            const zoom = parts[2] || map.getZoom();
+            map.setView([lat, lng], zoom);
+        }
+
+        document.getElementById('gotoInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') gotoLocation();
+        });
+
+        let startMarker   = null;
+        let headingHandle = null;
+        let headingLine   = null;
+        let currentMode   = 'start';
         let routePolyline = null;
         let searchTimeout = null;
-        let startCoords = null;
-        let goalCoords = null;
-        
-        const startModeBtn = document.getElementById('startMode');
-        const goalModeBtn = document.getElementById('goalMode');
-        const searchInput = document.getElementById('searchInput');
-        const searchResults = document.getElementById('searchResults');
-        const routeToggle = document.getElementById('routeToggle');
-        
-        startModeBtn.addEventListener('click', () => setMode('start'));
-        goalModeBtn.addEventListener('click', () => setMode('goal'));
-        routeToggle.addEventListener('change', updateRoute);
-        
-        window.addEventListener('load', () => {
-            loadStoredPositionsDisplay();
-        });
-        
-        function setMode(mode) {
-            currentMode = mode;
-            startModeBtn.classList.toggle('active', mode === 'start');
-            goalModeBtn.classList.toggle('active', mode === 'goal');
+        let startCoords   = null;
+        let startPsi      = 0.0;
+
+        // Each entry: { marker, lat, lng, stop }
+        let goalNodes = [];
+
+        const HANDLE_PX = 34;
+
+        // ── Icons ──────────────────────────────────────────────────────────────
+
+        function makeStartIcon(psi) {
+            const deg = -(psi * 180 / Math.PI).toFixed(2);
+            const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">'
+                + '<circle cx="20" cy="20" r="11" fill="#28a745" stroke="white" stroke-width="2"/>'
+                + '<g transform="rotate(' + deg + ',20,20)">'
+                + '<line x1="20" y1="20" x2="24" y2="20" stroke="white" stroke-width="2" stroke-linecap="round"/>'
+                + '<polygon points="24,18 28,20 24,22" fill="white"/>'
+                + '</g></svg>';
+            return L.icon({ iconUrl: 'data:image/svg+xml;base64,' + btoa(svg), iconSize: [40,40], iconAnchor: [20,20] });
         }
-        
+
+        function makeGoalIcon(index, stop) {
+            const fill = stop ? '#e67e00' : '#dc3545';
+            const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="28" height="28">'
+                + '<circle cx="14" cy="14" r="12" fill="' + fill + '" stroke="white" stroke-width="2"/>'
+                + (stop
+                    ? '<rect x="9" y="9" width="10" height="10" fill="white" rx="1"/>'
+                    : '<text x="14" y="19" text-anchor="middle" fill="white" font-family="Arial" font-size="13" font-weight="bold">' + (index + 1) + '</text>')
+                + '</svg>';
+            return L.icon({ iconUrl: 'data:image/svg+xml;base64,' + btoa(svg), iconSize: [28,28], iconAnchor: [14,14] });
+        }
+
+        function makeHandleIcon() {
+            const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" width="18" height="18">'
+                + '<circle cx="9" cy="9" r="7" fill="#007bff" stroke="white" stroke-width="2"/>'
+                + '</svg>';
+            return L.icon({ iconUrl: 'data:image/svg+xml;base64,' + btoa(svg), iconSize: [18,18], iconAnchor: [9,9] });
+        }
+
+        // ── Heading handle ─────────────────────────────────────────────────────
+
+        function handleLatLng(psi) {
+            const startPx = map.latLngToContainerPoint(L.latLng(startCoords.lat, startCoords.lng));
+            const handlePx = L.point(
+                startPx.x + HANDLE_PX * Math.cos(psi),
+                startPx.y - HANDLE_PX * Math.sin(psi)
+            );
+            return map.containerPointToLatLng(handlePx);
+        }
+
+        function createHeadingVisuals() {
+            removeHeadingVisuals();
+            const pos = handleLatLng(startPsi);
+            headingLine = L.polyline(
+                [L.latLng(startCoords.lat, startCoords.lng), pos],
+                { color: '#28a745', weight: 2, dashArray: '5 5', opacity: 0.9 }
+            ).addTo(map);
+            headingHandle = L.marker(pos, { icon: makeHandleIcon(), draggable: true, zIndexOffset: 1000 }).addTo(map);
+            headingHandle.on('dragend', markDragEnd);
+            headingHandle.on('drag', onHandleDrag);
+        }
+
+        function removeHeadingVisuals() {
+            if (headingHandle) { map.removeLayer(headingHandle); headingHandle = null; }
+            if (headingLine)   { map.removeLayer(headingLine);   headingLine   = null; }
+        }
+
+        function updateHeadingVisuals() {
+            if (!startCoords || !headingHandle) return;
+            const pos = handleLatLng(startPsi);
+            headingHandle.setLatLng(pos);
+            headingLine.setLatLngs([L.latLng(startCoords.lat, startCoords.lng), pos]);
+        }
+
+        function onHandleDrag(e) {
+            if (!startCoords) return;
+            const startPx  = map.latLngToContainerPoint(L.latLng(startCoords.lat, startCoords.lng));
+            const handlePx = map.latLngToContainerPoint(e.target.getLatLng());
+            startPsi = Math.atan2(-(handlePx.y - startPx.y), handlePx.x - startPx.x);
+            const snapped = handleLatLng(startPsi);
+            e.target.setLatLng(snapped);
+            headingLine.setLatLngs([L.latLng(startCoords.lat, startCoords.lng), snapped]);
+            startMarker.setIcon(makeStartIcon(startPsi));
+            syncHeadingUI();
+            updatePythonCode();
+        }
+
+        function syncHeadingUI() {
+            document.getElementById('headingInput').value = startPsi.toFixed(3);
+            document.getElementById('headingDeg').textContent = (startPsi * 180 / Math.PI).toFixed(1);
+        }
+
+        document.getElementById('headingInput').addEventListener('input', function () {
+            startPsi = parseFloat(this.value) || 0;
+            document.getElementById('headingDeg').textContent = (startPsi * 180 / Math.PI).toFixed(1);
+            if (startMarker && startCoords) {
+                startMarker.setIcon(makeStartIcon(startPsi));
+                updateHeadingVisuals();
+            }
+            updatePythonCode();
+        });
+
+        // ── Drag suppression ───────────────────────────────────────────────────
+
+        let _dragging = false;
+
+        function markDragEnd() {
+            _dragging = true;
+            setTimeout(function() { _dragging = false; }, 100);
+        }
+
+        // ── Goal nodes ─────────────────────────────────────────────────────────
+
+        function addGoalNode(lat, lng, stop) {
+            const node   = { lat, lng, stop: stop || false, marker: null };
+            const idx    = goalNodes.length;
+            const marker = L.marker([lat, lng], {
+                icon: makeGoalIcon(idx, node.stop),
+                draggable: true,
+                zIndexOffset: 500
+            }).addTo(map);
+            marker.on('dragend', markDragEnd);
+            marker.on('drag', function(e) {
+                const ll = e.target.getLatLng();
+                node.lat = ll.lat;
+                node.lng = ll.lng;
+                drawRoute();
+                updatePythonCode();
+                renderGoalNodeList();
+            });
+            node.marker = marker;
+            goalNodes.push(node);
+            renderGoalNodeList();
+            updatePythonCode();
+            drawRoute();
+        }
+
+        function removeGoalNode(idx) {
+            const node = goalNodes[idx];
+            if (node.marker) map.removeLayer(node.marker);
+            goalNodes.splice(idx, 1);
+            goalNodes.forEach(function(n, i) { n.marker.setIcon(makeGoalIcon(i, n.stop)); });
+            renderGoalNodeList();
+            updatePythonCode();
+            drawRoute();
+        }
+
+        function toggleNodeStop(idx, checked) {
+            const node = goalNodes[idx];
+            node.stop = checked;
+            node.marker.setIcon(makeGoalIcon(idx, node.stop));
+            renderGoalNodeList();
+            updatePythonCode();
+        }
+
+        function clearGoalNodes() {
+            goalNodes.forEach(function(n) { if (n.marker) map.removeLayer(n.marker); });
+            goalNodes = [];
+            renderGoalNodeList();
+            updatePythonCode();
+            drawRoute();
+        }
+
+        function renderGoalNodeList() {
+            const el = document.getElementById('goalNodeList');
+            if (goalNodes.length === 0) {
+                el.innerHTML = '<div class="no-positions">Click map in Goal mode to add nodes</div>';
+                return;
+            }
+            el.innerHTML = goalNodes.map(function(n, i) {
+                const labelClass = n.stop ? 'stop-label' : 'stop-label continue';
+                const labelText  = n.stop ? 'STOP' : 'CONT';
+                return '<div class="goal-node-row">'
+                    + '<span class="goal-node-index">' + (i + 1) + '</span>'
+                    + '<span class="goal-node-coords">' + n.lat.toFixed(5) + '<br>' + n.lng.toFixed(5) + '</span>'
+                    + '<label class="stop-toggle">'
+                    + '<input type="checkbox" ' + (n.stop ? 'checked' : '') + ' onchange="toggleNodeStop(' + i + ', this.checked)">'
+                    + '<span class="' + labelClass + '">' + labelText + '</span>'
+                    + '</label>'
+                    + '<button class="goal-node-del" onclick="removeGoalNode(' + i + ')">&#x2715;</button>'
+                    + '</div>';
+            }).join('');
+        }
+
+        // ── Coords / Python ────────────────────────────────────────────────────
+
         function latLngToUtm(lat, lng) {
             const zone = Math.floor((lng + 180) / 6) + 1;
             const hemisphere = lat >= 0 ? 'N' : 'S';
-            
-            const utmProj = `+proj=utm +zone=${zone} +datum=WGS84 +units=m +no_defs`;
-            const wgs84 = '+proj=longlat +datum=WGS84 +no_defs';
-            
-            const [easting, northing] = proj4(wgs84, utmProj, [lng, lat]);
-            
-            return {
-                zone: zone,
-                hemisphere: hemisphere,
-                easting: Math.round(easting),
-                northing: Math.round(northing)
-            };
+            const [e, n] = proj4('+proj=longlat +datum=WGS84 +no_defs',
+                '+proj=utm +zone=' + zone + ' +datum=WGS84 +units=m +no_defs', [lng, lat]);
+            return { zone, hemisphere, easting: Math.round(e), northing: Math.round(n) };
         }
-        
-        function updateCoordinateDisplay(coords, elementId) {
-            const utm = latLngToUtm(coords.lat, coords.lng);
-            
-            document.getElementById(elementId).innerHTML = `
-                <div class="coord-display">
-                    <strong>Lat/Long:</strong><br>
-                    ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}
-                </div>
-                <div class="coord-display">
-                    <strong>UTM:</strong><br>
-                    Zone: ${utm.zone}${utm.hemisphere}<br>
-                    Easting: ${utm.easting.toLocaleString()}m<br>
-                    Northing: ${utm.northing.toLocaleString()}m
-                </div>
-            `;
+
+        function updateCoordDisplay(coords, elId) {
+            const u = latLngToUtm(coords.lat, coords.lng);
+            document.getElementById(elId).innerHTML =
+                '<div class="coord-display"><strong>Lat/Long:</strong><br>' + coords.lat.toFixed(6) + ', ' + coords.lng.toFixed(6) + '</div>'
+                + '<div class="coord-display"><strong>UTM:</strong><br>Zone: ' + u.zone + u.hemisphere
+                + '<br>Easting: ' + u.easting.toLocaleString() + 'm<br>Northing: ' + u.northing.toLocaleString() + 'm</div>';
         }
-        
+
+        function goalPositionsLatLong() {
+            if (goalNodes.length === 0) return null;
+            const items = goalNodes.map(function(n) {
+                const behavior = n.stop ? ', WaypointBehavior.STOP' : '';
+                return '    Waypoint(Position(lat_long=(' + n.lat.toFixed(6) + ', ' + n.lng.toFixed(6) + '))' + behavior + '),';
+            });
+            return 'goal_positions = [\n' + items.join('\n') + '\n]';
+        }
+
+        function goalPositionsUtm() {
+            if (goalNodes.length === 0) return null;
+            const items = goalNodes.map(function(n) {
+                const u = latLngToUtm(n.lat, n.lng);
+                const behavior = n.stop ? ', WaypointBehavior.STOP' : '';
+                return '    Waypoint(Position(utm=(' + u.easting + ', ' + u.northing + ', ' + u.zone + ', \'' + u.hemisphere + '\'))' + behavior + '),';
+            });
+            return 'goal_positions = [\n' + items.join('\n') + '\n]';
+        }
+
         function updatePythonCode() {
-            const startPythonCode = document.getElementById('startPythonCode');
-            const goalPythonCode = document.getElementById('goalPythonCode');
-            
+            const se = document.getElementById('startPythonCode');
+            const sl = document.getElementById('summaryLatLong');
+            const su = document.getElementById('summaryUtm');
+
+            let startLl = '', startUt = '';
             if (startCoords) {
-                const startUtm = latLngToUtm(startCoords.lat, startCoords.lng);
-                const startLatLongCode = `start_position = Position(lat_long=(${startCoords.lat.toFixed(6)}, ${startCoords.lng.toFixed(6)}), psi=0.0)`;
-                const startUtmCode = `start_position = Position(utm=(${startUtm.easting}, ${startUtm.northing}, ${startUtm.zone}, '${startUtm.hemisphere}'), psi=0.0)`;
-                startPythonCode.value = `${startLatLongCode}\n${startUtmCode}`;
+                const u = latLngToUtm(startCoords.lat, startCoords.lng);
+                const p = startPsi.toFixed(3);
+                startLl = 'start_position = Position(lat_long=(' + startCoords.lat.toFixed(6) + ', ' + startCoords.lng.toFixed(6) + '), psi=' + p + ')';
+                startUt = 'start_position = Position(utm=(' + u.easting + ', ' + u.northing + ', ' + u.zone + ', \'' + u.hemisphere + '\'), psi=' + p + ')';
+                se.value = startLl + '\n' + startUt;
             } else {
-                startPythonCode.value = '';
+                se.value = '';
             }
-            
-            if (goalCoords) {
-                const goalUtm = latLngToUtm(goalCoords.lat, goalCoords.lng);
-                const goalLatLongCode = `goal_position = Position(lat_long=(${goalCoords.lat.toFixed(6)}, ${goalCoords.lng.toFixed(6)}))`;
-                const goalUtmCode = `goal_position = Position(utm=(${goalUtm.easting}, ${goalUtm.northing}, ${goalUtm.zone}, '${goalUtm.hemisphere}'))`;
-                goalPythonCode.value = `${goalLatLongCode}\n${goalUtmCode}`;
-            } else {
-                goalPythonCode.value = '';
-            }
+
+            const gll = goalPositionsLatLong();
+            const gut = goalPositionsUtm();
+
+            sl.value = [startLl, gll].filter(Boolean).join('\n');
+            su.value = [startUt, gut].filter(Boolean).join('\n');
         }
-        
-        async function storePositions() {
-            const data = {};
-            
-            if (startCoords) {
-                const startUtm = latLngToUtm(startCoords.lat, startCoords.lng);
-                data.start = {
-                    lat: startCoords.lat,
-                    lng: startCoords.lng,
-                    utm: startUtm
-                };
-            }
-            
-            if (goalCoords) {
-                const goalUtm = latLngToUtm(goalCoords.lat, goalCoords.lng);
-                data.goal = {
-                    lat: goalCoords.lat,
-                    lng: goalCoords.lng,
-                    utm: goalUtm
-                };
-            }
-            
-            try {
-                const response = await fetch('/api/positions/set', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                if (result.success) {
-                    alert('Positions stored successfully!');
-                    loadStoredPositionsDisplay();
-                } else {
-                    alert('Failed to store positions');
-                }
-            } catch (error) {
-                console.error('Error storing positions:', error);
-                alert('Error storing positions');
-            }
+
+        function copyCode(elementId) {
+            const el = document.getElementById(elementId);
+            if (!el.value) return;
+            navigator.clipboard.writeText(el.value).then(function() {
+                const btn = el.previousElementSibling.querySelector('button');
+                const orig = btn.textContent;
+                btn.textContent = 'Copied!';
+                btn.style.background = '#28a745';
+                setTimeout(function() { btn.textContent = orig; btn.style.background = ''; }, 1500);
+            }).catch(function() { el.select(); document.execCommand('copy'); });
         }
-        
-        async function loadPositions() {
-            try {
-                const response = await fetch('/api/positions/get');
-                const positions = await response.json();
-                
-                if (positions.start) {
-                    placeMarker(positions.start, 'start');
-                    startCoords = { lat: positions.start.lat, lng: positions.start.lng };
-                    updateCoordinateDisplay(startCoords, 'startCoords');
-                }
-                
-                if (positions.goal) {
-                    placeMarker(positions.goal, 'goal');
-                    goalCoords = { lat: positions.goal.lat, lng: positions.goal.lng };
-                    updateCoordinateDisplay(goalCoords, 'goalCoords');
-                }
-                
+
+        // ── Map click ──────────────────────────────────────────────────────────
+
+        document.getElementById('startMode').addEventListener('click', () => setMode('start'));
+        document.getElementById('goalMode').addEventListener('click',  () => setMode('goal'));
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('startMode').classList.toggle('active', mode === 'start');
+            document.getElementById('goalMode').classList.toggle('active',  mode === 'goal');
+        }
+
+        map.on('click', function(e) {
+            if (_dragging) return;
+            const c = e.latlng;
+            if (currentMode === 'start') {
+                if (startMarker) map.removeLayer(startMarker);
+                removeHeadingVisuals();
+                startCoords = { lat: c.lat, lng: c.lng };
+                startMarker = L.marker([c.lat, c.lng], { icon: makeStartIcon(startPsi) }).addTo(map);
+                createHeadingVisuals();
+                updateCoordDisplay(startCoords, 'startCoords');
+                syncHeadingUI();
                 updatePythonCode();
                 drawRoute();
-                
-            } catch (error) {
-                console.error('Error loading positions:', error);
-                alert('Error loading positions');
-            }
-        }
-        
-        async function clearStoredPositions() {
-            try {
-                const response = await fetch('/api/positions/clear', { method: 'POST' });
-                const result = await response.json();
-                if (result.success) {
-                    alert('Stored positions cleared!');
-                    loadStoredPositionsDisplay();
-                }
-            } catch (error) {
-                console.error('Error clearing positions:', error);
-            }
-        }
-        
-        async function loadStoredPositionsDisplay() {
-            try {
-                const response = await fetch('/api/positions/get');
-                const positions = await response.json();
-                
-                const display = document.getElementById('storedPositionsDisplay');
-                
-                if (!positions.start && !positions.goal) {
-                    display.innerHTML = '<div class="no-positions">No positions stored</div>';
-                    return;
-                }
-                
-                let html = '';
-                
-                if (positions.start) {
-                    html += `
-                        <div class="stored-position">
-                            <strong>Start:</strong> ${positions.start.lat.toFixed(6)}, ${positions.start.lng.toFixed(6)}
-                        </div>
-                    `;
-                }
-                
-                if (positions.goal) {
-                    html += `
-                        <div class="stored-position">
-                            <strong>Goal:</strong> ${positions.goal.lat.toFixed(6)}, ${positions.goal.lng.toFixed(6)}
-                        </div>
-                    `;
-                }
-                
-                display.innerHTML = html;
-                
-            } catch (error) {
-                console.error('Error loading stored positions display:', error);
-            }
-        }
-        
-        function placeMarker(position, type) {
-            const coords = { lat: position.lat, lng: position.lng };
-            
-            if (type === 'start') {
-                if (startMarker) {
-                    map.removeLayer(startMarker);
-                }
-                
-                startMarker = L.marker([coords.lat, coords.lng], {
-                    icon: L.icon({
-                        iconUrl: 'data:image/svg+xml;base64,' + btoa(`
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-                                <circle cx="12" cy="12" r="10" fill="#28a745" stroke="white" stroke-width="2"/>
-                                <text x="12" y="16" text-anchor="middle" fill="white" font-family="Arial" font-size="14" font-weight="bold">S</text>
-                            </svg>
-                        `),
-                        iconSize: [24, 24],
-                        iconAnchor: [12, 12]
-                    })
-                }).addTo(map);
-                
-            } else if (type === 'goal') {
-                if (goalMarker) {
-                    map.removeLayer(goalMarker);
-                }
-                
-                goalMarker = L.marker([coords.lat, coords.lng], {
-                    icon: L.icon({
-                        iconUrl: 'data:image/svg+xml;base64,' + btoa(`
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-                                <circle cx="12" cy="12" r="10" fill="#dc3545" stroke="white" stroke-width="2"/>
-                                <text x="12" y="16" text-anchor="middle" fill="white" font-family="Arial" font-size="14" font-weight="bold">G</text>
-                            </svg>
-                        `),
-                        iconSize: [24, 24],
-                        iconAnchor: [12, 12]
-                    })
-                }).addTo(map);
-            }
-        }
-        
-        async function searchLocation(query) {
-            try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
-                const results = await response.json();
-                
-                searchResults.innerHTML = '';
-                
-                if (results.length > 0) {
-                    searchResults.style.display = 'block';
-                    results.forEach(result => {
-                        const div = document.createElement('div');
-                        div.className = 'search-result';
-                        div.textContent = result.display_name;
-                        div.onclick = () => {
-                            map.setView([parseFloat(result.lat), parseFloat(result.lon)], 15);
-                            searchResults.style.display = 'none';
-                            searchInput.value = '';
-                        };
-                        searchResults.appendChild(div);
-                    });
-                } else {
-                    searchResults.style.display = 'none';
-                }
-            } catch (error) {
-                console.error('Search error:', error);
-                searchResults.style.display = 'none';
-            }
-        }
-        
-        searchInput.addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            if (e.target.value.length > 2) {
-                searchTimeout = setTimeout(() => {
-                    searchLocation(e.target.value);
-                }, 300);
+                setMode('goal');
             } else {
-                searchResults.style.display = 'none';
+                addGoalNode(c.lat, c.lng);
             }
         });
-        
-        searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                if (e.target.value.length > 2) {
-                    searchLocation(e.target.value);
-                }
-            }
-        });
-        
-        document.addEventListener('click', (e) => {
-            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
-                searchResults.style.display = 'none';
-            }
-        });
-        
+
+        map.on('zoom moveend', function() { updateHeadingVisuals(); });
+
+        // ── Route ──────────────────────────────────────────────────────────────
+
+        // ── Settings persistence ──────────────────────────────────────────────
+        (function() {
+            try {
+                const s = JSON.parse(localStorage.getItem('gp_settings') || '{}');
+                if (s.route  !== undefined) document.getElementById('routeToggle').checked = s.route;
+                if (s.lanes  !== undefined) document.getElementById('laneToggle').checked  = s.lanes;
+            } catch(e) {}
+        })();
+
+        function saveSettings() {
+            try {
+                localStorage.setItem('gp_settings', JSON.stringify({
+                    route: document.getElementById('routeToggle').checked,
+                    lanes: document.getElementById('laneToggle').checked,
+                }));
+            } catch(e) {}
+        }
+
+        document.getElementById('routeToggle').addEventListener('change', function() { saveSettings(); drawRoute(); });
+
         async function drawRoute() {
-            if (!startMarker || !goalMarker || !routeToggle.checked) {
-                if (routePolyline) {
-                    map.removeLayer(routePolyline);
-                    routePolyline = null;
+            if (routePolyline) { map.removeLayer(routePolyline); routePolyline = null; }
+            if (!startMarker || goalNodes.length === 0 || !document.getElementById('routeToggle').checked) return;
+
+            const waypoints = [startMarker.getLatLng(), ...goalNodes.map(function(n) { return n.marker.getLatLng(); })];
+            const coords    = waypoints.map(function(p) { return p.lng + ',' + p.lat; }).join(';');
+
+            try {
+                const res  = await fetch('https://router.project-osrm.org/route/v1/driving/' + coords + '?overview=full&geometries=geojson');
+                const data = await res.json();
+                if (data.routes && data.routes.length > 0) {
+                    const ll = data.routes[0].geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
+                    // Offset the route into the forward lane (half a lane width to the left of centreline)
+                    const offsetted = offsetPolyline(ll, -(LANE_WIDTH_M * 0.5));
+                    routePolyline = L.polyline(offsetted, { color:'#007cba', weight: 3, opacity: 0.9 }).addTo(map);
                 }
+            } catch(err) { console.error('Routing error:', err); }
+        }
+
+        // ── Lane overlay ───────────────────────────────────────────────────────
+
+        const LANE_MIN_ZOOM   = 16;
+        const LANE_WIDTH_M    = 3.5;   // assumed lane width in metres for offset calc
+        const LANE_COLOURS = {
+            forward:  'rgba(30, 136, 229, 0.75)',
+            backward: 'rgba(229, 57, 53, 0.65)',
+            both:     'rgba(76, 175, 80, 0.70)',
+        };
+        const LANE_SEPARATOR  = 'rgba(255,255,255,0.55)';
+        const CENTRE_LINE     = 'rgba(255,200,0,0.7)';
+
+        // Turn colour mapping
+        const TURN_COLOUR = {
+            left:         '#1e88e5',
+            slight_left:  '#42a5f5',
+            right:        '#e53935',
+            slight_right: '#ef5350',
+            through:      '#43a047',
+            merge_to_left:'#8e24aa',
+            merge_to_right:'#8e24aa',
+            none:         '#9e9e9e',
+        };
+
+        const OVERPASS_MIRRORS = [
+            'https://overpass-api.de/api/interpreter',
+            'https://overpass.kumi.systems/api/interpreter',
+        ];
+
+        // ── Tile-based lane cache ──────────────────────────────────────────────
+        // Uses OSM tile coordinates at a fixed cache zoom level.
+        // Each tile key "z/x/y" tracks fetch state and owns its Leaflet layers.
+        const CACHE_ZOOM = 15;  // tile grid resolution — one Overpass fetch per tile
+
+        const tileCache = {};   // key -> { state: 'loading'|'done'|'error', layers: L.LayerGroup }
+        let laneDebounceTimer  = null;
+        let activeFetches      = 0;
+
+        // ── localStorage tile persistence ──────────────────────────────────────
+        const LS_PREFIX    = 'lane_tile_v1_';
+        const LS_MAX_TILES = 300;  // evict oldest when exceeded
+
+        function lsSaveElements(key, elements) {
+            try {
+                const entry = JSON.stringify({ ts: Date.now(), elements });
+                localStorage.setItem(LS_PREFIX + key, entry);
+                // Evict oldest tiles if over limit
+                const keys = Object.keys(localStorage)
+                    .filter(function(k) { return k.startsWith(LS_PREFIX); });
+                if (keys.length > LS_MAX_TILES) {
+                    const sorted = keys.map(function(k) {
+                        try { return { k, ts: JSON.parse(localStorage.getItem(k)).ts }; }
+                        catch(e) { return { k, ts: 0 }; }
+                    }).sort(function(a, b) { return a.ts - b.ts; });
+                    sorted.slice(0, keys.length - LS_MAX_TILES).forEach(function(e) {
+                        localStorage.removeItem(e.k);
+                    });
+                }
+            } catch(e) { /* storage full — ignore */ }
+        }
+
+        function lsLoadElements(key) {
+            try {
+                const raw = localStorage.getItem(LS_PREFIX + key);
+                if (!raw) return null;
+                return JSON.parse(raw).elements || null;
+            } catch(e) { return null; }
+        }
+
+        function lngToTileX(lng, z) {
+            return Math.floor((lng + 180) / 360 * Math.pow(2, z));
+        }
+        function latToTileY(lat, z) {
+            const r = lat * Math.PI / 180;
+            return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * Math.pow(2, z));
+        }
+        function tileToLngLat(x, y, z) {
+            const n   = Math.pow(2, z);
+            const lng = x / n * 360 - 180;
+            const r   = Math.atan(Math.sinh(Math.PI * (1 - 2 * y / n)));
+            const lat = r * 180 / Math.PI;
+            return { lat, lng };
+        }
+        function tileBBox(x, y, z) {
+            const nw = tileToLngLat(x,     y,     z);
+            const se = tileToLngLat(x + 1, y + 1, z);
+            // pad slightly so ways crossing tile edges are included
+            const pad = 0.0003;
+            return { s: se.lat - pad, w: nw.lng - pad, n: nw.lat + pad, e: se.lng + pad };
+        }
+        function visibleTileKeys() {
+            const b    = map.getBounds();
+            const minX = lngToTileX(b.getWest(),  CACHE_ZOOM);
+            const maxX = lngToTileX(b.getEast(),  CACHE_ZOOM);
+            const minY = latToTileY(b.getNorth(), CACHE_ZOOM);
+            const maxY = latToTileY(b.getSouth(), CACHE_ZOOM);
+            const keys = [];
+            for (let x = minX; x <= maxX; x++)
+                for (let y = minY; y <= maxY; y++)
+                    keys.push(CACHE_ZOOM + '/' + x + '/' + y);
+            return keys;
+        }
+
+        function setLaneStatus(msg) {
+            document.getElementById('laneStatus').textContent = msg;
+        }
+
+        function updateLaneStatus() {
+            const keys    = visibleTileKeys();
+            const done    = keys.filter(function(k) { return tileCache[k] && tileCache[k].state === 'done'; }).length;
+            const loading = keys.filter(function(k) { return tileCache[k] && tileCache[k].state === 'loading'; }).length;
+            const errors  = keys.filter(function(k) { return tileCache[k] && tileCache[k].state === 'error'; }).length;
+            let totalSegs = 0, totalTagged = 0;
+            Object.values(tileCache).forEach(function(t) {
+                if (t.state === 'done') { totalSegs += t.segCount || 0; totalTagged += t.taggedCount || 0; }
+            });
+            const est = totalSegs - totalTagged;
+            let msg = done + '/' + keys.length + ' tiles loaded';
+            if (loading) msg += ', ' + loading + ' loading';
+            if (errors)  msg += ', ' + errors + ' failed (will retry)';
+            if (totalSegs) msg += ' — ' + totalSegs + ' segs (' + totalTagged + ' tagged, ' + est + ' est.)';
+            setLaneStatus(msg);
+        }
+
+        function setAllTilesVisible(visible) {
+            Object.values(tileCache).forEach(function(t) {
+                if (!t.layers) return;
+                if (visible && !map.hasLayer(t.layers)) map.addLayer(t.layers);
+                if (!visible && map.hasLayer(t.layers)) map.removeLayer(t.layers);
+            });
+        }
+
+        document.getElementById('laneToggle').addEventListener('change', function() {
+            saveSettings();
+            if (this.checked) {
+                scheduleLaneRefresh();
+            } else {
+                setAllTilesVisible(false);
+                setLaneStatus('Lane overlay disabled');
+            }
+        });
+
+        map.on('zoomend moveend', scheduleLaneRefresh);
+
+        function scheduleLaneRefresh() {
+            clearTimeout(laneDebounceTimer);
+            laneDebounceTimer = setTimeout(refreshLanes, 350);
+        }
+
+        async function refreshLanes() {
+            if (!document.getElementById('laneToggle').checked) return;
+
+            const zoom = map.getZoom();
+            if (zoom < LANE_MIN_ZOOM) {
+                // Hide all tile layers
+                Object.values(tileCache).forEach(function(t) {
+                    if (t.layers) map.removeLayer(t.layers);
+                });
+                setLaneStatus('Zoom in to ≥ ' + LANE_MIN_ZOOM + ' to load lanes (current: ' + zoom.toFixed(1) + ')');
                 return;
             }
-            
-            const startPos = startMarker.getLatLng();
-            const goalPos = goalMarker.getLatLng();
-            
-            try {
-                const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${startPos.lng},${startPos.lat};${goalPos.lng},${goalPos.lat}?overview=full&geometries=geojson`);
-                const data = await response.json();
-                
-                if (data.routes && data.routes.length > 0) {
-                    const coordinates = data.routes[0].geometry.coordinates;
-                    const latLngs = coordinates.map(coord => [coord[1], coord[0]]);
-                    
-                    if (routePolyline) {
-                        map.removeLayer(routePolyline);
+
+            // Re-show any tile layers that were hidden by the toggle
+            Object.values(tileCache).forEach(function(t) {
+                if (t.layers && !map.hasLayer(t.layers)) map.addLayer(t.layers);
+            });
+
+            const keys = visibleTileKeys();
+            const toFetch = keys.filter(function(k) {
+                const t = tileCache[k];
+                return !t || t.state === 'error';
+            });
+
+            if (toFetch.length === 0) { updateLaneStatus(); return; }
+
+            // Mark all pending tiles as loading immediately so concurrent
+            // calls triggered by rapid panning don't double-fetch
+            toFetch.forEach(function(k) {
+                if (!tileCache[k] || tileCache[k].state === 'error') {
+                    tileCache[k] = { state: 'loading', layers: tileCache[k] ? tileCache[k].layers : null };
+                }
+            });
+            updateLaneStatus();
+
+            // Fetch tiles concurrently, up to 3 at a time
+            const CONCURRENCY = 3;
+            let idx = 0;
+            async function worker() {
+                while (idx < toFetch.length) {
+                    const key = toFetch[idx++];
+                    await fetchTile(key);
+                    updateLaneStatus();
+                }
+            }
+            const workers = [];
+            for (let i = 0; i < Math.min(CONCURRENCY, toFetch.length); i++) workers.push(worker());
+            await Promise.all(workers);
+        }
+
+        function renderTileElements(key, elements) {
+            const tagged  = elements.filter(function(e) { return e.tags && e.tags['lanes']; }).length;
+            const existing = tileCache[key] && tileCache[key].layers;
+            if (existing) existing.clearLayers();
+            const layers = existing || L.layerGroup().addTo(map);
+            if (!map.hasLayer(layers)) map.addLayer(layers);
+            tileCache[key] = { state: 'done', layers, segCount: elements.length, taggedCount: tagged };
+            renderLanesIntoGroup(elements, layers);
+        }
+
+        async function fetchTile(key) {
+            // Serve from localStorage if available
+            const cached = lsLoadElements(key);
+            if (cached) {
+                renderTileElements(key, cached);
+                return;
+            }
+
+            const [z, x, y] = key.split('/').map(Number);
+            const bb  = tileBBox(x, y, z);
+            const query = `[out:json][timeout:20];
+way["highway"~"^(motorway|motorway_link|trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified|residential|living_street|service)$"](${bb.s.toFixed(6)},${bb.w.toFixed(6)},${bb.n.toFixed(6)},${bb.e.toFixed(6)});
+out body geom;`;
+
+            let lastErr = null;
+            for (let attempt = 0; attempt < OVERPASS_MIRRORS.length; attempt++) {
+                try {
+                    if (attempt > 0) await new Promise(function(r) { setTimeout(r, 1500 * attempt); });
+                    const res  = await fetch(OVERPASS_MIRRORS[attempt], {
+                        method: 'POST',
+                        body: 'data=' + encodeURIComponent(query),
+                    });
+                    const text = await res.text();
+                    if (text.trimStart().startsWith('<')) {
+                        const msg = (text.match(/<p>([^<]+)<\/p>/) || [])[1] || 'rate limited';
+                        lastErr = new Error(msg);
+                        continue;
                     }
-                    
-                    routePolyline = L.polyline(latLngs, {
-                        color: '#007cba',
-                        weight: 4,
-                        opacity: 0.7
-                    }).addTo(map);
+                    const elements = JSON.parse(text).elements || [];
+                    lsSaveElements(key, elements);
+                    renderTileElements(key, elements);
+                    lastErr = null;
+                    return;
+                } catch (err) {
+                    lastErr = err;
                 }
-            } catch (error) {
-                console.error('Routing error:', error);
+            }
+            console.error('Tile fetch failed', key, lastErr);
+            tileCache[key] = { state: 'error', layers: tileCache[key] ? tileCache[key].layers : null };
+        }
+
+        // ── Lane geometry helpers ──────────────────────────────────────────────
+
+        // Degrees to radians
+        function toRad(d) { return d * Math.PI / 180; }
+
+        // Haversine distance in metres between two [lat,lng] points
+        function haversine(a, b) {
+            const R = 6371000;
+            const dLat = toRad(b[0] - a[0]);
+            const dLng = toRad(b[1] - a[1]);
+            const x = Math.sin(dLat/2)**2 + Math.cos(toRad(a[0])) * Math.cos(toRad(b[0])) * Math.sin(dLng/2)**2;
+            return 2 * R * Math.asin(Math.sqrt(x));
+        }
+
+        // Perpendicular offset of a [lat,lng] point by `metres` to the right of
+        // the bearing from `prev` to `next` (both [lat,lng]).
+        function offsetPoint(pt, prev, next, metres) {
+            // bearing of segment (in radians, east = 0, north = pi/2 — standard math)
+            const lat1 = toRad(prev[0]), lng1 = toRad(prev[1]);
+            const lat2 = toRad(next[0]), lng2 = toRad(next[1]);
+            const dLng = lng2 - lng1;
+            const bearing = Math.atan2(
+                Math.sin(dLng) * Math.cos(lat2),
+                Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng)
+            );
+            // perpendicular = bearing - pi/2 (right of direction of travel)
+            const perp = bearing - Math.PI / 2;
+            const R = 6371000;
+            const lat0 = toRad(pt[0]);
+            const lng0 = toRad(pt[1]);
+            const angDist = metres / R;
+            const newLat = Math.asin(
+                Math.sin(lat0) * Math.cos(angDist) +
+                Math.cos(lat0) * Math.sin(angDist) * Math.cos(perp)
+            );
+            const newLng = lng0 + Math.atan2(
+                Math.sin(perp) * Math.sin(angDist) * Math.cos(lat0),
+                Math.cos(angDist) - Math.sin(lat0) * Math.sin(newLat)
+            );
+            return [newLat * 180 / Math.PI, newLng * 180 / Math.PI];
+        }
+
+        // Offset an entire polyline's nodes by `metres` to the right of travel
+        function offsetPolyline(nodes, metres) {
+            if (nodes.length < 2) return nodes;
+            return nodes.map(function(pt, i) {
+                const prev = nodes[Math.max(0, i - 1)];
+                const next = nodes[Math.min(nodes.length - 1, i + 1)];
+                // For end points use the single adjacent segment
+                const a = i === 0 ? next : prev;
+                const b = i === 0 ? pt   : (i === nodes.length - 1 ? nodes[i - 1] : next);
+                const segPrev = i === 0 ? pt : prev;
+                const segNext = i === nodes.length - 1 ? pt : next;
+                return offsetPoint(pt, segPrev, segNext, metres);
+            });
+        }
+
+        // ── Turn arrow SVG icons ───────────────────────────────────────────────
+
+        function turnArrowSvg(turn, colour) {
+            colour = colour || '#555';
+            // Arrow paths for common turn types — all drawn in a 24x24 viewbox
+            const paths = {
+                through:       'M12 4 L12 20 M12 4 L8 9 M12 4 L16 9',
+                left:          'M12 20 L12 10 Q12 4 6 4 M6 4 L10 8 M6 4 L10 0',
+                slight_left:   'M12 20 L12 12 Q12 6 8 4 M8 4 L12 7 M8 4 L5 8',
+                right:         'M12 20 L12 10 Q12 4 18 4 M18 4 L14 8 M18 4 L14 0',
+                slight_right:  'M12 20 L12 12 Q12 6 16 4 M16 4 L12 7 M16 4 L19 8',
+                merge_to_left: 'M16 20 Q10 14 12 4 M12 4 L8 8 M12 4 L16 8',
+                merge_to_right:'M8 20 Q14 14 12 4 M12 4 L8 8 M12 4 L16 8',
+                none:          'M12 20 L12 4',
+            };
+            const d = paths[turn] || paths['through'];
+            return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">'
+                + '<path d="' + d + '" stroke="' + colour + '" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
+                + '</svg>';
+        }
+
+        function makeTurnIcon(turn, colour) {
+            const svg = turnArrowSvg(turn, colour);
+            return L.icon({
+                iconUrl: 'data:image/svg+xml;base64,' + btoa(svg),
+                iconSize: [18, 18],
+                iconAnchor: [9, 9],
+            });
+        }
+
+        // ── Lane rendering ─────────────────────────────────────────────────────
+
+        // OSM highway type -> [total, fwd, bwd] lane defaults
+        // oneway types get all lanes forward; bidirectional split evenly
+        const HIGHWAY_LANE_DEFAULTS = {
+            motorway:        [4, 2, 2],
+            motorway_link:   [1, 1, 0],
+            trunk:           [4, 2, 2],
+            trunk_link:      [1, 1, 0],
+            primary:         [2, 1, 1],
+            primary_link:    [1, 1, 0],
+            secondary:       [2, 1, 1],
+            secondary_link:  [1, 1, 0],
+            tertiary:        [2, 1, 1],
+            tertiary_link:   [1, 1, 0],
+            unclassified:    [2, 1, 1],
+            residential:     [2, 1, 1],
+            living_street:   [2, 1, 1],
+            service:         [1, 1, 0],
+        };
+
+        function renderLanesIntoGroup(elements, laneLayerGroup) {
+            elements.forEach(function(way) {
+                if (!way.geometry || way.geometry.length < 2) return;
+
+                const tags    = way.tags || {};
+                const nodes   = way.geometry.map(function(g) { return [g.lat, g.lon]; });
+                const highway = tags['highway'] || '';
+                const oneway  = tags['oneway'] === 'yes' || tags['oneway'] === '1'
+                             || highway === 'motorway' || highway === 'motorway_link';
+
+                const taggedLanes = parseInt(tags['lanes']) || 0;
+                const defaults    = HIGHWAY_LANE_DEFAULTS[highway] || [2, 1, 1];
+                const totalLanes  = taggedLanes || defaults[0];
+                const estimated   = taggedLanes === 0;
+
+                const fwdLanes  = parseInt(tags['lanes:forward'])  || null;
+                const bwdLanes  = parseInt(tags['lanes:backward']) || null;
+
+                // Determine forward/backward lane counts
+                let nFwd, nBwd;
+                if (oneway) {
+                    nFwd = totalLanes;
+                    nBwd = 0;
+                } else if (fwdLanes !== null && bwdLanes !== null) {
+                    nFwd = fwdLanes;
+                    nBwd = bwdLanes;
+                } else if (fwdLanes !== null) {
+                    nFwd = fwdLanes;
+                    nBwd = totalLanes - fwdLanes;
+                } else if (bwdLanes !== null) {
+                    nBwd = bwdLanes;
+                    nFwd = totalLanes - bwdLanes;
+                } else if (estimated) {
+                    nFwd = defaults[1];
+                    nBwd = defaults[2];
+                } else {
+                    nFwd = Math.ceil(totalLanes / 2);
+                    nBwd = Math.floor(totalLanes / 2);
+                }
+
+                // Parse turn:lanes tags (pipe-separated per lane, left-to-right)
+                const turnFwd = parseTurnLanes(tags['turn:lanes'] || tags['turn:lanes:forward'] || '');
+                const turnBwd = parseTurnLanes(tags['turn:lanes:backward'] || '');
+
+                // Road total half-width in metres
+                const halfWidth = totalLanes * LANE_WIDTH_M / 2;
+
+                const edgeOpacity = estimated ? 0.4 : 0.9;
+                const laneOpacity = estimated ? 0.30 : 0.55;
+                const edgeDash    = estimated ? '6 6' : null;
+
+                // Draw backward lanes
+                for (let i = 0; i < nBwd; i++) {
+                    const centreOffset = (i + 0.5) * LANE_WIDTH_M;
+                    const laneNodes = offsetPolyline(nodes, centreOffset);
+                    const reversed = laneNodes.slice().reverse();
+                    const turn = turnBwd[i] || 'none';
+                    const col = LANE_COLOURS.backward;
+                    drawLane(reversed, col, turn, TURN_COLOUR[turn] || '#555', laneOpacity, estimated, laneLayerGroup);
+                    if (i < nBwd - 1) {
+                        const sepNodes = offsetPolyline(nodes, (i + 1) * LANE_WIDTH_M);
+                        L.polyline(sepNodes, { color: LANE_SEPARATOR, weight: 1, opacity: estimated ? 0.4 : 0.8, dashArray: '4 6', interactive: false }).addTo(laneLayerGroup);
+                    }
+                }
+
+                // Centre line between forward and backward directions
+                if (nFwd > 0 && nBwd > 0) {
+                    L.polyline(nodes, { color: CENTRE_LINE, weight: 2, opacity: estimated ? 0.4 : 0.9, dashArray: '8 6', interactive: false }).addTo(laneLayerGroup);
+                }
+
+                // Draw forward lanes
+                for (let i = 0; i < nFwd; i++) {
+                    const centreOffset = -((i + 0.5) * LANE_WIDTH_M);
+                    const laneNodes = offsetPolyline(nodes, centreOffset);
+                    const turn = turnFwd[i] || 'none';
+                    const col = oneway ? LANE_COLOURS.both : LANE_COLOURS.forward;
+                    drawLane(laneNodes, col, turn, TURN_COLOUR[turn] || '#555', laneOpacity, estimated, laneLayerGroup);
+                    if (i < nFwd - 1) {
+                        const sepNodes = offsetPolyline(nodes, -((i + 1) * LANE_WIDTH_M));
+                        L.polyline(sepNodes, { color: LANE_SEPARATOR, weight: 1, opacity: estimated ? 0.4 : 0.8, dashArray: '4 6', interactive: false }).addTo(laneLayerGroup);
+                    }
+                }
+
+                // Road edge lines (dashed when estimated)
+                const leftEdge  = offsetPolyline(nodes, -(nFwd * LANE_WIDTH_M));
+                const rightEdge = offsetPolyline(nodes,   nBwd * LANE_WIDTH_M);
+                L.polyline(leftEdge,  { color: 'rgba(255,255,255,0.9)', weight: 2, opacity: edgeOpacity, dashArray: edgeDash, interactive: false }).addTo(laneLayerGroup);
+                L.polyline(rightEdge, { color: 'rgba(255,255,255,0.9)', weight: 2, opacity: edgeOpacity, dashArray: edgeDash, interactive: false }).addTo(laneLayerGroup);
+            });
+        }
+
+        function parseTurnLanes(str) {
+            if (!str) return [];
+            return str.split('|').map(function(s) {
+                // A lane can have multiple values (e.g. "through;left") — use the first
+                return s.trim().split(';')[0].trim() || 'none';
+            });
+        }
+
+        function drawLane(nodes, colour, turn, turnColour, opacity, estimated, group) {
+            L.polyline(nodes, {
+                color: colour,
+                weight: Math.max(2, LANE_WIDTH_M * map.getZoom() * 0.25),
+                opacity: opacity,
+                dashArray: estimated ? '8 5' : null,
+                interactive: false,
+            }).addTo(group);
+
+            // Turn arrows only on OSM-tagged lanes (not estimated)
+            if (!estimated && turn && turn !== 'none') {
+                const mid = Math.floor(nodes.length / 2);
+                const icon = makeTurnIcon(turn, turnColour);
+                L.marker(nodes[mid], { icon, interactive: false, zIndexOffset: -100 }).addTo(group);
             }
         }
-        
-        function updateRoute() {
-            drawRoute();
-        }
-        
-        map.on('click', function(e) {
-            const coords = e.latlng;
-            
-            if (currentMode === 'start') {
-                if (startMarker) {
-                    map.removeLayer(startMarker);
+
+        // Pre-render any tiles already in localStorage for the current viewport
+        (function() {
+            const keys = Object.keys(localStorage)
+                .filter(function(k) { return k.startsWith(LS_PREFIX); })
+                .map(function(k) { return k.slice(LS_PREFIX.length); });
+            keys.forEach(function(key) {
+                const elements = lsLoadElements(key);
+                if (elements) {
+                    tileCache[key] = { state: 'loading', layers: null };
+                    renderTileElements(key, elements);
                 }
-                
-                startMarker = L.marker([coords.lat, coords.lng], {
-                    icon: L.icon({
-                        iconUrl: 'data:image/svg+xml;base64,' + btoa(`
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-                                <circle cx="12" cy="12" r="10" fill="#28a745" stroke="white" stroke-width="2"/>
-                                <text x="12" y="16" text-anchor="middle" fill="white" font-family="Arial" font-size="14" font-weight="bold">S</text>
-                            </svg>
-                        `),
-                        iconSize: [24, 24],
-                        iconAnchor: [12, 12]
-                    })
-                }).addTo(map);
-                
-                startCoords = coords;
-                updateCoordinateDisplay(coords, 'startCoords');
-                updatePythonCode();
-                drawRoute();
-                
-                // Auto-switch to goal mode after placing start point
-                setMode('goal');
-                
-            } else if (currentMode === 'goal') {
-                if (goalMarker) {
-                    map.removeLayer(goalMarker);
-                }
-                
-                goalMarker = L.marker([coords.lat, coords.lng], {
-                    icon: L.icon({
-                        iconUrl: 'data:image/svg+xml;base64,' + btoa(`
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
-                                <circle cx="12" cy="12" r="10" fill="#dc3545" stroke="white" stroke-width="2"/>
-                                <text x="12" y="16" text-anchor="middle" fill="white" font-family="Arial" font-size="14" font-weight="bold">G</text>
-                            </svg>
-                        `),
-                        iconSize: [24, 24],
-                        iconAnchor: [12, 12]
-                    })
-                }).addTo(map);
-                
-                goalCoords = coords;
-                updateCoordinateDisplay(coords, 'goalCoords');
-                updatePythonCode();
-                drawRoute();
+            });
+        })();
+
+        // Trigger initial lane load
+        scheduleLaneRefresh();
+
+        // ── Store / load ───────────────────────────────────────────────────────
+
+        async function storePositions() {
+            const data = {};
+            if (startCoords) data.start = { lat: startCoords.lat, lng: startCoords.lng, psi: startPsi };
+            if (goalNodes.length > 0) {
+                data.goals = goalNodes.map(function(n) { return { lat: n.lat, lng: n.lng, stop: n.stop }; });
             }
-        });
-        
+            try {
+                const res = await fetch('/api/positions/set', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+                const r   = await res.json();
+                if (r.success) { alert('Positions stored!'); loadStoredPositionsDisplay(); }
+                else alert('Failed to store positions');
+            } catch(e) { alert('Error storing positions'); }
+        }
+
+        async function loadPositions() {
+            try {
+                const res = await fetch('/api/positions/get');
+                const pos = await res.json();
+                if (pos.start) {
+                    startCoords = { lat: pos.start.lat, lng: pos.start.lng };
+                    startPsi    = pos.start.psi !== undefined ? pos.start.psi : 0.0;
+                    if (startMarker) map.removeLayer(startMarker);
+                    removeHeadingVisuals();
+                    startMarker = L.marker([startCoords.lat, startCoords.lng], { icon: makeStartIcon(startPsi) }).addTo(map);
+                    createHeadingVisuals();
+                    updateCoordDisplay(startCoords, 'startCoords');
+                    syncHeadingUI();
+                }
+                if (pos.goals && pos.goals.length > 0) {
+                    clearGoalNodes();
+                    pos.goals.forEach(function(g) { addGoalNode(g.lat, g.lng, g.stop); });
+                }
+                updatePythonCode();
+                drawRoute();
+            } catch(e) { alert('Error loading positions'); }
+        }
+
+        async function clearStoredPositions() {
+            try {
+                const res = await fetch('/api/positions/clear', { method:'POST' });
+                const r   = await res.json();
+                if (r.success) { alert('Cleared!'); loadStoredPositionsDisplay(); }
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadStoredPositionsDisplay() {
+            try {
+                const res = await fetch('/api/positions/get');
+                const pos = await res.json();
+                const el  = document.getElementById('storedPositionsDisplay');
+                if (!pos.start && !pos.goals) { el.innerHTML = '<div class="no-positions">No positions stored</div>'; return; }
+                let html = '';
+                if (pos.start) {
+                    const psiPart = pos.start.psi !== undefined ? ' | psi: ' + pos.start.psi.toFixed(3) : '';
+                    html += '<div class="stored-position"><strong>Start:</strong> ' + pos.start.lat.toFixed(6) + ', ' + pos.start.lng.toFixed(6) + psiPart + '</div>';
+                }
+                if (pos.goals) {
+                    pos.goals.forEach(function(g, i) {
+                        html += '<div class="stored-position"><strong>Goal ' + (i + 1) + (g.stop ? ' [STOP]' : '') + ':</strong> ' + g.lat.toFixed(6) + ', ' + g.lng.toFixed(6) + '</div>';
+                    });
+                }
+                el.innerHTML = html;
+            } catch(e) { console.error(e); }
+        }
+
         function clearMarkers() {
-            if (startMarker) {
-                map.removeLayer(startMarker);
-                startMarker = null;
-            }
-            if (goalMarker) {
-                map.removeLayer(goalMarker);
-                goalMarker = null;
-            }
-            if (routePolyline) {
-                map.removeLayer(routePolyline);
-                routePolyline = null;
-            }
-            
+            if (startMarker)   { map.removeLayer(startMarker); startMarker = null; }
+            if (routePolyline) { map.removeLayer(routePolyline); routePolyline = null; }
+            removeHeadingVisuals();
+            clearGoalNodes();
             startCoords = null;
-            goalCoords = null;
-            
-            document.getElementById('startCoords').innerHTML = '<div class="coord-display">Click map to place start marker</div>';
-            document.getElementById('goalCoords').innerHTML = '<div class="coord-display">Click map to place goal marker</div>';
-            updatePythonCode();
-            
-            // Reset to start mode when clearing markers
+            startPsi    = 0.0;
+            document.getElementById('startCoords').innerHTML  = '<div class="coord-display">Click map to place start marker</div>';
+            document.getElementById('headingInput').value      = '0.000';
+            document.getElementById('headingDeg').textContent  = '0.0';
+            document.getElementById('summaryLatLong').value    = '';
+            document.getElementById('summaryUtm').value        = '';
+            document.getElementById('startPythonCode').value   = '';
             setMode('start');
         }
+
+        // ── Search ─────────────────────────────────────────────────────────────
+
+        const searchInput   = document.getElementById('searchInput');
+        const searchResults = document.getElementById('searchResults');
+
+        async function searchLocation(q) {
+            try {
+                const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(q) + '&limit=5');
+                const rs  = await res.json();
+                searchResults.innerHTML = '';
+                if (rs.length > 0) {
+                    searchResults.style.display = 'block';
+                    rs.forEach(function(r) {
+                        const d = document.createElement('div');
+                        d.className = 'search-result';
+                        d.textContent = r.display_name;
+                        d.onclick = function() { map.setView([parseFloat(r.lat), parseFloat(r.lon)], 17); searchResults.style.display = 'none'; searchInput.value = ''; };
+                        searchResults.appendChild(d);
+                    });
+                } else { searchResults.style.display = 'none'; }
+            } catch(e) { searchResults.style.display = 'none'; }
+        }
+
+        searchInput.addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            if (e.target.value.length > 2) searchTimeout = setTimeout(function() { searchLocation(e.target.value); }, 300);
+            else searchResults.style.display = 'none';
+        });
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') { e.preventDefault(); if (e.target.value.length > 2) searchLocation(e.target.value); }
+        });
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) searchResults.style.display = 'none';
+        });
+
+        window.addEventListener('load', loadStoredPositionsDisplay);
     </script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 # ADORe Prerequisites
-ADORe requires a recent version of Docker on your system. ADORe is
+ADORe requires a recent version of make and Docker on your system. ADORe is
 officially supported in Ubuntu 20.04, 22.04 and 24.04. The following document applies to
 that.
 
@@ -13,8 +13,13 @@ should yield something such as the following:
 "24.04.2 LTS (Noble Numbat)"
 ```
 
-In principle, any x86 Linux operating system supporting Docker will run
+In principle, any x86 Linux operating system supporting Docker and Make will run
 ADORe however installation steps for all the tooling will differ. 
+
+### Installing make
+```
+sudo apt-get install -y make
+```
 
 ### Installing Docker
 Review the [Installing Docker 🔗](installing_docker.md) 

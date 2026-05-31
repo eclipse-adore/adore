@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hardware Monitor</title>
+    <style>
+        /* ── Reset / Base ──────────────────────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; padding: 0;
+            background: #0f1117;
+            color: #e1e4e8;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ── Layout ────────────────────────────────────────────────────────── */
+        .app-layout { display: flex; height: 100vh; overflow: hidden; }
+        .main-content { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* ── Header ────────────────────────────────────────────────────────── */
+        .header {
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
+            border-bottom: 1px solid #30363d;
+            padding: 12px 20px;
+            display: flex; align-items: center; justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .header h1 { margin: 0; font-size: 18px; font-weight: 700; color: #58a6ff; letter-spacing: 0.3px; }
+        .header-right { display: flex; align-items: center; gap: 16px; }
+        .header-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #8b949e; }
+
+        /* ── Status indicator ──────────────────────────────────────────────── */
+        .status-indicator {
+            width: 8px; height: 8px; border-radius: 50%;
+            display: inline-block; background: #6e7681;
+        }
+        .status-ok    { background: #2ea043; box-shadow: 0 0 6px #2ea04388; }
+        .status-warn  { background: #d29922; box-shadow: 0 0 6px #d2992288; animation: pulse 1.5s infinite; }
+        .status-error { background: #f85149; box-shadow: 0 0 6px #f8514988; animation: pulse 0.8s infinite; }
+        .status-idle  { background: #6e7681; }
+        .status-connecting { background: #58a6ff; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+        /* ── Tabs ──────────────────────────────────────────────────────────── */
+        .tabs {
+            background: #0d1117; border-bottom: 1px solid #30363d;
+            padding: 0 18px; display: flex; gap: 0; flex-shrink: 0; overflow-x: auto;
+        }
+        .tab {
+            background: none; border: none; border-bottom: 2px solid transparent;
+            color: #8b949e; padding: 10px 16px; font-size: 13px; font-weight: 500;
+            cursor: pointer; white-space: nowrap; transition: color 0.15s;
+        }
+        .tab:hover { color: #c9d1d9; }
+        .tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+
+        /* ── Tab content ───────────────────────────────────────────────────── */
+        .tab-content { display: none; flex: 1; overflow: auto; padding: 16px; }
+        .tab-content.active { display: flex; flex-direction: column; gap: 16px; }
+
+        /* ── Cards ─────────────────────────────────────────────────────────── */
+        .card {
+            background: #161b22; border: 1px solid #30363d;
+            border-radius: 8px; padding: 16px;
+        }
+        .card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 14px;
+        }
+        .card-title {
+            font-size: 13px; font-weight: 600; color: #8b949e;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .card-badge {
+            font-size: 11px; padding: 2px 8px; border-radius: 12px;
+            background: #21262d; color: #8b949e; border: 1px solid #30363d;
+        }
+
+        /* ── Overview grid ─────────────────────────────────────────────────── */
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .metric-tile {
+            background: #0d1117; border: 1px solid #21262d;
+            border-radius: 6px; padding: 14px 16px;
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        .metric-tile.warn  { border-color: #d29922; }
+        .metric-tile.error { border-color: #f85149; }
+        .metric-label { font-size: 11px; color: #6e7681; text-transform: uppercase; letter-spacing: 0.4px; }
+        .metric-value { font-size: 22px; font-weight: 700; color: #e1e4e8; line-height: 1.2; }
+        .metric-value.ok    { color: #2ea043; }
+        .metric-value.warn  { color: #d29922; }
+        .metric-value.error { color: #f85149; }
+        .metric-sub { font-size: 11px; color: #8b949e; }
+
+        /* ── Progress bars ─────────────────────────────────────────────────── */
+        .progress-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .progress-label { font-size: 12px; color: #8b949e; min-width: 80px; }
+        .progress-bar-wrap {
+            flex: 1; background: #21262d; border-radius: 4px; height: 8px; overflow: hidden;
+        }
+        .progress-bar { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+        .progress-bar.ok    { background: #2ea043; }
+        .progress-bar.warn  { background: #d29922; }
+        .progress-bar.error { background: #f85149; }
+        .progress-pct { font-size: 12px; color: #c9d1d9; min-width: 38px; text-align: right; }
+
+        /* ── Tables ────────────────────────────────────────────────────────── */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .data-table th {
+            text-align: left; color: #6e7681; font-weight: 600;
+            font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px;
+            padding: 6px 10px; border-bottom: 1px solid #21262d;
+        }
+        .data-table td { padding: 7px 10px; border-bottom: 1px solid #161b22; color: #c9d1d9; }
+        .data-table tr:last-child td { border-bottom: none; }
+        .data-table tr:hover td { background: #1c2128; }
+
+        /* ── Tags / Badges ─────────────────────────────────────────────────── */
+        .tag {
+            display: inline-block; font-size: 10px; padding: 1px 7px;
+            border-radius: 10px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .tag-blue   { background: #1f3a5f; color: #58a6ff; }
+        .tag-green  { background: #1a3a1f; color: #2ea043; }
+        .tag-yellow { background: #3a2e0a; color: #d29922; }
+        .tag-red    { background: #3a1212; color: #f85149; }
+        .tag-gray   { background: #21262d; color: #8b949e; }
+        .tag-purple { background: #2a1f3a; color: #a371f7; }
+
+        /* ── Two-column layout ─────────────────────────────────────────────── */
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+        /* ── CPU Cores grid ────────────────────────────────────────────────── */
+        .cores-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px;
+        }
+        .core-cell {
+            background: #0d1117; border: 1px solid #21262d;
+            border-radius: 4px; padding: 6px 4px; text-align: center;
+        }
+        .core-cell .core-id { font-size: 10px; color: #6e7681; }
+        .core-cell .core-pct { font-size: 13px; font-weight: 700; }
+
+        /* ── Network interface ─────────────────────────────────────────────── */
+        .iface-card {
+            background: #0d1117; border: 1px solid #21262d;
+            border-radius: 6px; padding: 12px; margin-bottom: 8px;
+        }
+        .iface-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .iface-name { font-size: 13px; font-weight: 600; color: #c9d1d9; }
+        .iface-addresses { display: flex; flex-direction: column; gap: 3px; }
+        .iface-addr { font-size: 11px; color: #8b949e; font-family: monospace; }
+
+        /* ── Device list ───────────────────────────────────────────────────── */
+        .device-list { display: flex; flex-direction: column; gap: 6px; }
+        .device-item {
+            display: flex; align-items: flex-start; gap: 10px;
+            background: #0d1117; border: 1px solid #21262d;
+            border-radius: 6px; padding: 10px 12px;
+        }
+        .device-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+        .device-info { flex: 1; min-width: 0; }
+        .device-name { font-size: 12px; font-weight: 600; color: #c9d1d9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .device-detail { font-size: 11px; color: #8b949e; margin-top: 2px; }
+
+        /* ── Flags ─────────────────────────────────────────────────────────── */
+        .flags-wrap { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+        .flag-badge {
+            font-size: 10px; padding: 1px 6px; border-radius: 3px;
+            background: #1f3a5f; color: #58a6ff; font-family: monospace;
+        }
+
+        /* ── Stale / empty state ───────────────────────────────────────────── */
+        .empty-state {
+            text-align: center; padding: 32px; color: #6e7681; font-size: 13px;
+        }
+        .empty-state .empty-icon { font-size: 32px; margin-bottom: 8px; }
+
+        /* ── Timestamp ─────────────────────────────────────────────────────── */
+        .ts-label { font-size: 11px; color: #484f58; font-family: monospace; }
+
+        /* ── Scrollable section ────────────────────────────────────────────── */
+        .scroll-section { overflow-y: auto; flex: 1; }
+
+        /* ── Responsive ────────────────────────────────────────────────────── */
+        @media (max-width: 900px) {
+            .two-col, .three-col { grid-template-columns: 1fr; }
+        }
+
+        /* ── JSON viewer ───────────────────────────────────────────────────── */
+        .json-view {
+            background: #0d1117; border: 1px solid #21262d;
+            border-radius: 6px; padding: 12px;
+            font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 11px;
+            color: #8b949e; white-space: pre-wrap; overflow-x: auto;
+            max-height: 400px; overflow-y: auto;
+        }
+
+        /* ── Temperatures ──────────────────────────────────────────────────── */
+        .temp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+        .temp-cell {
+            background: #0d1117; border: 1px solid #21262d;
+            border-radius: 6px; padding: 10px 12px;
+        }
+        .temp-sensor-name { font-size: 11px; color: #8b949e; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .temp-reading { font-size: 20px; font-weight: 700; }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+<div class="main-content">
+
+    <div class="header">
+        <div>
+            <h1>🖥 Hardware Monitor</h1>
+        </div>
+        <div class="header-right">
+            <div class="header-status">
+                <span class="status-indicator status-connecting" id="globalIndicator"></span>
+                <span id="globalStatusText">Connecting…</span>
+            </div>
+            <div class="ts-label" id="lastUpdateTs"></div>
+        </div>
+    </div>
+
+    <div class="tabs" id="mainTabs">
+        <button class="tab active" data-tab="overview">Overview</button>
+        <button class="tab" data-tab="cpu">CPU</button>
+        <button class="tab" data-tab="memory">Memory</button>
+        <button class="tab" data-tab="network">Network</button>
+        <button class="tab" data-tab="storage">Storage</button>
+        <button class="tab" data-tab="gpu">GPU / NPU</button>
+        <button class="tab" data-tab="temperatures">Temperatures</button>
+        <button class="tab" data-tab="inventory">Hardware Inventory</button>
+        <button class="tab" data-tab="raw">Raw JSON</button>
+    </div>
+
+    <!-- ── OVERVIEW ── -->
+    <div id="overview" class="tab-content active">
+        <div id="overviewGrid" class="overview-grid"></div>
+        <div class="two-col">
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">CPU Usage</span>
+                    <span class="card-badge" id="cpuOverallBadge">—</span>
+                </div>
+                <div id="cpuProgressRows"></div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">Memory</span>
+                </div>
+                <div id="ramProgressRows"></div>
+            </div>
+        </div>
+        <div class="two-col">
+            <div class="card">
+                <div class="card-header"><span class="card-title">Network Interfaces</span></div>
+                <div id="overviewNetIfaces"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><span class="card-title">Disk Usage</span></div>
+                <div id="overviewDisks"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── CPU ── -->
+    <div id="cpu" class="tab-content">
+        <div class="two-col">
+            <div class="card">
+                <div class="card-header"><span class="card-title">Summary</span></div>
+                <div id="cpuSummaryTable"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><span class="card-title">Load Average</span></div>
+                <div id="cpuLoadTable"></div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">Per-Core Usage</span>
+                <span class="card-badge" id="coreCountBadge">—</span>
+            </div>
+            <div class="cores-grid" id="coresGrid"></div>
+        </div>
+    </div>
+
+    <!-- ── MEMORY ── -->
+    <div id="memory" class="tab-content">
+        <div class="two-col">
+            <div class="card">
+                <div class="card-header"><span class="card-title">RAM</span></div>
+                <div id="ramDetailRows"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><span class="card-title">Swap</span></div>
+                <div id="swapDetailRows"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── NETWORK ── -->
+    <div id="network" class="tab-content">
+        <div id="networkIfaceCards"></div>
+    </div>
+
+    <!-- ── STORAGE ── -->
+    <div id="storage" class="tab-content">
+        <div class="card">
+            <div class="card-header"><span class="card-title">Mounted Filesystems</span></div>
+            <div id="storageTable"></div>
+        </div>
+        <div class="card" id="diskIoCard" style="display:none">
+            <div class="card-header"><span class="card-title">I/O Counters</span></div>
+            <div id="diskIoTable"></div>
+        </div>
+    </div>
+
+    <!-- ── GPU / NPU ── -->
+    <div id="gpu" class="tab-content">
+        <div id="gpuCards"></div>
+    </div>
+
+    <!-- ── TEMPERATURES ── -->
+    <div id="temperatures" class="tab-content">
+        <div class="card">
+            <div class="card-header"><span class="card-title">Sensors</span></div>
+            <div class="temp-grid" id="tempGrid"></div>
+        </div>
+    </div>
+
+    <!-- ── INVENTORY ── -->
+    <div id="inventory" class="tab-content">
+        <div class="three-col" id="inventoryTopRow"></div>
+        <div class="two-col">
+            <div class="card">
+                <div class="card-header"><span class="card-title">PCI Devices</span></div>
+                <div id="pciTable"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><span class="card-title">USB Devices</span></div>
+                <div id="usbList"></div>
+            </div>
+        </div>
+        <div class="two-col">
+            <div class="card">
+                <div class="card-header"><span class="card-title">Serial / UART Ports</span></div>
+                <div id="serialList"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><span class="card-title">Storage Devices</span></div>
+                <div id="storageDevList"></div>
+            </div>
+        </div>
+        <div class="two-col">
+            <div class="card">
+                <div class="card-header"><span class="card-title">Sensors & Cameras</span></div>
+                <div id="sensorList"></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><span class="card-title">Input & Audio</span></div>
+                <div id="inputAudioList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── RAW JSON ── -->
+    <div id="raw" class="tab-content">
+        <div class="two-col">
+            <div class="card">
+                <div class="card-header"><span class="card-title">Hardware Status</span></div>
+                <div class="json-view" id="rawStatus">Waiting…</div>
+            </div>
+            <div class="card">
+                <div class="card-header"><span class="card-title">Hardware Inventory</span></div>
+                <div class="json-view" id="rawInventory">Waiting…</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    // ── Tab switching ───────────────────────────────────────────────────────
+    document.querySelectorAll('.tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const target = btn.dataset.tab;
+            document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(target)?.classList.add('active');
+        });
+    });
+
+    // ── Helpers ─────────────────────────────────────────────────────────────
+    const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+    function levelClass(status) {
+        if (!status) return '';
+        const s = String(status).toLowerCase();
+        if (s === 'ok') return 'ok';
+        if (s === 'warn' || s === 'warning') return 'warn';
+        if (s === 'error' || s === 'critical') return 'error';
+        return '';
+    }
+
+    function pctColor(pct, warn = 85, error = 95) {
+        if (pct >= error) return 'error';
+        if (pct >= warn)  return 'warn';
+        return 'ok';
+    }
+
+    function progressRow(label, pct, sublabel = '') {
+        const cls = pctColor(pct);
+        return `<div class="progress-row">
+            <span class="progress-label">${esc(label)}</span>
+            <div class="progress-bar-wrap">
+                <div class="progress-bar ${cls}" style="width:${Math.min(100,pct)}%"></div>
+            </div>
+            <span class="progress-pct ${cls}">${pct.toFixed(1)}%</span>
+        </div>${sublabel ? `<div style="font-size:11px;color:#6e7681;margin:-4px 0 8px 0;padding-left:90px">${esc(sublabel)}</div>` : ''}`;
+    }
+
+    function kvTable(rows) {
+        return `<table class="data-table"><tbody>` +
+            rows.map(([k, v]) => `<tr><td style="color:#6e7681;width:55%">${esc(k)}</td><td>${esc(v)}</td></tr>`).join('') +
+            `</tbody></table>`;
+    }
+
+    function emptyState(icon, msg) {
+        return `<div class="empty-state"><div class="empty-icon">${icon}</div>${esc(msg)}</div>`;
+    }
+
+    function tag(text, style = 'blue') {
+        return `<span class="tag tag-${style}">${esc(text)}</span>`;
+    }
+
+    // ── State ────────────────────────────────────────────────────────────────
+    let _status = null;
+    let _inventory = null;
+
+    // ── SSE for status ───────────────────────────────────────────────────────
+    function connectSSE() {
+        const es = new EventSource('/api/hardware/stream');
+        es.onmessage = e => {
+            try {
+                const payload = JSON.parse(e.data);
+                _status = payload.data;
+                renderStatus(_status, payload.received_at);
+            } catch (_) {}
+        };
+        es.onerror = () => {
+            setGlobal('connecting', 'Reconnecting…');
+            setTimeout(connectSSE, 3000);
+            es.close();
+        };
+    }
+
+    // ── Poll inventory (low freq / latched) ──────────────────────────────────
+    async function pollInventory() {
+        try {
+            const r = await fetch('/api/hardware/inventory');
+            if (r.ok) {
+                const d = await r.json();
+                if (d.available) {
+                    _inventory = d.data;
+                    renderInventory(_inventory);
+                }
+            }
+        } catch (_) {}
+    }
+
+    // ── Global indicator ─────────────────────────────────────────────────────
+    function setGlobal(cls, text) {
+        const ind = document.getElementById('globalIndicator');
+        const txt = document.getElementById('globalStatusText');
+        if (ind) ind.className = `status-indicator status-${cls}`;
+        if (txt) txt.textContent = text;
+    }
+
+    // ── STATUS RENDERING ─────────────────────────────────────────────────────
+
+    function renderStatus(s, ts) {
+        if (!s) return;
+
+        // Global indicator
+        setGlobal(levelClass(s.status) || 'ok', `${s.hostname || ''} — ${(s.status||'').toUpperCase()}`);
+        const tsEl = document.getElementById('lastUpdateTs');
+        if (tsEl && ts) tsEl.textContent = ts.slice(11, 19) + ' UTC';
+
+        // Overview
+        renderOverview(s);
+        renderCpu(s.cpu);
+        renderMemory(s.ram);
+        renderNetworkStatus(s.network);
+        renderStorageStatus(s.disk);
+        renderGpu(s.gpu);
+        renderTemperatures(s.temperatures);
+        renderNtp(s.ntp);
+        renderProcesses(s.processes);
+
+        // Raw
+        document.getElementById('rawStatus').textContent = JSON.stringify(s, null, 2);
+    }
+
+    function renderOverview(s) {
+        const cpu = s.cpu || {};
+        const ram = s.ram || {};
+        const net = s.network || {};
+        const ntp = s.ntp || {};
+        const proc = s.processes || {};
+
+        // Metric tiles
+        const tiles = [
+            { label: 'Hostname', value: esc(s.hostname || '—'), sub: '', cls: '' },
+            { label: 'CPU', value: `${(cpu.overall_percent??0).toFixed(1)}%`, sub: `load ${(cpu.load_avg?.['1m']??0).toFixed(2)}`, cls: pctColor(cpu.overall_percent??0) },
+            { label: 'RAM', value: `${(ram.used_percent??0).toFixed(1)}%`, sub: `${ram.used_mb??0} / ${ram.total_mb??0} MB`, cls: pctColor(ram.used_percent??0) },
+            { label: 'Processes', value: proc.total??'—', sub: `${proc.running??0} running`, cls: (proc.zombie??0) > 5 ? 'warn' : '' },
+            { label: 'NTP', value: (ntp.synchronized===false ? 'UNSYNC' : (ntp.synchronized===true?'SYNC':'—')), sub: ntp.source||'', cls: ntp.synchronized===false ? 'warn' : 'ok' },
+            { label: 'Status', value: (s.status||'—').toUpperCase(), sub: '', cls: levelClass(s.status) },
+        ];
+
+        document.getElementById('overviewGrid').innerHTML = tiles.map(t =>
+            `<div class="metric-tile ${t.cls}">
+                <span class="metric-label">${t.label}</span>
+                <span class="metric-value ${t.cls}">${t.value}</span>
+                ${t.sub ? `<span class="metric-sub">${t.sub}</span>` : ''}
+            </div>`
+        ).join('');
+
+        // CPU progress
+        const cpuPct = cpu.overall_percent ?? 0;
+        document.getElementById('cpuOverallBadge').textContent = `${cpuPct.toFixed(1)}%`;
+        let cpuRows = progressRow('Overall', cpuPct);
+        const perCore = cpu.per_core_percent || [];
+        perCore.slice(0, 8).forEach((p, i) => { cpuRows += progressRow(`Core ${i}`, p); });
+        document.getElementById('cpuProgressRows').innerHTML = cpuRows;
+
+        // RAM progress
+        let ramRows = progressRow('Used', ram.used_percent ?? 0, `${ram.used_mb} / ${ram.total_mb} MB`);
+        const swap = ram.swap || {};
+        if (swap.total_mb > 0) {
+            ramRows += progressRow('Swap', swap.used_percent ?? 0, `${swap.used_mb} / ${swap.total_mb} MB`);
+        }
+        document.getElementById('ramProgressRows').innerHTML = ramRows;
+
+        // Network overview
+        const ifaces = net.interfaces || {};
+        document.getElementById('overviewNetIfaces').innerHTML =
+            Object.entries(ifaces).map(([name, iface]) => {
+                const up = iface.is_up;
+                const addrs = (iface.ipv4 || []).join(', ') || 'no address';
+                return `<div class="iface-card">
+                    <div class="iface-header">
+                        <span class="status-indicator ${up ? 'status-ok' : 'status-error'}"></span>
+                        <span class="iface-name">${esc(name)}</span>
+                        ${tag(up ? 'UP' : 'DOWN', up ? 'green' : 'red')}
+                        ${iface.type ? tag(iface.type, 'blue') : ''}
+                    </div>
+                    <div class="iface-addresses">
+                        <span class="iface-addr">🌐 ${esc(addrs)}</span>
+                        ${iface.mac ? `<span class="iface-addr">⊟ ${esc(iface.mac)}</span>` : ''}
+                    </div>
+                </div>`;
+            }).join('') || emptyState('📡', 'No network interfaces');
+
+        // Disk overview
+        const disk = s.disk || {};
+        const mounts = disk.mounts || {};
+        document.getElementById('overviewDisks').innerHTML =
+            Object.entries(mounts).slice(0, 6).map(([mp, m]) =>
+                progressRow(mp, m.used_percent ?? 0, `${m.used_gb} / ${m.total_gb} GB · ${m.fstype||''}`)
+            ).join('') || emptyState('💾', 'No mounts');
+    }
+
+    function renderCpu(cpu) {
+        if (!cpu) return;
+        document.getElementById('cpuSummaryTable').innerHTML = kvTable([
+            ['Overall %', `${(cpu.overall_percent??0).toFixed(1)}%`],
+            ['Frequency', cpu.freq_mhz ? `${cpu.freq_mhz} MHz` : '—'],
+            ['Status', (cpu.status||'—').toUpperCase()],
+        ]);
+        const la = cpu.load_avg || {};
+        document.getElementById('cpuLoadTable').innerHTML = kvTable([
+            ['1 min', la['1m'] ?? '—'],
+            ['5 min', la['5m'] ?? '—'],
+            ['15 min', la['15m'] ?? '—'],
+        ]);
+
+        const perCore = cpu.per_core_percent || [];
+        document.getElementById('coreCountBadge').textContent = `${perCore.length} cores`;
+        document.getElementById('coresGrid').innerHTML = perCore.map((p, i) => {
+            const cls = pctColor(p);
+            return `<div class="core-cell">
+                <div class="core-id">C${i}</div>
+                <div class="core-pct ${cls}">${p.toFixed(0)}%</div>
+            </div>`;
+        }).join('') || emptyState('⚙', 'No core data');
+    }
+
+    function renderMemory(ram) {
+        if (!ram) return;
+        document.getElementById('ramDetailRows').innerHTML =
+            progressRow('Used', ram.used_percent ?? 0) +
+            kvTable([
+                ['Total', `${ram.total_mb ?? 0} MB`],
+                ['Used', `${ram.used_mb ?? 0} MB`],
+                ['Available', `${ram.available_mb ?? 0} MB`],
+            ]);
+        const swap = ram.swap || {};
+        document.getElementById('swapDetailRows').innerHTML =
+            (swap.total_mb > 0 ? progressRow('Used', swap.used_percent ?? 0) : '') +
+            kvTable([
+                ['Total', `${swap.total_mb ?? 0} MB`],
+                ['Used', `${swap.used_mb ?? 0} MB`],
+            ]);
+    }
+
+    function renderNetworkStatus(net) {
+        if (!net) return;
+        const ifaces = net.interfaces || {};
+        document.getElementById('networkIfaceCards').innerHTML =
+            Object.entries(ifaces).map(([name, iface]) => {
+                const up = iface.is_up;
+                const io = iface.io || {};
+                const addrs = [...(iface.ipv4||[]), ...(iface.ipv6||[])];
+                return `<div class="card" style="margin-bottom:12px">
+                    <div class="card-header">
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <span class="status-indicator ${up?'status-ok':'status-error'}"></span>
+                            <span class="card-title">${esc(name)}</span>
+                            ${tag(up?'UP':'DOWN', up?'green':'red')}
+                            ${iface.type ? tag(iface.type,'blue') : ''}
+                        </div>
+                        ${iface.driver ? `<span class="card-badge">${esc(iface.driver)}</span>` : ''}
+                    </div>
+                    <div class="two-col">
+                        <div>
+                            ${kvTable([
+                                ['MAC', iface.mac||'—'],
+                                ['MTU', iface.mtu||'—'],
+                                ['Speed', iface.speed_mbps ? `${iface.speed_mbps} Mbps` : '—'],
+                                ['Duplex', iface.duplex||'—'],
+                                ['State', iface.operstate||'—'],
+                            ])}
+                        </div>
+                        <div>
+                            ${addrs.length ? addrs.map(a => `<div class="iface-addr" style="margin-bottom:4px;font-size:12px">${esc(a)}</div>`).join('') : emptyState('🌐','No addresses')}
+                        </div>
+                    </div>
+                    ${Object.keys(io).length ? `<div style="margin-top:10px">
+                        ${kvTable([
+                            ['Sent', `${io.bytes_sent_mb??0} MB`],
+                            ['Received', `${io.bytes_recv_mb??0} MB`],
+                            ['Errors In/Out', `${io.errors_in??0} / ${io.errors_out??0}`],
+                            ['Drops In/Out', `${io.drops_in??0} / ${io.drops_out??0}`],
+                        ])}
+                    </div>` : ''}
+                </div>`;
+            }).join('') || emptyState('📡', 'No network data');
+    }
+
+    function renderStorageStatus(disk) {
+        if (!disk) return;
+        const mounts = disk.mounts || {};
+        document.getElementById('storageTable').innerHTML =
+            `<table class="data-table">
+                <thead><tr><th>Mount</th><th>Type</th><th>Total</th><th>Used</th><th>Free</th><th>%</th></tr></thead>
+                <tbody>` +
+            Object.entries(mounts).map(([mp, m]) => {
+                const cls = pctColor(m.used_percent ?? 0);
+                return `<tr>
+                    <td style="font-family:monospace">${esc(mp)}</td>
+                    <td>${tag(m.fstype||'?','gray')}</td>
+                    <td>${m.total_gb} GB</td>
+                    <td>${m.used_gb} GB</td>
+                    <td>${m.free_gb} GB</td>
+                    <td class="${cls}">${(m.used_percent??0).toFixed(1)}%</td>
+                </tr>`;
+            }).join('') +
+            `</tbody></table>` || emptyState('💾','No mount data');
+
+        const io = disk.io;
+        const ioCard = document.getElementById('diskIoCard');
+        if (io) {
+            ioCard.style.display = '';
+            document.getElementById('diskIoTable').innerHTML = kvTable([
+                ['Total Read',  `${io.total_read_mb} MB`],
+                ['Total Write', `${io.total_write_mb} MB`],
+                ['Read Count',  io.read_count],
+                ['Write Count', io.write_count],
+            ]);
+        } else {
+            ioCard.style.display = 'none';
+        }
+    }
+
+    function renderGpu(gpuList) {
+        const el = document.getElementById('gpuCards');
+        if (!gpuList || gpuList.length === 0) {
+            el.innerHTML = emptyState('🎮', 'No GPU / NPU detected');
+            return;
+        }
+        el.innerHTML = gpuList.map(gpu => `
+            <div class="card" style="margin-bottom:12px">
+                <div class="card-header">
+                    <div style="display:flex;align-items:center;gap:8px">
+                        <span class="card-title">${esc(gpu.name||'GPU')}</span>
+                        ${tag(gpu.vendor||'?', 'purple')}
+                        ${tag(gpu.type||'GPU', 'blue')}
+                    </div>
+                    <span class="card-badge ${levelClass(gpu.status)}">${(gpu.status||'—').toUpperCase()}</span>
+                </div>
+                ${gpu.utilization_percent !== undefined ? progressRow('GPU', gpu.utilization_percent) : ''}
+                ${gpu.memory_utilization_percent !== undefined ? progressRow('VRAM', gpu.memory_utilization_percent) : ''}
+                ${kvTable([
+                    ...(gpu.temperature_celsius !== undefined ? [['Temperature', `${gpu.temperature_celsius} °C`]] : []),
+                    ...(gpu.memory_used_mb ? [['VRAM Used', `${gpu.memory_used_mb} / ${gpu.memory_total_mb} MB`]] : []),
+                    ...(gpu.power_draw_w ? [['Power', `${gpu.power_draw_w} W`]] : []),
+                ])}
+            </div>`
+        ).join('');
+    }
+
+    function renderTemperatures(temps) {
+        const el = document.getElementById('tempGrid');
+        if (!temps || !temps.sensors || Object.keys(temps.sensors).length === 0) {
+            el.innerHTML = emptyState('🌡', 'No temperature data');
+            return;
+        }
+        const cells = [];
+        for (const [chip, readings] of Object.entries(temps.sensors)) {
+            if (typeof readings === 'object' && readings !== null) {
+                if (readings.celsius !== undefined) {
+                    const cls = pctColor(readings.celsius, 70, 85);
+                    cells.push(`<div class="temp-cell">
+                        <div class="temp-sensor-name">${esc(chip)}</div>
+                        <div class="temp-reading ${cls}">${readings.celsius}°C</div>
+                    </div>`);
+                } else {
+                    for (const [label, r] of Object.entries(readings)) {
+                        if (r && r.celsius !== undefined) {
+                            const cls = pctColor(r.celsius, 70, 85);
+                            cells.push(`<div class="temp-cell">
+                                <div class="temp-sensor-name">${esc(chip)} / ${esc(label)}</div>
+                                <div class="temp-reading ${cls}">${r.celsius}°C</div>
+                                ${r.critical ? `<div style="font-size:10px;color:#6e7681">crit ${r.critical}°C</div>` : ''}
+                            </div>`);
+                        }
+                    }
+                }
+            }
+        }
+        el.innerHTML = cells.join('') || emptyState('🌡', 'No sensor readings');
+    }
+
+    function renderNtp(ntp) { /* displayed in overview */ }
+    function renderProcesses(proc) { /* displayed in overview */ }
+
+    // ── INVENTORY RENDERING ──────────────────────────────────────────────────
+
+    function renderInventory(inv) {
+        if (!inv) return;
+
+        // Top row: system, cpu, ram
+        const sys = inv.system || {};
+        const cpu = inv.cpu || {};
+        const ram = inv.ram || {};
+        document.getElementById('inventoryTopRow').innerHTML = `
+            <div class="card">
+                <div class="card-header"><span class="card-title">System</span></div>
+                ${kvTable([
+                    ['Hostname', inv.hostname||'—'],
+                    ['OS', sys.os||'—'],
+                    ['Kernel', sys.kernel||'—'],
+                    ['Architecture', sys.machine||'—'],
+                ])}
+            </div>
+            <div class="card">
+                <div class="card-header"><span class="card-title">CPU</span></div>
+                ${kvTable([
+                    ['Model', cpu.model||'—'],
+                    ['Architecture', cpu.architecture||'—'],
+                    ['Physical Cores', cpu.physical_cores||'—'],
+                    ['Logical Cores', cpu.logical_cores||'—'],
+                    ['Max Freq', cpu.base_frequency_mhz ? `${cpu.base_frequency_mhz} MHz` : '—'],
+                    ['L1d Cache', (cpu.cache||{}).l1d_kb ? `${cpu.cache.l1d_kb} KB` : '—'],
+                    ['L2 Cache', (cpu.cache||{}).l2_kb ? `${cpu.cache.l2_kb} KB` : '—'],
+                    ['L3 Cache', (cpu.cache||{}).l3_kb ? `${cpu.cache.l3_kb} KB` : '—'],
+                ])}
+                ${cpu.flags?.length ? `<div class="flags-wrap">${cpu.flags.map(f=>`<span class="flag-badge">${esc(f)}</span>`).join('')}</div>` : ''}
+            </div>
+            <div class="card">
+                <div class="card-header"><span class="card-title">RAM</span></div>
+                ${kvTable([
+                    ['Total', `${ram.total_mb||0} MB`],
+                    ['NUMA Nodes', (ram.numa_nodes||[]).length],
+                ])}
+                ${(ram.numa_nodes||[]).map(n =>
+                    `<div style="font-size:11px;color:#8b949e;margin-top:4px">Node ${n.node}: ${n.total_mb} MB · CPUs ${n.cpus}</div>`
+                ).join('')}
+            </div>`;
+
+        // PCI
+        const pci = inv.pci || [];
+        document.getElementById('pciTable').innerHTML = pci.length
+            ? `<table class="data-table">
+                <thead><tr><th>Slot</th><th>Class</th><th>Vendor:Device</th><th>Driver</th></tr></thead>
+                <tbody>${pci.map(d => `<tr>
+                    <td style="font-family:monospace;font-size:11px">${esc(d.slot)}</td>
+                    <td>${tag(d.subclass_label||d.class_label||'?','gray')}</td>
+                    <td style="font-family:monospace;font-size:11px">${esc(d.vendor_id)}:${esc(d.device_id)}</td>
+                    <td>${d.driver ? tag(d.driver,'blue') : ''}</td>
+                </tr>`).join('')}</tbody>
+               </table>`
+            : emptyState('🔌', 'No PCI devices');
+
+        // USB
+        const usb = inv.usb || [];
+        document.getElementById('usbList').innerHTML = usb.length
+            ? `<div class="device-list">${usb.map(d => `
+                <div class="device-item">
+                    <div class="device-icon">🔌</div>
+                    <div class="device-info">
+                        <div class="device-name">${esc(d.product||d.id||'USB Device')}</div>
+                        <div class="device-detail">
+                            ${esc(d.manufacturer||'')} · ${esc(d.id)} · USB ${esc(d.usb_version||'?')} · ${esc(d.speed_mbps||'?')} Mbps
+                        </div>
+                        <div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">
+                            ${tag(d.class_label||'?','gray')}
+                            ${(d.drivers||[]).map(dr=>tag(dr,'blue')).join('')}
+                            ${d.serial ? `<span style="font-size:10px;color:#6e7681;font-family:monospace">${esc(d.serial)}</span>` : ''}
+                        </div>
+                    </div>
+                </div>`).join('')}</div>`
+            : emptyState('🔌', 'No USB devices detected');
+
+        // Serial
+        const serial = inv.serial || [];
+        document.getElementById('serialList').innerHTML = serial.length
+            ? `<div class="device-list">${serial.map(d => `
+                <div class="device-item">
+                    <div class="device-icon">📡</div>
+                    <div class="device-info">
+                        <div class="device-name">${esc(d.device)}</div>
+                        <div class="device-detail">${esc(d.type)} · driver: ${esc(d.driver||'—')}</div>
+                        ${d.uart_type ? `<div class="device-detail">UART ${esc(d.uart_type)} · 0x${esc(d.port_address||'?')} · IRQ ${esc(d.irq||'?')}</div>` : ''}
+                        ${d.usb_manufacturer ? `<div class="device-detail">USB: ${esc(d.usb_manufacturer)} ${esc(d.usb_product||'')}</div>` : ''}
+                        ${d.is_console ? tag('console','yellow') : ''}
+                    </div>
+                </div>`).join('')}</div>`
+            : emptyState('📡', 'No serial ports detected');
+
+        // Storage devices
+        const stor = inv.storage || [];
+        document.getElementById('storageDevList').innerHTML = stor.length
+            ? `<div class="device-list">${stor.map(d => `
+                <div class="device-item">
+                    <div class="device-icon">💾</div>
+                    <div class="device-info">
+                        <div class="device-name">${esc(d.device)} ${esc(d.size)}</div>
+                        <div class="device-detail">${esc(d.model||'—')} · ${esc(d.vendor||'—')}</div>
+                        <div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">
+                            ${tag(d.type,'blue')}
+                            ${d.transport ? tag(d.transport,'gray') : ''}
+                            ${d.serial ? `<span style="font-size:10px;color:#6e7681;font-family:monospace">${esc(d.serial)}</span>` : ''}
+                        </div>
+                        <div class="device-detail">${d.partitions} partition(s) · ${d.logical_sector_bytes||512}B sectors</div>
+                    </div>
+                </div>`).join('')}</div>`
+            : emptyState('💾', 'No block devices');
+
+        // Sensors
+        const sensors = inv.sensors || [];
+        const audioList = inv.audio || [];
+        const inputList = inv.input || [];
+        document.getElementById('sensorList').innerHTML = sensors.length
+            ? `<div class="device-list">${sensors.map(d => `
+                <div class="device-item">
+                    <div class="device-icon">📷</div>
+                    <div class="device-info">
+                        <div class="device-name">${esc(d.name)}</div>
+                        <div class="device-detail">${tag(d.type,'blue')} · ${tag(d.interface,'gray')}</div>
+                        ${d.device ? `<div class="device-detail">${esc(d.device)}</div>` : ''}
+                    </div>
+                </div>`).join('')}</div>`
+            : emptyState('📷', 'No sensors detected');
+
+        document.getElementById('inputAudioList').innerHTML = [
+            ...audioList.map(d => `
+                <div class="device-item">
+                    <div class="device-icon">🔊</div>
+                    <div class="device-info">
+                        <div class="device-name">${esc(d.name||d.description)}</div>
+                        <div class="device-detail">${esc(d.description||'')} · card ${d.card_index}</div>
+                    </div>
+                </div>`),
+            ...inputList.map(d => `
+                <div class="device-item">
+                    <div class="device-icon">⌨</div>
+                    <div class="device-info">
+                        <div class="device-name">${esc(d.name)}</div>
+                        <div class="device-detail">${tag(d.type,'gray')} · ${esc(d.phys||'')}</div>
+                    </div>
+                </div>`),
+        ].join('') || emptyState('⌨', 'No input / audio devices');
+
+        // Raw inventory
+        document.getElementById('rawInventory').textContent = JSON.stringify(inv, null, 2);
+    }
+
+    // ── Boot ─────────────────────────────────────────────────────────────────
+    connectSSE();
+    pollInventory();
+    setInterval(pollInventory, 30000);
+})();
+</script>
+</body>
+</html>

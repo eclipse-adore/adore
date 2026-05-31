@@ -1,0 +1,4 @@
+eclipse-zenoh==1.6.2
+pyyaml
+numpy
+yq

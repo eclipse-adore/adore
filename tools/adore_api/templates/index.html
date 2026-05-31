@@ -1,276 +1,569 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>ADORe Mission Control</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADORe Mission Control</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/monokai.min.css">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="app-layout">
 
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/monokai.min.css">
-        <link rel="stylesheet" href="/static/style.css">
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
+    <!-- ── Side panel (model checker results) ── -->
+    <div class="side-panel" id="sidePanel">
+        <div class="side-panel-header">
+            <span>Model Checker Results</span>
+            <button class="side-panel-close" id="sidePanelClose" title="Close panel">✕</button>
+        </div>
+        <div class="side-panel-body" id="sidePanelBody">
+            <div class="mc-panel-status">
+                <span class="status-indicator status-idle" id="mcPanelIndicator"></span>
+                <span id="mcPanelStatusText">Idle</span>
+            </div>
+            <div class="mc-panel-summary" id="mcPanelSummary"></div>
+            <div id="mcPanelPropositions"></div>
+        </div>
+    </div>
+
+    <!-- ── Main content ── -->
+    <div class="main-content" id="mainContent">
+        <div class="header">
+            <div class="header-left">
                 <h1>ADORe Mission Control</h1>
             </div>
-
-            <div class="tabs">
-                <button class="tab active" onclick="showTab('manager')">ADORe Scenario Manager</button>
-                <button class="tab" onclick="showTab('output')">Output</button>
-                <button class="tab" onclick="showTab('visualization')">Scenario Visualization</button>
-                <button class="tab" onclick="showTab('goal-picker')">Goal Picker</button>
-                <button class="tab" onclick="showTab('api-reference')">ADORe API Reference</button>
-            </div>
-
-            <div id="manager" class="tab-content active">
-                <div class="status-display">
-                    <span class="status-indicator" id="statusIndicator"></span>
-                    <span id="statusText">Loading...</span>
+            <div class="header-right">
+                <button class="mc-panel-toggle-btn" id="sidePanelToggle" title="Toggle Model Checker Results">
+                    🗎 Model Checker Results
+                </button>
+                <div class="header-status">
+                    <span class="status-indicator" id="globalStatusIndicator"></span>
+                    <span id="globalStatusText">Loading…</span>
                 </div>
+            </div>
+        </div>
 
-                <div class="controls">
+        <div class="tabs" id="mainTabs">
+            <button class="tab active" data-tab="scenario-manager">Scenario Manager</button>
+            <button class="tab" data-tab="ros-task-manager">ROS Task Manager</button>
+            <button class="tab" data-tab="ros-topics">ROS Topics</button>
+            <button class="tab" data-tab="ros-workspace">ROS Workspace</button>
+            <button class="tab" data-tab="visualization">Scenario Visualization</button>
+            <button class="tab" data-tab="bag-recording">Bag File Recording</button>
+            <button class="tab" data-tab="goal-picker">Goal Picker</button>
+            <button class="tab" data-tab="model-checker">Model Checker</button>
+            <button class="tab" data-tab="hardware-monitor">Hardware Monitor</button>
+            <button class="tab" data-tab="api-reference">API Reference</button>
+        </div>
+
+        <!-- ══════════════════════════════════════════
+             TAB: Scenario Manager
+        ══════════════════════════════════════════ -->
+        <div id="scenario-manager" class="tab-content active">
+            <div class="split-layout">
+                <!-- Left: controls -->
+                <div class="split-left">
                     <div class="control-panel">
                         <h3>Scenario Control</h3>
 
-                        <div class="scenario-search">
-                            <input type="text" id="scenarioSearchInput" placeholder="Search scenarios...">
-                            <div class="scenario-dropdown" id="scenarioDropdown"></div>
+                        <!-- Fuzzy finder -->
+                        <div class="fuzzy-finder" id="fuzzyFinder">
+                            <div class="fuzzy-input-wrap">
+                                <span class="fuzzy-icon">⌕</span>
+                                <input type="text" id="scenarioSearchInput"
+                                       placeholder="Search scenarios… (fuzzy)" autocomplete="off">
+                                <span class="fuzzy-clear" id="fuzzySearchClear" title="Clear">✕</span>
+                            </div>
+                            <div class="fuzzy-list" id="fuzzyList"></div>
+                        </div>
+                        <div class="selected-scenario-display" id="selectedScenarioDisplay">
+                            <span class="sel-label">Selected:</span>
+                            <span id="selectedScenarioName">— none —</span>
                         </div>
 
-                        <div class="loop-controls">
-                            <input type="checkbox" id="loopMode">
-                            <label for="loopMode">Loop Mode</label>
+                        <div class="options-row">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="loopMode"> Loop Mode
+                            </label>
+                            <label class="toggle-label">
+                                <input type="checkbox" id="modelCheckEnabled" checked> Model Checking
+                            </label>
                         </div>
 
-                        <div class="loop-controls">
-                            <span>Runtime:</span>
-                            <input type="number" id="loopRuntime" value="60" min="1" max="300">
-                            <span>seconds</span>
-                        </div>
-
-                        <div class="loop-controls">
-                            <span>Delay:</span>
-                            <input type="number" id="loopDelay" value="0" min="0" max="300">
-                            <span>seconds</span>
-                        </div>
-
-                        <div class="modelcheck-controls">
-                            <input type="checkbox" id="modelCheckEnabled" checked>
-                            <label for="modelCheckEnabled">Enable Model Checking</label>
-                        </div>
-
-                        <div class="modelcheck-controls">
-                            <span>Config:</span>
-                            <input type="text" id="modelCheckConfig" value="config/default.yaml" placeholder="config/default.yaml">
-                        </div>
-
-                        <div class="loop-info">
-                            <strong>Loop Mode:</strong> When enabled, the scenario will run for the specified runtime, then halt all processes, wait for the delay period (default 0s), and automatically restart. This ensures clean restarts between runs.
-                        </div>
-
-                        <div class="modelcheck-info">
-                            <strong>Model Checking:</strong> When enabled, the model checker will run along side the selected scenario. Check the 'Output' tab for results (results calculations take time and will be presented shortly after the scenario run). <br/>Use the following command to run the model checker manually(inside the CLI): "adore-model-checker --config vendor/adore_model_checker/default.yaml --mode online --vehicle-id 0 --output output.json"
-                        </div>
-
-                        <button id="startBtn">Start Scenario</button>
-                        <button id="restartBtn" class="btn-success">Restart Scenario</button>
-                        <button id="haltBtn" class="btn-danger">Halt/Stop Scenario</button>
-                        <button id="copySelectedBtn" class="btn-info">Copy Selected Scenario to Editor</button>
-
-                        <h4>Bag Recording</h4>
-
-                        <div class="bag-status-display">
-                            <span class="status-indicator" id="bagStatusIndicator"></span>
-                            <span id="bagStatusText">Not Recording</span>
-                        </div>
-
-                        <div class="bag-controls">
-                            <span>Duration:</span>
-                            <input type="number" id="bagDuration" value="60" min="1" max="3600">
-                            <span>seconds</span>
-                        </div>
-
-                        <div class="bag-controls">
-                            <input type="checkbox" id="recordAllTopics" checked>
-                            <label for="recordAllTopics">Record All Topics</label>
-                        </div>
-
-                        <div id="topicsSelectionContainer" style="display: none;">
-                            <label>Select Topics to Record:</label>
-                            <div class="topics-container" id="topicsContainer">
-                                <div style="text-align: center; color: #6c757d;">Loading topics...</div>
+                        <div class="inline-fields">
+                            <div class="field-group">
+                                <label>Runtime (s)</label>
+                                <input type="number" id="loopRuntime" value="60" min="1" max="3600">
+                            </div>
+                            <div class="field-group">
+                                <label>Delay (s)</label>
+                                <input type="number" id="loopDelay" value="0" min="0" max="300">
                             </div>
                         </div>
 
-                        <div class="bag-info">
-                            <strong>Bag Recording:</strong> Records ROS topics to bag files stored in LOG_DIRECTORY/bag_file_recordings/. Files are named with the current scenario and timestamp in ISO8601 format.
+                        <div class="field-group">
+                            <label>Model Check Config</label>
+                            <input type="text" id="modelCheckConfig" value="config/default.yaml">
                         </div>
 
-                        <button id="startBagBtn" class="btn-success">Start Recording</button>
-                        <button id="stopBagBtn" class="btn-danger" disabled>Stop Recording</button>
-                        <button id="refreshTopicsBtn" class="btn-info">Refresh Topics</button>
+                        <div class="action-buttons">
+                            <button id="startBtn" class="btn-success">▶ Start</button>
+                            <button id="restartBtn" class="btn-warning" disabled>↺ Restart</button>
+                            <button id="haltBtn" class="btn-danger">■ Halt All</button>
+                        </div>
+                        <div class="action-buttons">
+                            <button id="copySelectedBtn" class="btn-info">⎘ Copy to Editor</button>
+                        </div>
 
-                        <div class="running-nodes-display">
-                            <h4>🟢 Running ROS2 Nodes (<span id="runningNodesCount">0</span>)</h4>
-                            <div id="runningNodesInfo">
-                                <div class="no-running-nodes">Loading nodes...</div>
+                        <div class="info-box info-box-loop">
+                            Loop mode runs the scenario for the runtime, halts all processes, waits the delay, then restarts automatically.
+                        </div>
+                        <div class="info-box info-box-mc">
+                            Model checking runs alongside the scenario. Results appear in the side panel after the run completes.
+                        </div>
+                    </div>
+
+                    <!-- Stored positions -->
+                    <div class="control-panel stored-positions-panel">
+                        <h3>Stored Positions</h3>
+                        <div id="storedPositionsInfo">
+                            <div class="no-stored-positions">No positions stored</div>
+                        </div>
+                        <div class="action-buttons">
+                            <button id="applyPositionsBtn" class="btn-info">Apply to Editor</button>
+                            <button id="clearPositionsBtn" class="btn-danger">Clear</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: log + editor -->
+                <div class="split-right">
+                    <div class="log-editor-tabs">
+                        <button class="log-tab" data-logtab="editor-panel">Editor</button>
+                        <button class="log-tab active" data-logtab="scenario-log-panel">Live Output</button>
+                    </div>
+
+                    <div id="editor-panel" class="log-tab-content">
+                        <div class="control-panel editor-panel">
+                            <div class="code-editor-container" id="codeEditor"></div>
+                            <textarea id="scenarioTextarea" class="scenario-textarea" style="display:none"></textarea>
+                            <div class="editor-footer">
+                                <input type="text" id="scenarioName" placeholder="Scenario name to save…">
+                                <button id="saveBtn" class="btn-success">💾 Save</button>
+                                <button id="clearEditorBtn" class="btn-warning">✕ Clear</button>
+                                <button id="runCustomBtn" class="btn-success">▶ Run from Editor</button>
                             </div>
                         </div>
                     </div>
 
-                    <div class="control-panel">
-                        <h3>Scenario Editor</h3>
-
-                        <div class="code-editor-container">
-                            <div id="codeEditor"></div>
-                        </div>
-
-                        <textarea id="scenarioTextarea" class="scenario-textarea" placeholder="Write your ROS2 launch file content here...">
-                            from launch import LaunchDescription
-                            import os
-                            import sys
-                            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                            if base_dir not in sys.path:
-                            sys.path.insert(0, base_dir)
-                            from scenario_helpers.simulated_vehicle import create_simulated_vehicle_nodes
-                            from scenario_helpers.simulated_vehicle import Position
-                            from scenario_helpers.visualizer import create_visualization_nodes
-
-                            start_position = Position(lat_long=(52.314562, 10.560474), psi=3.04)
-                            goal_position = Position(lat_long=(52.313533, 10.560554))
-
-                            def generate_launch_description():
-                            launch_file_dir = os.path.dirname(os.path.realpath(__file__))
-                            map_image_folder = os.path.abspath(os.path.join(launch_file_dir, "../assets/maps/"))
-                            map_folder = os.path.abspath(os.path.join(launch_file_dir, "../assets/tracks/"))
-                            vehicle_param = os.path.abspath(os.path.join(launch_file_dir, "../assets/vehicle_params/"))
-                            map_file = map_folder + "/de_bs_borders_wfs.r2sr"
-                            vehicle_model_file = vehicle_param + "/NGC.json"
-
-                            return LaunchDescription([
-                            *create_visualization_nodes(
-                            whitelist=["ego_vehicle"],
-                            asset_folder=map_image_folder,
-                            use_center_ego=True
-                            ),
-                            *create_simulated_vehicle_nodes(
-                            namespace="ego_vehicle",
-                            start_position=start_position,
-                            goal_position=goal_position,
-                            map_file=map_file,
-                            model_file=vehicle_model_file,
-                            controllable=True,
-                            optinlc_route_following=True,
-                            v2x_id=0,
-                            vehicle_id=0,
-                            controller=1,
-                            debug=False,
-                            composable=False
-                            )
-                            ])
-
-                        </textarea>
-
-                        <div class="save-controls">
-                            <input type="text" id="scenarioName" placeholder="Enter scenario name...">
-                            <button id="saveBtn" class="btn-success">Save Scenario</button>
-                        </div>
-
-                        <div class="utility-buttons">
-                            <button id="clearEditorBtn" class="btn-warning">Clear Editor</button>
-                        </div>
-
-                        <button id="runCustomBtn" class="btn-success">Run Scenario from Editor</button>
-                        <button id="haltCustomBtn" class="btn-danger">Halt</button>
-
-                        <div class="stored-positions-display">
-                            <h3>Stored Positions (Set with Goal Picker)</h3>
-                            <div id="storedPositionsInfo">
-                                <div class="no-stored-positions">No positions stored</div>
+                    <div id="scenario-log-panel" class="log-tab-content active">
+                        <div class="control-panel log-panel-full">
+                            <div class="log-header">
+                                <span>Scenario Output</span>
+                                <label class="toggle-label small">
+                                    <input type="checkbox" id="autoScrollScenario" checked> Auto-scroll
+                                </label>
                             </div>
-                            <button id="clearPositionsBtn" class="btn-danger clear-positions-btn">Clear Stored Positions</button>
-                            <button id="applyPositionsBtn" class="btn-info">Apply Stored Positions</button>
+                            <div class="log-container" id="scenarioLogContainer"></div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <div id="output" class="tab-content">
-                <h2>System Output & Results</h2>
-
-                <div class="control-panel" style="margin-bottom: 20px;">
-                    <h3>Model Checker Status & Results</h3>
-
-                    <div class="modelcheck-status-display">
-                        <span class="status-indicator" id="modelCheckStatusIndicator"></span>
-                        <span id="modelCheckStatusText">Idle</span>
-                    </div>
-
-                    <div class="modelcheck-results-widget" id="modelCheckResultsWidget" style="display: none;">
-                        <h4>Model Checking Results</h4>
-                        <div class="modelcheck-summary" id="modelCheckSummary"></div>
-                        <div id="modelCheckPropositions"></div>
-                    </div>
-
-                    <button id="cancelModelCheckBtn" class="btn-warning" disabled>Cancel Model Check</button>
-                    <button id="downloadModelCheckBtn" class="btn-info" disabled>Download Results</button>
-                </div>
-
-                <button class="collapsible" id="scenarioContentToggle">Current Scenario Content</button>
-                <div class="collapsible-content" id="scenarioContentDiv">
-                    <pre id="scenarioContent">No scenario loaded</pre>
-                </div>
-
-                <button class="collapsible" id="bagRecordingsToggle">Recorded Bag Files</button>
-                <div class="collapsible-content" id="bagRecordingsDiv">
-                    <div id="bagRecordingsList">No recordings found</div>
-                </div>
-
-                <div class="three-column">
-                    <div class="control-panel">
-                        <h3>Scenario Output Log</h3>
-                        <div class="log-container" id="logContainer"></div>
-                    </div>
-
-                    <div class="control-panel">
-                        <h3>Bag Recording Output Log</h3>
-                        <div class="log-container" id="bagLogContainer"></div>
-                    </div>
-
-                    <div class="control-panel">
-                        <h3>Model Checker Output Log</h3>
-                        <div class="log-container" id="modelCheckLogContainer">No model checking output</div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="visualization" class="tab-content">
-                <iframe 
-                    src="http://{{ host.split(':')[0] }}:8080/?ds=foxglove-websocket&ds.url=ws://{{ host.split(':')[0] }}:8765&layout=Default.json"
-                    width="100%" 
-                    height="600" 
-                    frameborder="0">
-                </iframe>
-            </div>
-
-            <div id="goal-picker" class="tab-content">
-                <iframe src="/goal_picker"></iframe>
-            </div>
-            <div id="api-reference" class="tab-content">
-                <div id="api-reference-loading" style="text-align: center; padding: 50px;">
-                    <p>Loading API Reference...</p>
-                </div>
-                <div id="api-reference-content" style="display: none;"></div>
-            </div>
-
         </div>
 
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
-        <script src="/static/main.js"></script>
-    </body>
+        <!-- ══════════════════════════════════════════
+             TAB: ROS Task Manager
+        ══════════════════════════════════════════ -->
+        <div id="ros-task-manager" class="tab-content">
+            <div class="split-layout">
+                <div class="split-left">
+                    <div class="control-panel">
+                        <h3>Node Actions</h3>
+                        <button id="refreshNodesBtn" class="btn-info">⟳ Refresh Nodes</button>
+                        <button id="killAllNodesBtn" class="btn-danger">⚡ Kill All Nodes</button>
+                        <div class="info-box info-box-loop" style="margin-top:12px;">
+                            Select a node from the list then click Halt Node to stop it individually.
+                        </div>
+                        <div class="field-group" style="margin-top:12px;">
+                            <label>Selected Node</label>
+                            <input type="text" id="selectedNodeDisplay" readonly placeholder="Click a node to select">
+                        </div>
+                        <button id="haltNodeBtn" class="btn-warning" disabled>⬛ Halt Selected Node</button>
+                    </div>
+                </div>
+                <div class="split-right">
+                    <div class="control-panel" style="height:100%;">
+                        <div class="log-header">
+                            <span>Running ROS2 Nodes (<span id="ros-node-count">0</span>)</span>
+                            <span id="ros-node-last-update" style="font-size:11px;color:#888;"></span>
+                        </div>
+                        <div id="ros-node-list" class="node-list-container">
+                            <div class="no-running-nodes">Loading…</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════
+             TAB: ROS Topics
+        ══════════════════════════════════════════ -->
+        <div id="ros-topics" class="tab-content">
+            <div class="split-layout">
+                <div class="split-left">
+                    <div class="control-panel">
+                        <h3>Topic Browser</h3>
+                        <div class="log-header">
+                            <span>Topics (<span id="rosTopicCount">0</span>)</span>
+                            <button id="rosTopicRefreshBtn" class="btn-info btn-sm">⟳ Refresh</button>
+                        </div>
+                        <input type="text" id="rosTopicSearch" placeholder="Filter topics…" style="margin-bottom:6px;">
+                        <div id="rosTopicList" class="topic-list-container">
+                            <div class="no-running-nodes">Click Refresh to load topics</div>
+                        </div>
+                        <div class="field-group" style="margin-top:10px;">
+                            <label>Selected Topic</label>
+                            <input type="text" id="rosTopicSelected" readonly placeholder="Click a topic to select">
+                        </div>
+                    </div>
+                </div>
+                <div class="split-right">
+                    <div class="log-editor-tabs">
+                        <button class="log-tab active" data-logtab="ros-topics-observe">Observe</button>
+                        <button class="log-tab" data-logtab="ros-topics-hz">Hz / Rate</button>
+                        <button class="log-tab" data-logtab="ros-topics-echo">Single Message</button>
+                        <button class="log-tab" data-logtab="ros-topics-publish">Publish</button>
+                    </div>
+
+                    <!-- Observe sub-tab -->
+                    <div id="ros-topics-observe" class="log-tab-content active">
+                        <div class="control-panel" style="border-radius:0 8px 8px 8px;">
+                            <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;">
+                                <div class="field-group" style="flex:1;margin:0;position:relative;">
+                                    <label>Topic</label>
+                                    <input type="text" id="rosTopicObserveInput" placeholder="/your/topic" autocomplete="off">
+                                    <div class="topic-dropdown" id="rosObserveDropdown"></div>
+                                </div>
+                                <div class="field-group" style="width:80px;margin:0;">
+                                    <label>Max Hz</label>
+                                    <input type="number" id="rosObserveMaxHz" value="10" min="0.1" max="20" step="0.5">
+                                </div>
+                                <button id="rosObserveStartBtn" class="btn-success">▶ Stream</button>
+                                <button id="rosObserveStopBtn" class="btn-danger" disabled>⏹ Stop</button>
+                            </div>
+                            <div class="log-header">
+                                <span>Live Output</span>
+                                <div style="display:flex;gap:8px;align-items:center;">
+                                    <label class="toggle-label small">
+                                        <input type="checkbox" id="rosObserveAutoScroll" checked> Auto-scroll
+                                    </label>
+                                    <div style="display:flex;gap:4px;align-items:center;">
+                                        <input type="number" id="rosExportCount" value="10" min="1" max="10000" style="width:60px;padding:3px 6px;font-size:12px;" title="Messages to export">
+                                        <button id="rosExportJsonlBtn" class="btn-info btn-sm" title="Export captured messages as JSONL">⬇ JSONL</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="log-container" id="rosTopicObserveLog" style="height:calc(100vh - 360px);"></div>
+                        </div>
+                    </div>
+
+                    <!-- Hz sub-tab -->
+                    <div id="ros-topics-hz" class="log-tab-content">
+                        <div class="control-panel" style="border-radius:0 8px 8px 8px;">
+                            <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;">
+                                <div class="field-group" style="flex:1;margin:0;position:relative;">
+                                    <label>Topic</label>
+                                    <input type="text" id="rosTopicHzInput" placeholder="/your/topic" autocomplete="off">
+                                    <div class="topic-dropdown" id="rosHzDropdown"></div>
+                                </div>
+                                <button id="rosTopicHzBtn" class="btn-info">📡 Measure Hz</button>
+                            </div>
+                            <div class="info-box info-box-loop">Runs <code>ros2 topic hz -w 10</code> for the given topic and returns rate statistics.</div>
+                            <div class="log-header" style="margin-top:10px;"><span>Hz Output</span></div>
+                            <pre id="rosTopicHzOutput" style="background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:12px;color:#3fb950;font-size:12px;min-height:80px;overflow:auto;"></pre>
+                        </div>
+                    </div>
+
+                    <!-- Echo sub-tab -->
+                    <div id="ros-topics-echo" class="log-tab-content">
+                        <div class="control-panel" style="border-radius:0 8px 8px 8px;">
+                            <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;">
+                                <div class="field-group" style="flex:1;margin:0;position:relative;">
+                                    <label>Topic</label>
+                                    <input type="text" id="rosTopicEchoInput" placeholder="/your/topic" autocomplete="off">
+                                    <div class="topic-dropdown" id="rosEchoDropdown"></div>
+                                </div>
+                                <button id="rosTopicEchoBtn" class="btn-info">📨 Get Message</button>
+                            </div>
+                            <div class="info-box info-box-loop">Receives one message from the topic and displays it as formatted JSON.</div>
+                            <div class="log-header" style="margin-top:10px;"><span>Message</span></div>
+                            <div class="json-viewer" id="rosTopicJsonViewer"><span style="color:#6e7681;">Select a topic and click Get Message</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Publish sub-tab -->
+                    <div id="ros-topics-publish" class="log-tab-content">
+                        <div class="control-panel" style="border-radius:0 8px 8px 8px;flex:1;display:flex;flex-direction:column;overflow:auto;">
+                            <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;flex-wrap:wrap;">
+                                <div class="field-group" style="flex:2;min-width:180px;margin:0;position:relative;">
+                                    <label>Topic</label>
+                                    <input type="text" id="rosPublishTopicInput" placeholder="/your/topic" autocomplete="off">
+                                    <div class="topic-dropdown" id="rosPublishTopicDropdown"></div>
+                                </div>
+                                <div class="field-group" style="flex:2;min-width:180px;margin:0;position:relative;">
+                                    <label>Datatype</label>
+                                    <input type="text" id="rosPublishDatatypeInput" placeholder="e.g. std_msgs/msg/String" autocomplete="off">
+                                    <div class="topic-dropdown" id="rosPublishDatatypeDropdown"></div>
+                                </div>
+                                <button id="rosPublishLoadProtoBtn" class="btn-info" title="Load empty message template for datatype">⬇ Load Template</button>
+                            </div>
+                            <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;flex-wrap:wrap;">
+                                <div class="field-group" style="width:120px;margin:0;">
+                                    <label>Frequency (Hz)</label>
+                                    <input type="number" id="rosPublishFreqInput" value="0" min="0" max="100" step="0.5" placeholder="0 = once">
+                                </div>
+                                <button id="rosPublishOnceBtn" class="btn-success">▶ Publish Once</button>
+                                <button id="rosPublishStartBtn" class="btn-success">⟳ Start Loop</button>
+                                <button id="rosPublishStopBtn" class="btn-danger" disabled>⏹ Stop Loop</button>
+                                <label class="btn-info" style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:6px;font-size:13px;white-space:nowrap;" title="Import JSONL file to republish">
+                                    📂 Import JSONL
+                                    <input type="file" id="rosPublishImportFile" accept=".jsonl,.json" style="display:none;">
+                                </label>
+                            </div>
+                            <div style="display:flex;gap:8px;min-height:0;flex:1;">
+                                <div style="flex:1;display:flex;flex-direction:column;min-height:0;">
+                                    <div class="log-header"><span>Message Editor (JSON)</span></div>
+                                    <div id="rosPublishEditorContainer" style="flex:1;min-height:220px;border:1px solid #30363d;border-radius:6px;overflow:hidden;"></div>
+                                    <div id="rosPublishEditorError" style="color:#f85149;font-size:11px;margin-top:4px;min-height:16px;"></div>
+                                    <div id="rosPublishImportList" style="display:none;margin-top:6px;">
+                                        <div class="log-header">
+                                            <span>Imported Messages (<span id="rosPublishImportCount">0</span>)</span>
+                                            <div style="display:flex;gap:6px;align-items:center;">
+                                                <button id="rosPublishImportPrevBtn" class="btn-info btn-sm">◀</button>
+                                                <span id="rosPublishImportIdx" style="font-size:12px;color:#8b949e;">1</span>
+                                                <button id="rosPublishImportNextBtn" class="btn-info btn-sm">▶</button>
+                                                <button id="rosPublishImportClearBtn" class="btn-danger btn-sm">✕ Clear</button>
+                                                <label class="toggle-label small" style="margin-left:4px;">
+                                                    <input type="checkbox" id="rosPublishLoopReplay"> Loop
+                                                </label>
+                                                <button id="rosPublishImportReplayBtn" class="btn-success btn-sm">⟳ Replay All</button>
+                                                <button id="rosPublishImportStopBtn" class="btn-danger btn-sm" disabled>⏹ Stop</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style="flex:1;display:flex;flex-direction:column;min-height:0;">
+                                    <div class="log-header">
+                                        <span>Publish Log</span>
+                                        <button id="rosPublishClearLogBtn" class="btn-info btn-sm">✕ Clear</button>
+                                    </div>
+                                    <div class="log-container" id="rosPublishLog" style="min-height:220px;height:calc(100vh - 440px);"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════
+             TAB: ROS Workspace
+        ══════════════════════════════════════════ -->
+        <div id="ros-workspace" class="tab-content">
+            <div class="split-layout">
+                <div class="split-left">
+                    <div class="control-panel">
+                        <h3>Workspace Status</h3>
+                        <div class="workspace-status-grid" id="wsStatusGrid">
+                            <span class="ws-key" style="grid-column:1/-1;color:#6e7681;">Click Refresh to load</span>
+                        </div>
+                        <button id="wsRefreshBtn" class="btn-info" style="margin-top:10px;">⟳ Refresh Status</button>
+                    </div>
+                    <div class="control-panel">
+                        <h3>Build Actions</h3>
+                        <div class="action-buttons">
+                            <button id="wsCleanBtn" class="btn-warning">🧹 make clean</button>
+                            <button id="wsBuildBtn" class="btn-success">🔨 make build</button>
+                        </div>
+                        <div class="options-row" style="margin-top:10px;">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="wsAutoRebuildToggle"> Auto-rebuild stale packages
+                            </label>
+                        </div>
+                        <div class="info-box info-box-loop" style="margin-top:6px;">
+                            When enabled, packages with the <strong>Auto</strong> checkbox ticked are rebuilt automatically when source changes are detected. Packages unknown to colcon are excluded.
+                        </div>
+                    </div>
+                    <div class="control-panel">
+                        <h3>Packages (<span id="wsPkgCount">0</span>)</h3>
+                        <input type="text" id="wsPkgSearch" placeholder="Filter packages…" style="margin-bottom:6px;">
+                        <div id="wsPackageList" class="topic-list-container" style="height:calc(100vh - 560px);min-height:120px;">
+                            <div class="no-running-nodes">Click Refresh to load</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="split-right">
+                    <div class="log-editor-tabs">
+                        <button class="log-tab active" data-logtab="ws-build-panel">Build Output</button>
+                        <button class="log-tab" data-logtab="ws-ccache-panel">CCache</button>
+                    </div>
+
+                    <div id="ws-build-panel" class="log-tab-content active">
+                        <div class="control-panel" style="border-radius:0 8px 8px 8px;height:calc(100vh - 175px);">
+                            <div class="log-header">
+                                <span>Build Output</span>
+                                <div style="display:flex;gap:8px;align-items:center;">
+                                    <label class="toggle-label small">
+                                        <input type="checkbox" id="wsAutoScroll" checked> Auto-scroll
+                                    </label>
+                                    <button id="wsClearLogBtn" class="btn-info btn-sm">✕ Clear</button>
+                                </div>
+                            </div>
+                            <div class="log-container" id="wsLogContainer" style="height:calc(100vh - 255px);"></div>
+                        </div>
+                    </div>
+
+                    <div id="ws-ccache-panel" class="log-tab-content">
+                        <div class="control-panel" style="border-radius:0 8px 8px 8px;height:calc(100vh - 175px);display:flex;flex-direction:column;">
+                            <div class="log-header">
+                                <span>CCache Statistics</span>
+                                <div style="display:flex;gap:8px;align-items:center;">
+                                    <button id="ccacheRefreshBtn" class="btn-info btn-sm">⟳ Refresh</button>
+                                    <button id="ccacheClearBtn" class="btn-warning btn-sm">🗑 Clear Cache</button>
+                                </div>
+                            </div>
+                            <div id="ccacheStatus" style="font-size:12px;color:#8b949e;margin-bottom:8px;"></div>
+                            <div id="ccacheStats" style="flex:1;overflow-y:auto;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════
+             TAB: Scenario Visualization
+        ══════════════════════════════════════════ -->
+        <div id="visualization" class="tab-content">
+            <div class="viz-toolbar">
+                <label style="font-weight:600;font-size:14px;">Lichtblick URL</label>
+                <input id="lichtblickUrl" type="text"
+                    value="http://localhost:8080/?ds=rosbridge-websocket&ds.url=ws://localhost:9090&layout=Default.json">
+                <button onclick="const f=document.getElementById('lichtblickFrame'),u=document.getElementById('lichtblickUrl').value;f.dataset.src=u;f.src=u;">
+                    Connect
+                </button>
+            </div>
+            <iframe id="lichtblickFrame"
+                data-src="http://localhost:8080/?ds=rosbridge-websocket&ds.url=ws://localhost:9090&layout=Default.json"
+                class="full-iframe"></iframe>
+        </div>
+
+        <!-- ══════════════════════════════════════════
+             TAB: Bag File Recording
+        ══════════════════════════════════════════ -->
+        <div id="bag-recording" class="tab-content">
+            <div class="split-layout">
+                <div class="split-left">
+                    <div class="control-panel">
+                        <h3>Recording Control</h3>
+                        <div class="bag-status-row">
+                            <span class="status-indicator" id="bagStatusIndicator"></span>
+                            <span id="bagStatusText">Idle</span>
+                        </div>
+
+                        <div class="inline-fields">
+                            <div class="field-group">
+                                <label>Duration (s) — 0 = unlimited</label>
+                                <input type="number" id="bagDuration" value="0" min="0" max="86400">
+                            </div>
+                        </div>
+
+                        <div class="options-row">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="recordAllTopics" checked> Record all topics
+                            </label>
+                        </div>
+
+                        <div id="topicsSelectionContainer" style="display:none;">
+                            <label>Select Topics</label>
+                            <div class="topics-container" id="topicsContainer">
+                                <div style="color:#6c757d;text-align:center;padding:8px;">Loading topics…</div>
+                            </div>
+                            <button id="refreshTopicsBtn" class="btn-info" style="margin-top:6px;">⟳ Refresh Topics</button>
+                        </div>
+
+                        <div class="action-buttons" style="margin-top:12px;">
+                            <button id="startBagBtn" class="btn-success">⏺ Start Recording</button>
+                            <button id="stopBagBtn" class="btn-danger" disabled>⏹ Stop Recording</button>
+                        </div>
+
+                        <div class="info-box info-box-loop" style="margin-top:12px;">
+                            Recordings are stored in <code>LOG_DIRECTORY/bag_file_recordings/</code> named with scenario and ISO8601 timestamp.
+                        </div>
+                    </div>
+                </div>
+                <div class="split-right">
+                    <div class="control-panel" style="height:100%;">
+                        <div class="log-header">
+                            <span>Recorded Bag Files</span>
+                            <button id="refreshBagListBtn" class="btn-info btn-sm">⟳ Refresh</button>
+                        </div>
+                        <div id="bagRecordingsList" class="bag-list-container">
+                            <div class="no-running-nodes">No recordings found</div>
+                        </div>
+                        <div class="log-header" style="margin-top:16px;">
+                            <span>Recording Output</span>
+                        </div>
+                        <div class="log-container" id="bagLogContainer" style="height:200px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════════════
+             TAB: Goal Picker
+        ══════════════════════════════════════════ -->
+        <div id="goal-picker" class="tab-content">
+            <iframe src="/goal_picker" class="full-iframe"></iframe>
+        </div>
+
+        <!-- ══════════════════════════════════════════
+             TAB: Model Checker
+        ══════════════════════════════════════════ -->
+        <div id="model-checker" class="tab-content">
+            <iframe id="modelCheckerFrame" class="full-iframe" data-src="/model-checker/dashboard"></iframe>
+        </div>
+
+        <!-- ══════════════════════════════════════════
+             TAB: Hardware Monitor
+        ══════════════════════════════════════════ -->
+        <div id="hardware-monitor" class="tab-content" style="padding:0;overflow:hidden;"></div>
+
+        <!-- ══════════════════════════════════════════
+             TAB: API Reference
+        ══════════════════════════════════════════ -->
+        <div id="api-reference" class="tab-content">
+            <div id="api-reference-loading" class="api-loading"><p>Loading API Reference…</p></div>
+            <div id="api-reference-content" class="api-reference-content" style="display:none;"></div>
+        </div>
+
+    </div><!-- /main-content -->
+</div><!-- /app-layout -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="/static/tabs.js"></script>
+<script src="/static/fuzzy.js"></script>
+<script src="/static/scenario_manager.js"></script>
+<script src="/static/ros_task_manager.js"></script>
+<script src="/static/bag_recording.js"></script>
+<script src="/static/model_checker_panel.js"></script>
+<script src="/static/hardware_monitor_panel.js"></script>
+<script src="/static/ros_topics.js"></script>
+<script src="/static/ros_workspace.js"></script>
+<script src="/static/main.js"></script>
+</body>
 </html>

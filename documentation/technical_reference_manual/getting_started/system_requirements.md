@@ -18,10 +18,10 @@ and its components.
 > **⚠️ WARNING: Building ADORe ROS nodes on systems with limited resources may cause crashes!**  
 > By default, ADORe uses parallel builds, which can overwhelm low-resource systems.  
 > To prevent this, either:  
-> - Edit the `.colcon_workspace/colcon_defaults.yaml` file to disable parallel builds, **or**  
+> - Edit the `adore.env` file to disable parallel builds, **or**  
 > - Run a single-core build with:  
 >   ```bash
->   cd .colcon_workspace && colcon build --parallel-workers 1
+>   cd ros2_workspace && make build_single_core
 >   ```
 
 **RAM:** 
@@ -31,8 +31,8 @@ and its components.
 
 **HD Storage:**
 
-- At least 1.5 GB to clone the repository  
-- At least 10 GB to build all necessary Docker contexts
+- At least 2.5 GB to clone the repository  
+- At least 15 GB to build all necessary Docker contexts
 
 **Operating System:** 
 
@@ -49,3 +49,6 @@ and its components.
 
 - [Docker 🔗](https://www.docker.com/) v20.10.17 or greater and Docker Compose v2.6.0 or greater.  
   For a guide on installing docker, see [Installing Docker](installing_docker.md).
+
+- [GNU Make 🔗](https://www.gnu.org/software/make/) is the backbone of the ADORe build system and is required.
+

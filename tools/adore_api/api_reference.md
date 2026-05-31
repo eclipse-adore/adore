@@ -744,3 +744,336 @@ Error responses include a descriptive message:
   "message": "Error description"
 }
 ```
+
+## Continuous Monitoring API
+
+The continuous monitoring API enables real-time proposition checking against live ROS2 data streams.
+
+### Start Continuous Monitoring
+
+**POST** `/api/model_checker/continuous/start`
+
+Start a continuous monitoring session.
+
+**Request Body:**
+```json
+{
+  "config_file": "config/default.yaml",
+  "vehicle_id": 0
+}
+```
+
+**Response:**
+```json
+{
+  "session_id": "abc123",
+  "status": "running",
+  "message": "Continuous monitoring started"
+}
+```
+
+### Stop Continuous Monitoring
+
+**POST** `/api/model_checker/continuous/stop`
+
+Stop the active continuous monitoring session.
+
+**Response:**
+```json
+{
+  "status": "stopped",
+  "message": "Monitoring stopped"
+}
+```
+
+### Get Continuous Monitoring Status
+
+**GET** `/api/model_checker/continuous/status`
+
+Get the status of the current continuous monitoring session.
+
+**Response:**
+```json
+{
+  "running": true,
+  "session_id": "abc123",
+  "uptime_s": 42.3,
+  "messages_processed": 1200,
+  "active_propositions": 10
+}
+```
+
+### Get Live Violations
+
+**GET** `/api/model_checker/continuous/violations`
+
+Get current violation events from the running monitoring session.
+
+**Response:**
+```json
+{
+  "violations": [
+    {
+      "proposition": "SAFE_DISTANCE",
+      "timestamp": 1642780800.0,
+      "value": 0.42,
+      "threshold": 0.5,
+      "severity": "warning"
+    }
+  ],
+  "count": 1,
+  "session_id": "abc123"
+}
+```
+
+### Get Filtered Violations (excluding disabled propositions)
+
+**GET** `/api/model_checker/continuous/violations/filtered`
+
+Returns violations excluding any propositions disabled via the `/api/model_checker/continuous/disabled` endpoint.
+
+**Response:** Same shape as `/violations`.
+
+### Set Disabled Propositions
+
+**POST** `/api/model_checker/continuous/disabled`
+
+Suppress specific propositions from violation output.
+
+**Request Body:**
+```json
+{
+  "disabled_propositions": ["PROP_NAME_A", "PROP_NAME_B"]
+}
+```
+
+**Response:**
+```json
+{ "ok": true }
+```
+
+### Get Continuous Results
+
+**GET** `/api/model_checker/continuous/results`
+
+Get the aggregated results from the current or most recently completed continuous session.
+
+**Response:**
+```json
+{
+  "results": {
+    "SUMMARY": {
+      "total_propositions": 10,
+      "passed": 8,
+      "failed": 2,
+      "success_rate": 0.8,
+      "overall_result": "FAIL"
+    },
+    "PROP_NAME": {
+      "status": "fail",
+      "description": { "title": "...", "description": "..." },
+      "formula_description": "...",
+      "result": 0.43,
+      "statistics": {
+        "duration_s": 42.3,
+        "messages_processed": 1200,
+        "violation_count": 3,
+        "safety_grade": "C, 3.0"
+      }
+    }
+  }
+}
+```
+
+## Model Checker Configuration API
+
+### List Configs
+
+**GET** `/api/model_checker/configs`
+
+List all available YAML configuration files.
+
+**Response:**
+```json
+{
+  "configs": [
+    { "name": "default.yaml", "size": 2048, "modified": "2025-07-01T12:00:00Z" }
+  ]
+}
+```
+
+### Get Config
+
+**GET** `/api/model_checker/configs/<name>`
+
+Read a specific configuration file.
+
+**Response:**
+```json
+{ "name": "default.yaml", "content": "# yaml content..." }
+```
+
+### Save Config
+
+**POST** `/api/model_checker/configs`
+
+Create or overwrite a configuration file.
+
+**Request Body:**
+```json
+{ "name": "my_config.yaml", "content": "# yaml content..." }
+```
+
+### Delete Config
+
+**DELETE** `/api/model_checker/configs/<name>`
+
+Delete a configuration file.
+
+## Model Checker History API
+
+### List Run History
+
+**GET** `/api/model_checker/history`
+
+List all completed model checking runs.
+
+**Response:**
+```json
+{
+  "runs": [
+    {
+      "run_id": 1,
+      "status": "completed",
+      "overall_result": "PASS",
+      "config_file": "config/default.yaml",
+      "completed_at": "2025-07-01T12:00:00Z"
+    }
+  ]
+}
+```
+
+### Get Run Log
+
+**GET** `/api/model_checker/history/<run_id>/log`
+
+Retrieve the log output for a specific historical run.
+
+**Response:**
+```json
+{ "log": "full log text..." }
+```
+
+## Model Checker Log Stream
+
+### Stream API Logs
+
+**GET** `/api/model_checker/logs/stream`
+
+Server-Sent Events stream of all API log output. Connect with `EventSource`.
+
+**Event format:**
+```json
+{ "text": "log line", "stream": "stdout", "time": "14:30:00" }
+```
+
+## ROS Topics Extended API
+
+### Measure Topic Rate
+
+**POST** `/api/topic/hz`
+
+Run `ros2 topic hz -w 10` for a topic and return the output (waits up to 12 seconds for window of 10 messages).
+
+**Request Body:**
+```json
+{ "topic": "/your/topic" }
+```
+
+**Response:**
+```json
+{ "success": true, "topic": "/your/topic", "output": "average rate: 10.000\n..." }
+```
+
+### Echo One Message
+
+**POST** `/api/topic/echo`
+
+Receive a single message from a topic (`ros2 topic echo --once`) and return it as raw text.
+
+**Request Body:**
+```json
+{ "topic": "/your/topic" }
+```
+
+**Response:**
+```json
+{ "success": true, "topic": "/your/topic", "raw": "header:\n  stamp: ..." }
+```
+
+### Stream Topic (SSE)
+
+**GET** `/api/topic/stream?topic=<topic_name>`
+
+Server-Sent Events stream of `ros2 topic echo` output for continuous observation.
+
+**Query Parameters:**
+- `topic`: the ROS 2 topic name (required)
+
+**Event format:**
+```json
+{ "text": "line from ros2 topic echo", "time": "14:30:00" }
+```
+
+## ROS Workspace API
+
+### Workspace Status
+
+**GET** `/api/ros_workspace/status`
+
+Returns the current state of the `ros2_workspace` directory.
+
+**Response:**
+```json
+{
+  "workspace_dir": "/path/to/ros2_workspace",
+  "workspace_exists": true,
+  "makefile_exists": true,
+  "build_dir_exists": true,
+  "install_dir_exists": true,
+  "running": { "clean": false, "build": false }
+}
+```
+
+### Clean Workspace
+
+**POST** `/api/ros_workspace/clean`
+
+Runs `make clean` inside the `ros2_workspace` directory. Output is streamed via `/api/ros_workspace/log/stream`.
+
+**Response:**
+```json
+{ "success": true, "message": "make clean started" }
+```
+
+### Build Workspace
+
+**POST** `/api/ros_workspace/build`
+
+Runs `make build` inside the `ros2_workspace` directory. Output is streamed via `/api/ros_workspace/log/stream`.
+
+**Response:**
+```json
+{ "success": true, "message": "make build started" }
+```
+
+### Workspace Build Log Stream (SSE)
+
+**GET** `/api/ros_workspace/log/stream`
+
+Server-Sent Events stream of stdout/stderr from `make clean` or `make build` invocations.
+
+**Event format:**
+```json
+{ "text": "log line", "stream": "stdout", "time": "14:30:00" }
+```

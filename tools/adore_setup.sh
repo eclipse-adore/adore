@@ -12,16 +12,18 @@
 # SPDX-License-Identifier: EPL-2.0
 # ********************************************************************************
 
+
+#!/bin/bash
 #
 # adore_setup.sh
 #
 # Description:
 # This script sets up/configures ADORe by performing the following tasks:
 # - Verifies system requirements, such as sufficient free disk space.
-# - Installs Docker or updates Docker to the latest version.
+# - Installs Docker or updates Docker to the latest version
 # - Checks the Ubuntu version against supported versions.
 # - Anonymously clones the ADORe repository to '~/adore'.
-# - Builds the ADORe Docker images and prepares the colcon workspace.
+# - Builds the ADORe CLI Docker context and builds the user libraries and ROS nodes.
 #
 # Usage:
 # Run this script using one of the following commands:
@@ -33,23 +35,28 @@
 #    or headless/non-interactive
 #    bash <(curl -sSL https://raw.githubusercontent.com/eclipse-adore/adore/develop/tools/adore_setup.sh) --headless
 
-set -euo pipefail
+#set -euo pipefail
+#set -euo
 
 trap 'get_help' EXIT
 
-echoerr() { printf "%b" "$*\n" >&2; }
-exiterr() { printf "%b\n" "$@" >&2; exit 1; }
+echoerr() { printf "%b" "$*\n" >&2;}
+exiterr (){ printf "$@\n"; exit 1;}
 
 SCRIPT_DIRECTORY="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
 
 CLONE_DIR="${HOME}"
 SUPPORTED_UBUNTU_VERSIONS="20.04 20.10 22.04 24.04"
 REQUIRED_FREESPACE_GB="20"
 EXTERNAL_RESOURCES=("https://pypi.org" "http://archive.canonical.com" "https://registry.hub.docker.com")
 
+#ADORE_ORGANIZATION="eclipse"
 ADORE_ORGANIZATION="eclipse-adore"
 ADORE_SUPPORT_EMAIL_ADDRESS=opensource-ts@dlr.de
 ADORE_REPO="https://github.com/${ADORE_ORGANIZATION}/adore.git"
+#ADORE_REPO="git@github.com:${ADORE_ORGANIZATION}/adore.git"
+
 ADORE_HELP_LINK="${ADORE_REPO}/issues"
 ADORE_DOCS_LINK="https://${ADORE_ORGANIZATION}.github.io/adore/"
 
@@ -58,92 +65,79 @@ SKIP_PREREQUISITE_CHECKS=0
 
 setup_complete=false
 
-success() {
+success(){
     printf "\n"
-    printf "ADORe was set up successfully!\n"
-    printf "  ADORe Directory: %s/adore\n" "${CLONE_DIR}"
-    printf "  Recommended next steps:\n"
-    printf "    - Change into the repo:    cd \"%s/adore\"\n" "${CLONE_DIR}"
-    printf "    - Start a dev shell:       .docker/scripts/cli.sh\n"
-    printf "      (or, if 'just' is installed: just cli)\n"
-    printf "  Documentation:  %s\n" "${ADORE_DOCS_LINK}"
-    printf "  Help / Issues:  %s\n" "${ADORE_HELP_LINK}"
+    printf "ADORe was setup successfully!\n"
+    printf "  ADORe Directory: ${CLONE_DIR}/adore \n"
+    printf "  Use: 'cd ${CLONE_DIR}/adore && make cli' to get started \n"
+    printf "  Read the docs: ${ADORE_DOCS_LINK} \n"
+    printf "  Get help: ${ADORE_HELP_LINK}\n"
     printf "\n"
 }
 
-failure() {
+failure(){
     printf "\n"
     printf "ERROR: ADORe automated setup failed or was incomplete!\n"
-    printf "  The recommended next step is to attempt a manual setup.\n"
-    printf "    Visit the documentation: %s\n" "${ADORE_DOCS_LINK}"
-    printf "    Or open an issue:        %s\n" "${ADORE_HELP_LINK}"
+    printf "  The recomended next step is to attempt a manual setup."
+    printf "    visit: ${ADORE_HELP_LINK}/mkdocs/getting_started/getting_started/\n"
     printf "\n"
 }
 
-get_help() {
+get_help(){
     local exit_status=$?
-    if [[ "${setup_complete}" == "true" && ${exit_status} -eq 0 ]]; then
+    if [[ "$setup_complete" == "true" && $exit_status -ne 0 ]]; then
         success
-    elif [[ ${exit_status} -ne 0 ]]; then
+    else
         failure
     fi
-
     printf "\n\n"
     printf "Having trouble? Reach out to the ADORe team, we are here to help!\n"
-    printf "  %s\n" "${ADORE_HELP_LINK}"
-    printf "  or send us an email at: %s\n" "${ADORE_SUPPORT_EMAIL_ADDRESS}"
+    printf "  ${ADORE_REPO}/issues \n"
+    printf "  or send us an email at: ${ADORE_SUPPORT_EMAIL_ADDRESS} \n"
     printf "\n\n"
-    exit "${exit_status}"
+    exit $exit_status
 }
 
 usage() {
   cat << EOF
-Usage: $(basename "${BASH_SOURCE[0]}") [OPTIONS]
+Usage: $(basename "${BASH_SOURCE[0]}") [-h] [-v] [-f] -p param_value arg1 [arg2...]
 
-ADORe automated setup.
+Script description here.
 
 Available options:
 
-  -h, --help                      Print this help and exit
-  -H, --headless                  Run ADORe installation in headless/non-interactive mode
-  -s, --skip-prerequisite-checks  Do not run prerequisite checks for storage, OS, etc.
-  -v, --verbose                   Print script debug info
+-h, --help                      Print this help and exit
+-H, --headless                  Run ADORe installation in headless mode and non-interactive 
+-s, --skip-prerequisite-checks  Do not run prerequisite checks for storage, os, etc 
+-v, --verbose                   Print script debug info
 EOF
-  exit 0
+  exit
 }
 
-parse_params() {
+function parse_params() {
+
   while :; do
     case "${1-}" in
-      -h|--help)
-        usage
-        ;;
-      -s|--skip-prerequisite-checks)
-        SKIP_PREREQUISITE_CHECKS=1
-        ;;
-      -v|--verbose)
-        set -x
-        ;;
-      -H|--headless)
-        HEADLESS=1
-        ;;
-      -?*)
-        exiterr "ERROR: Unknown option: $1"
-        ;;
-      *)
-        break
-        ;;
+    -h | --help) usage ;;
+    -s | --skip-prerequisite-checks) SKIP_PREREQUISITE_CHECKS=1 ;;
+    -v | --verbose) set -x ;;
+    -H | --headless) HEADLESS=1 ;;
+    -?*) exiterr "ERROR: Unknown option: $1" ;;
+    *) break ;;
     esac
-    shift || true
+    shift
   done
+
+  args=("$@")
 
   return 0
 }
 
+
 prompt_yes_no() {
     while true; do
         read -rp "Do you want to proceed? (yes/no): " choice
-        case "${choice}" in
+        case $choice in
             [Yy]|[Yy][Ee][Ss])
                 return 0
                 ;;
@@ -157,40 +151,41 @@ prompt_yes_no() {
     done
 }
 
-banner() {
-read -r -d '' coffee_cup << EOF || true
 
-ADORe will be set up on your system. The following system changes will occur:
+banner(){
+
+coffee_cup="
+ADORe will be setup on your system. The following system changes will occurs:
   - Your OS version will be checked against supported Ubuntu versions: ${SUPPORTED_UBUNTU_VERSIONS// /, }
-    Note: The only hard dependencies for ADORe are Docker and Git;
-          however, this automated setup script is supported only on Ubuntu.
-          For manual setup please refer to the getting started guide:
-          ${ADORE_DOCS_LINK}
-  - Docker will be installed or updated using a setup script based on
-          the official Docker docs: https://docs.docker.com/engine/install/ubuntu/
-  - APT dependencies 'git' (and optionally 'just') will be installed
+    Note: The only dependencies for ADORe are Docker and GNU Make; 
+        however, this automated setup script is supported only on Ubuntu!
+        For manual setup please refer to the help getting started help 
+        guide: ${ADORE_HELP_LINK}/mkdocs/getting_started/getting_started/
+  - Docker will be installed or updated using a setup script based off of 
+        the official docker docs: https://docs.docker.com/engine/install/ubuntu/
+  - APT dependencies 'GNU Make' and 'git' will be installed
   - ADORe (${ADORE_REPO}) will be cloned to: ${CLONE_DIR}/adore
-  - ADORe dev Docker images will be built via .docker/scripts/build_dev.sh
-  - You may be prompted for sudo password (root privileges are needed to install Docker and APT dependencies)
+  - ADORe will be built with \"make build\"
+  - You may be prompted for sudo password (root priviliges are needed to install Docker, GNU Make, and git)
 
 ADORe Requirements:
-  - ADORe requires a minimum of ~${REQUIRED_FREESPACE_GB}GB of storage.
-    The setup requires downloading 10–20 GB of dependencies depending on configuration from the Ubuntu central APT repository (https://ubuntu.com/server/docs/package-management), Docker Hub, and PyPI.
-  - Recent version of Docker (this setup script will install or update Docker)
-  - This script is designed and tested for Ubuntu versions 20.04–24.04
-
-Initial setup can take some time depending on system and internet connection.
+  - ADORe requires a minimum of ~${REQUIRED_FREESPACE_GB}GB of storage
+    The setup requires downloading 10–20 GB of dependencies depending on configuration from the Ubuntu central APT repository(https://ubuntu.com/server/docs/package-management), Docker.io(https://www.docker.com/), and PyPI(https://pypi.org/) via pip.
+    - Recent version of Docker (This setup script will install the latest version of Docker) 
+  - This script is designed and tested for Ubuntu versions 20.04-24.04
+ 
+Initial setup can take 10-15 minutes depending on system and internet connection.
+   Grab a cup of coffee and wait for the setup to complete.
 
     ( (
      ) )
   ........
   |      |]
-  \\      / 
+  \      / 
    \`'--'\`
-EOF
-
+"
     printf "%s\n" "$coffee_cup"
-    if [[ ${HEADLESS} -eq 0 ]]; then
+    if [[ $HEADLESS == 0 ]]; then 
         if ! prompt_yes_no; then
             exiterr "ADORe setup aborted."
         fi
@@ -202,200 +197,101 @@ EOF
 check_resources() {
     echo "Checking if required internet resources are accessible..."
 
+
+
     for url in "${EXTERNAL_RESOURCES[@]}"; do
         echo "  Fetching: ${url}"
-        if curl -fsSL --head "${url}" >/dev/null 2>&1; then
-            echo "    ${url} is reachable"
+
+        protocol=$(echo $url | sed 's|^\(.*://\).*|\1|')
+        domain=$(echo $url | sed 's|https\?://||')
+
+        if [[ "$protocol" == "https://" ]]; then
+            port=443
         else
-            echoerr "   ERROR: ${url} is unreachable"
-            echoerr "     Unable to reach ${url}. Please check your internet connection, firewall, or proxy."
+            port=80
+        fi
+
+        trap "" ERR
+        { exec 3<>/dev/tcp/$domain/$port; } &>/dev/null
+
+
+        if [ $? -eq 0 ]; then
+            echo "    $url is reachable"
+        else
+            echoerr "   ERROR: $url is unreachable\n"
+            echoerr "     Unable to reach $url. Please check your internet connection, firewall, or proxy.\n"
             exit 1
         fi
+        exec 3>&-
+
+        trap - ERR
     done
 }
 
+check_os_version(){
+    local os_version=$(cat /etc/os-release | grep VERSION_ID | cut -d'"' -f2)
 
-check_os_version() {
-    local os_version="unknown"
-
-    if [[ -r /etc/os-release ]]; then
-        # VERSION_ID="24.04"
-        os_version="$(grep -E '^VERSION_ID=' /etc/os-release | cut -d'"' -f2 || echo "unknown")"
-    elif command -v lsb_release >/dev/null 2>&1; then
-        # Fallback if /etc/os-release is missing
-        os_version="$(lsb_release -sr || echo "unknown")"
-    fi
-
-    if [[ "${os_version}" == "unknown" ]]; then
-        exiterr "ERROR: could not determine OS version. Supported Ubuntu versions: ${SUPPORTED_UBUNTU_VERSIONS}"
-    fi
-
-    # Match whole tokens only
-    case " ${SUPPORTED_UBUNTU_VERSIONS} " in
-        *" ${os_version} "*)
-            return 0
-            ;;
-        *)
-            exiterr "ERROR: unsupported OS version: ${os_version}. Supported versions: ${SUPPORTED_UBUNTU_VERSIONS}"
-            ;;
-    esac
-}
-
-
-check_freespace() {
-    local freespace current_device
-    freespace="$(df -BG --output=avail . | tail -n 1 | tr -dc '0-9')"
-    current_device="$(df --output=source . | tail -n 1)"
-    if [[ -z "${freespace}" ]]; then
-        echo "WARNING: Could not determine free space; continuing anyway."
-        return 0
-    fi
-
-    if (( freespace < REQUIRED_FREESPACE_GB )); then
-        exiterr "ERROR: Not enough free space: ${freespace}GB available and ${REQUIRED_FREESPACE_GB}GB required.\nFree up some space on '${current_device}' and try again."
+    if [[ $SUPPORTED_UBUNTU_VERSIONS != *"$os_version"* ]]; then
+        exiterr "ERROR: unsupported os version: ${os_version} Supported versions: ${SUPPORTED_UBUNTU_VERSIONS}"
     fi
 }
 
-install_dependencies() {
-    echo "Checking APT dependencies (git, curl, ca-certificates)..."
+check_freespace(){
+    freespace=$(df -h --output=avail . | tail -n 1 | awk '{print $1}' | sed "s|G||g")
+    current_device=$(df --output=source . | tail -n 1)
+    if (( $(echo "$freespace <= $REQUIRED_FREESPACE_GB" | bc -l) )); then     
+        exiterr "ERROR: Not enough free space: ${freespace} available and: ${REQUIRED_FREESPACE_GB} required.\n Free up some space on '${current_device}' and try again."
+    fi 
+}
 
-    # Ensure we have a package manager we know how to use
-    if ! command -v apt-get >/dev/null 2>&1; then
-        echo "WARNING: 'apt-get' not found. This setup script is only supported on Ubuntu."
-        echo "         Please install 'git', 'curl', and 'ca-certificates' manually and re-run."
-        if ! command -v git >/dev/null 2>&1; then
-            exiterr "ERROR: 'git' is required but not installed."
-        fi
-        return 0
-    fi
-
+install_dependencies(){
     sudo apt-get update
-
-    if ! command -v git >/dev/null 2>&1; then
-        echo "Installing git..."
-        sudo apt-get install -y git
-    else
-        echo "git is already installed."
-    fi
-
-    if ! command -v curl >/dev/null 2>&1; then
-        echo "Installing curl and ca-certificates..."
-        sudo apt-get install -y curl ca-certificates
-    else
-        echo "curl is already installed."
-        # still ensure ca-certificates is present
-        sudo apt-get install -y ca-certificates
-    fi
-
-    # Optional: try to install just for convenience
-    if ! command -v just >/dev/null 2>&1; then
-        echo "Attempting to install 'just' via apt (optional)..."
-        if sudo apt-get install -y just >/dev/null 2>&1; then
-            echo "INFO: Installed 'just' via apt."
-        else
-            echo "WARNING: 'just' could not be installed automatically. You can install it manually later if desired."
-        fi
-    fi
+    sudo apt-get install -y make git
 }
 
-
-install_docker() {
-    if command -v docker >/dev/null 2>&1; then
-        echo "Docker is already installed. Skipping automatic Docker installation."
-        return 0
-    fi
-
-    echo "Installing Docker using ADORe helper script..."
+install_docker(){
     bash <(curl -sSL https://raw.githubusercontent.com/eclipse-adore/adore/develop/tools/install_docker.sh)
 }
 
-clone_adore() {
+clone_adore(){
     cd "${CLONE_DIR}"
-
+    
     if [[ ! -d "adore" ]]; then
-        echo "Cloning ADORe into ${CLONE_DIR}/adore..."
         git clone "${ADORE_REPO}"
-    else
-        echo "Directory ${CLONE_DIR}/adore already exists."
-        echo "Attempting to update existing clone..."
-        cd "adore"
-        if [[ -d .git ]]; then
-            git fetch --all --tags || true
-            # Try to stay on current branch; fallback to develop if present.
-            current_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")"
-            if [[ "${current_branch}" == "HEAD" || -z "${current_branch}" ]]; then
-                if git rev-parse --verify develop >/dev/null 2>&1; then
-                    git checkout develop || true
-                fi
-            fi
-            git pull --ff-only || true
-        else
-            echo "WARNING: ${CLONE_DIR}/adore exists but is not a git repository."
-        fi
-        cd "${CLONE_DIR}"
     fi
-
     cd "${CLONE_DIR}/adore"
-
-    if [[ -f ".gitmodules" ]]; then
-        echo "Initializing/updating git submodules (using HTTPS)..."
-        cp .gitmodules .gitmodules.bak
-        sed -i "s|git@github.com:|https://github.com/|g" .gitmodules
-        git submodule update --init --recursive
-        mv .gitmodules.bak .gitmodules
-        git submodule sync --recursive
-    fi
+    cp .gitmodules .gitmodules.bak
+    sed -i "s|git@github.com:|https://github.com/|g" .gitmodules
+    git submodule update --init --recursive
+    mv .gitmodules.bak .gitmodules
+    git submodule sync
 }
 
-setup_colcon_workspace() {
-    cd "${CLONE_DIR}/adore"
-
-    local setup_script=".docker/scripts/setup_colcon_src.sh"
-
-    if [[ -x "${setup_script}" ]]; then
-        echo "Setting up .colcon_workspace/src symlinks..."
-        "${setup_script}"
-    else
-        echo "WARNING: ${setup_script} not found or not executable; skipping colcon workspace symlink setup."
-    fi
-}
-
-build_adore_dev_images() {
-    cd "${CLONE_DIR}/adore"
-
-    if [[ ! -x ".docker/scripts/build_dev.sh" ]]; then
-        echo "WARNING: .docker/scripts/build_dev.sh not found; skipping dev image build."
-        return
-    fi
-
-    echo "Building ADORe base and dev Docker images (this may take a while)..."
-    # Use newgrp so a freshly-added docker group membership is picked up
-    newgrp docker << END
-set -e
-cd "${CLONE_DIR}/adore"
-.docker/scripts/build_dev.sh
+build_adore_cli(){
+newgrp docker << END
+    cd "${CLONE_DIR}/adore" && make build
+END
+newgrp docker << END
+    cd "${CLONE_DIR}/adore" && make build_user_libraries
 END
 
-    setup_complete=true
+setup_complete=true
 }
 
-main() {
-    parse_params "$@"
-    banner
 
-    if [[ ${SKIP_PREREQUISITE_CHECKS} -eq 0 ]]; then
-        check_resources
-        check_freespace
-        check_os_version
-    else
-        printf "Prerequisite checks skipped...\n"
-    fi
 
-    install_dependencies
-    clone_adore
-    install_docker
-    setup_colcon_workspace
-    build_adore_dev_images
-}
+parse_params "$*"
+banner
+if [[ $SKIP_PREREQUISITE_CHECKS == 0 ]]; then
+    check_resources
+    check_freespace
+    check_os_version
+else
+    printf "Prerequsite checks skipped...\n"
+fi
 
-main "$@"
+install_dependencies
+clone_adore
+install_docker
+build_adore_cli
+get_help

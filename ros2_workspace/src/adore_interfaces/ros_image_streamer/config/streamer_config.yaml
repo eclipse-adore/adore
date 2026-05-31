@@ -1,0 +1,27 @@
+# Source type: 'device' for a local V4L2 device, 'ffmpeg' for an FFmpeg socket/URL
+source_type: device
+
+# --- Device source options (source_type: device) ---
+device:
+  path: /dev/video0
+  width: 640
+  height: 480
+  fps: 30
+  # Pixel format negotiated with the device.
+  # MJPG is preferred: higher framerates, lower USB bandwidth.
+  # Use YUYV if the device does not support MJPG.
+  fourcc: MJPG
+
+# --- FFmpeg source options (source_type: ffmpeg) ---
+ffmpeg:
+  # Any URL or transport string that OpenCV/FFmpeg can open.
+  # Examples:
+  #   udp://0.0.0.0:5000
+  #   tcp://192.168.1.10:5000
+  #   rtsp://user:pass@host/path
+  url: tcp://127.0.0.1:12345
+  options: {}
+
+publish_topic: /camera/image_raw
+encoding: bgr8
+queue_depth: 10

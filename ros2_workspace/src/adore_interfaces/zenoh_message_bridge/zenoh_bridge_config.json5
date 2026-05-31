@@ -1,0 +1,27 @@
+{
+  mode: "client",
+
+  connect: {
+    endpoints: [
+      "tcp/127.0.0.1:7446",
+    ],
+  },
+
+  scouting: {
+    multicast: {
+      enabled: false,
+    },
+    gossip: {
+      enabled: true,
+      multihop: false,
+    },
+  },
+
+  transport: {
+    unicast: {
+      lowlatency: false,
+      qos: { enabled: true },
+      compression: { enabled: false },
+    },
+  },
+}
