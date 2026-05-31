@@ -25,7 +25,7 @@
         .mode-buttons { display:flex; gap:10px; margin-bottom:16px; }
         .position-buttons { display:flex; gap:5px; margin-top:10px; }
         .position-buttons button { flex:1; padding:8px; font-size:12px; }
-        .checkbox-container { display:flex; align-items:center; gap:8px; }
+        .checkbox-container { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
         .search-results { max-height:150px; overflow-y:auto; border:1px solid #ddd; border-top:none; background:white; display:none; }
         .search-result { padding:8px; cursor:pointer; border-bottom:1px solid #eee; font-size:12px; }
         .search-result:hover { background:#f5f5f5; }
@@ -62,6 +62,12 @@
             background:#dc3545 !important; color:white !important;
             padding:4px 10px !important; font-size:11px !important; border-radius:3px;
         }
+        .lane-status { font-size:11px; color:#666; margin-top:4px; font-style:italic; }
+        .lane-zoom-hint { font-size:11px; color:#e67e00; margin-top:4px; }
+        .goto-row { display:flex; gap:6px; margin-top:8px; }
+        .goto-row input { flex:1; padding:6px 8px; border:1px solid #ddd; border-radius:3px; font-size:12px; font-family:monospace; }
+        .goto-row button { padding:6px 10px; font-size:12px; white-space:nowrap; }
+        .goto-hint { font-size:11px; color:#888; margin-top:4px; }
     </style>
 </head>
 <body>
@@ -73,6 +79,11 @@
             <h3>Search Location</h3>
             <input type="text" id="searchInput" placeholder="Enter location..." />
             <div id="searchResults" class="search-results"></div>
+            <div class="goto-row">
+                <input type="text" id="gotoInput" placeholder="lat, lng [, zoom]" />
+                <button class="btn-primary" onclick="gotoLocation()">Go</button>
+            </div>
+            <div class="goto-hint">e.g. 52.3158, 10.5621, 17</div>
         </div>
 
         <div class="settings-section">
@@ -81,6 +92,11 @@
                 <input type="checkbox" id="routeToggle" checked />
                 <label for="routeToggle">Draw route between markers</label>
             </div>
+            <div class="checkbox-container">
+                <input type="checkbox" id="laneToggle" checked />
+                <label for="laneToggle">Show lane overlay (zoom ≥ 16)</label>
+            </div>
+            <div id="laneStatus" class="lane-status">Zoom in to load lanes</div>
         </div>
 
         <div class="mode-buttons">
@@ -143,12 +159,55 @@
     </div>
 
     <script>
-        const map = L.map('map', { maxZoom: 23 }).setView([52.2689, 10.5268], 14);
+        // ── URL / location init ────────────────────────────────────────────────
+        // Priority: URL params > localStorage > hardcoded default
+        (function() {
+            const p    = new URLSearchParams(window.location.search);
+            const def  = { lat: 52.314626, lng: 10.557942, zoom: 18.0 };
+            let saved  = {};
+            try { saved = JSON.parse(localStorage.getItem('gp_view') || '{}'); } catch(e) {}
+            const lat  = parseFloat(p.get('lat'))  || saved.lat  || def.lat;
+            const lng  = parseFloat(p.get('lng'))  || saved.lng  || def.lng;
+            const zoom = parseFloat(p.get('zoom')) || saved.zoom || def.zoom;
+            window._initView = [lat, lng, zoom];
+        })();
+
+        const map = L.map('map', { maxZoom: 23 }).setView(window._initView.slice(0,2), window._initView[2]);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors',
             maxZoom: 23,
             maxNativeZoom: 19
         }).addTo(map);
+
+        // ── URL sync ──────────────────────────────────────────────────────────
+        function syncUrlToView() {
+            const c = map.getCenter();
+            const z = map.getZoom().toFixed(1);
+            const url = '?lat=' + c.lat.toFixed(6) + '&lng=' + c.lng.toFixed(6) + '&zoom=' + z;
+            history.replaceState(null, '', url);
+            document.getElementById('gotoInput').value = c.lat.toFixed(6) + ', ' + c.lng.toFixed(6) + ', ' + z;
+            try { localStorage.setItem('gp_view', JSON.stringify({ lat: c.lat, lng: c.lng, zoom: parseFloat(z) })); } catch(e) {}
+        }
+        map.on('moveend zoomend', syncUrlToView);
+        syncUrlToView();
+
+        function gotoLocation() {
+            const raw = document.getElementById('gotoInput').value.trim();
+            // Accept "lat, lng" or "lat, lng, zoom" — also handle degree symbols and spaces
+            const parts = raw.replace(/[°]/g, '').split(/[\s,]+/).filter(Boolean).map(Number);
+            if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) {
+                alert('Enter coordinates as: lat, lng  or  lat, lng, zoom');
+                return;
+            }
+            const lat  = parts[0];
+            const lng  = parts[1];
+            const zoom = parts[2] || map.getZoom();
+            map.setView([lat, lng], zoom);
+        }
+
+        document.getElementById('gotoInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') gotoLocation();
+        });
 
         let startMarker   = null;
         let headingHandle = null;
@@ -162,7 +221,7 @@
         // Each entry: { marker, lat, lng, stop }
         let goalNodes = [];
 
-        const HANDLE_PX = 34; // fixed pixel orbit radius from start marker center
+        const HANDLE_PX = 34;
 
         // ── Icons ──────────────────────────────────────────────────────────────
 
@@ -259,7 +318,6 @@
         });
 
         // ── Drag suppression ───────────────────────────────────────────────────
-        // Leaflet fires a map 'click' after marker dragend; suppress it.
 
         let _dragging = false;
 
@@ -443,12 +501,29 @@
             }
         });
 
-        // Resnap handle after zoom or pan so pixel distance stays constant
         map.on('zoom moveend', function() { updateHeadingVisuals(); });
 
         // ── Route ──────────────────────────────────────────────────────────────
 
-        document.getElementById('routeToggle').addEventListener('change', drawRoute);
+        // ── Settings persistence ──────────────────────────────────────────────
+        (function() {
+            try {
+                const s = JSON.parse(localStorage.getItem('gp_settings') || '{}');
+                if (s.route  !== undefined) document.getElementById('routeToggle').checked = s.route;
+                if (s.lanes  !== undefined) document.getElementById('laneToggle').checked  = s.lanes;
+            } catch(e) {}
+        })();
+
+        function saveSettings() {
+            try {
+                localStorage.setItem('gp_settings', JSON.stringify({
+                    route: document.getElementById('routeToggle').checked,
+                    lanes: document.getElementById('laneToggle').checked,
+                }));
+            } catch(e) {}
+        }
+
+        document.getElementById('routeToggle').addEventListener('change', function() { saveSettings(); drawRoute(); });
 
         async function drawRoute() {
             if (routePolyline) { map.removeLayer(routePolyline); routePolyline = null; }
@@ -462,10 +537,503 @@
                 const data = await res.json();
                 if (data.routes && data.routes.length > 0) {
                     const ll = data.routes[0].geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
-                    routePolyline = L.polyline(ll, { color:'#007cba', weight:4, opacity:0.7 }).addTo(map);
+                    // Offset the route into the forward lane (half a lane width to the left of centreline)
+                    const offsetted = offsetPolyline(ll, -(LANE_WIDTH_M * 0.5));
+                    routePolyline = L.polyline(offsetted, { color:'#007cba', weight: 3, opacity: 0.9 }).addTo(map);
                 }
             } catch(err) { console.error('Routing error:', err); }
         }
+
+        // ── Lane overlay ───────────────────────────────────────────────────────
+
+        const LANE_MIN_ZOOM   = 16;
+        const LANE_WIDTH_M    = 3.5;   // assumed lane width in metres for offset calc
+        const LANE_COLOURS = {
+            forward:  'rgba(30, 136, 229, 0.75)',
+            backward: 'rgba(229, 57, 53, 0.65)',
+            both:     'rgba(76, 175, 80, 0.70)',
+        };
+        const LANE_SEPARATOR  = 'rgba(255,255,255,0.55)';
+        const CENTRE_LINE     = 'rgba(255,200,0,0.7)';
+
+        // Turn colour mapping
+        const TURN_COLOUR = {
+            left:         '#1e88e5',
+            slight_left:  '#42a5f5',
+            right:        '#e53935',
+            slight_right: '#ef5350',
+            through:      '#43a047',
+            merge_to_left:'#8e24aa',
+            merge_to_right:'#8e24aa',
+            none:         '#9e9e9e',
+        };
+
+        const OVERPASS_MIRRORS = [
+            'https://overpass-api.de/api/interpreter',
+            'https://overpass.kumi.systems/api/interpreter',
+        ];
+
+        // ── Tile-based lane cache ──────────────────────────────────────────────
+        // Uses OSM tile coordinates at a fixed cache zoom level.
+        // Each tile key "z/x/y" tracks fetch state and owns its Leaflet layers.
+        const CACHE_ZOOM = 15;  // tile grid resolution — one Overpass fetch per tile
+
+        const tileCache = {};   // key -> { state: 'loading'|'done'|'error', layers: L.LayerGroup }
+        let laneDebounceTimer  = null;
+        let activeFetches      = 0;
+
+        // ── localStorage tile persistence ──────────────────────────────────────
+        const LS_PREFIX    = 'lane_tile_v1_';
+        const LS_MAX_TILES = 300;  // evict oldest when exceeded
+
+        function lsSaveElements(key, elements) {
+            try {
+                const entry = JSON.stringify({ ts: Date.now(), elements });
+                localStorage.setItem(LS_PREFIX + key, entry);
+                // Evict oldest tiles if over limit
+                const keys = Object.keys(localStorage)
+                    .filter(function(k) { return k.startsWith(LS_PREFIX); });
+                if (keys.length > LS_MAX_TILES) {
+                    const sorted = keys.map(function(k) {
+                        try { return { k, ts: JSON.parse(localStorage.getItem(k)).ts }; }
+                        catch(e) { return { k, ts: 0 }; }
+                    }).sort(function(a, b) { return a.ts - b.ts; });
+                    sorted.slice(0, keys.length - LS_MAX_TILES).forEach(function(e) {
+                        localStorage.removeItem(e.k);
+                    });
+                }
+            } catch(e) { /* storage full — ignore */ }
+        }
+
+        function lsLoadElements(key) {
+            try {
+                const raw = localStorage.getItem(LS_PREFIX + key);
+                if (!raw) return null;
+                return JSON.parse(raw).elements || null;
+            } catch(e) { return null; }
+        }
+
+        function lngToTileX(lng, z) {
+            return Math.floor((lng + 180) / 360 * Math.pow(2, z));
+        }
+        function latToTileY(lat, z) {
+            const r = lat * Math.PI / 180;
+            return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * Math.pow(2, z));
+        }
+        function tileToLngLat(x, y, z) {
+            const n   = Math.pow(2, z);
+            const lng = x / n * 360 - 180;
+            const r   = Math.atan(Math.sinh(Math.PI * (1 - 2 * y / n)));
+            const lat = r * 180 / Math.PI;
+            return { lat, lng };
+        }
+        function tileBBox(x, y, z) {
+            const nw = tileToLngLat(x,     y,     z);
+            const se = tileToLngLat(x + 1, y + 1, z);
+            // pad slightly so ways crossing tile edges are included
+            const pad = 0.0003;
+            return { s: se.lat - pad, w: nw.lng - pad, n: nw.lat + pad, e: se.lng + pad };
+        }
+        function visibleTileKeys() {
+            const b    = map.getBounds();
+            const minX = lngToTileX(b.getWest(),  CACHE_ZOOM);
+            const maxX = lngToTileX(b.getEast(),  CACHE_ZOOM);
+            const minY = latToTileY(b.getNorth(), CACHE_ZOOM);
+            const maxY = latToTileY(b.getSouth(), CACHE_ZOOM);
+            const keys = [];
+            for (let x = minX; x <= maxX; x++)
+                for (let y = minY; y <= maxY; y++)
+                    keys.push(CACHE_ZOOM + '/' + x + '/' + y);
+            return keys;
+        }
+
+        function setLaneStatus(msg) {
+            document.getElementById('laneStatus').textContent = msg;
+        }
+
+        function updateLaneStatus() {
+            const keys    = visibleTileKeys();
+            const done    = keys.filter(function(k) { return tileCache[k] && tileCache[k].state === 'done'; }).length;
+            const loading = keys.filter(function(k) { return tileCache[k] && tileCache[k].state === 'loading'; }).length;
+            const errors  = keys.filter(function(k) { return tileCache[k] && tileCache[k].state === 'error'; }).length;
+            let totalSegs = 0, totalTagged = 0;
+            Object.values(tileCache).forEach(function(t) {
+                if (t.state === 'done') { totalSegs += t.segCount || 0; totalTagged += t.taggedCount || 0; }
+            });
+            const est = totalSegs - totalTagged;
+            let msg = done + '/' + keys.length + ' tiles loaded';
+            if (loading) msg += ', ' + loading + ' loading';
+            if (errors)  msg += ', ' + errors + ' failed (will retry)';
+            if (totalSegs) msg += ' — ' + totalSegs + ' segs (' + totalTagged + ' tagged, ' + est + ' est.)';
+            setLaneStatus(msg);
+        }
+
+        function setAllTilesVisible(visible) {
+            Object.values(tileCache).forEach(function(t) {
+                if (!t.layers) return;
+                if (visible && !map.hasLayer(t.layers)) map.addLayer(t.layers);
+                if (!visible && map.hasLayer(t.layers)) map.removeLayer(t.layers);
+            });
+        }
+
+        document.getElementById('laneToggle').addEventListener('change', function() {
+            saveSettings();
+            if (this.checked) {
+                scheduleLaneRefresh();
+            } else {
+                setAllTilesVisible(false);
+                setLaneStatus('Lane overlay disabled');
+            }
+        });
+
+        map.on('zoomend moveend', scheduleLaneRefresh);
+
+        function scheduleLaneRefresh() {
+            clearTimeout(laneDebounceTimer);
+            laneDebounceTimer = setTimeout(refreshLanes, 350);
+        }
+
+        async function refreshLanes() {
+            if (!document.getElementById('laneToggle').checked) return;
+
+            const zoom = map.getZoom();
+            if (zoom < LANE_MIN_ZOOM) {
+                // Hide all tile layers
+                Object.values(tileCache).forEach(function(t) {
+                    if (t.layers) map.removeLayer(t.layers);
+                });
+                setLaneStatus('Zoom in to ≥ ' + LANE_MIN_ZOOM + ' to load lanes (current: ' + zoom.toFixed(1) + ')');
+                return;
+            }
+
+            // Re-show any tile layers that were hidden by the toggle
+            Object.values(tileCache).forEach(function(t) {
+                if (t.layers && !map.hasLayer(t.layers)) map.addLayer(t.layers);
+            });
+
+            const keys = visibleTileKeys();
+            const toFetch = keys.filter(function(k) {
+                const t = tileCache[k];
+                return !t || t.state === 'error';
+            });
+
+            if (toFetch.length === 0) { updateLaneStatus(); return; }
+
+            // Mark all pending tiles as loading immediately so concurrent
+            // calls triggered by rapid panning don't double-fetch
+            toFetch.forEach(function(k) {
+                if (!tileCache[k] || tileCache[k].state === 'error') {
+                    tileCache[k] = { state: 'loading', layers: tileCache[k] ? tileCache[k].layers : null };
+                }
+            });
+            updateLaneStatus();
+
+            // Fetch tiles concurrently, up to 3 at a time
+            const CONCURRENCY = 3;
+            let idx = 0;
+            async function worker() {
+                while (idx < toFetch.length) {
+                    const key = toFetch[idx++];
+                    await fetchTile(key);
+                    updateLaneStatus();
+                }
+            }
+            const workers = [];
+            for (let i = 0; i < Math.min(CONCURRENCY, toFetch.length); i++) workers.push(worker());
+            await Promise.all(workers);
+        }
+
+        function renderTileElements(key, elements) {
+            const tagged  = elements.filter(function(e) { return e.tags && e.tags['lanes']; }).length;
+            const existing = tileCache[key] && tileCache[key].layers;
+            if (existing) existing.clearLayers();
+            const layers = existing || L.layerGroup().addTo(map);
+            if (!map.hasLayer(layers)) map.addLayer(layers);
+            tileCache[key] = { state: 'done', layers, segCount: elements.length, taggedCount: tagged };
+            renderLanesIntoGroup(elements, layers);
+        }
+
+        async function fetchTile(key) {
+            // Serve from localStorage if available
+            const cached = lsLoadElements(key);
+            if (cached) {
+                renderTileElements(key, cached);
+                return;
+            }
+
+            const [z, x, y] = key.split('/').map(Number);
+            const bb  = tileBBox(x, y, z);
+            const query = `[out:json][timeout:20];
+way["highway"~"^(motorway|motorway_link|trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified|residential|living_street|service)$"](${bb.s.toFixed(6)},${bb.w.toFixed(6)},${bb.n.toFixed(6)},${bb.e.toFixed(6)});
+out body geom;`;
+
+            let lastErr = null;
+            for (let attempt = 0; attempt < OVERPASS_MIRRORS.length; attempt++) {
+                try {
+                    if (attempt > 0) await new Promise(function(r) { setTimeout(r, 1500 * attempt); });
+                    const res  = await fetch(OVERPASS_MIRRORS[attempt], {
+                        method: 'POST',
+                        body: 'data=' + encodeURIComponent(query),
+                    });
+                    const text = await res.text();
+                    if (text.trimStart().startsWith('<')) {
+                        const msg = (text.match(/<p>([^<]+)<\/p>/) || [])[1] || 'rate limited';
+                        lastErr = new Error(msg);
+                        continue;
+                    }
+                    const elements = JSON.parse(text).elements || [];
+                    lsSaveElements(key, elements);
+                    renderTileElements(key, elements);
+                    lastErr = null;
+                    return;
+                } catch (err) {
+                    lastErr = err;
+                }
+            }
+            console.error('Tile fetch failed', key, lastErr);
+            tileCache[key] = { state: 'error', layers: tileCache[key] ? tileCache[key].layers : null };
+        }
+
+        // ── Lane geometry helpers ──────────────────────────────────────────────
+
+        // Degrees to radians
+        function toRad(d) { return d * Math.PI / 180; }
+
+        // Haversine distance in metres between two [lat,lng] points
+        function haversine(a, b) {
+            const R = 6371000;
+            const dLat = toRad(b[0] - a[0]);
+            const dLng = toRad(b[1] - a[1]);
+            const x = Math.sin(dLat/2)**2 + Math.cos(toRad(a[0])) * Math.cos(toRad(b[0])) * Math.sin(dLng/2)**2;
+            return 2 * R * Math.asin(Math.sqrt(x));
+        }
+
+        // Perpendicular offset of a [lat,lng] point by `metres` to the right of
+        // the bearing from `prev` to `next` (both [lat,lng]).
+        function offsetPoint(pt, prev, next, metres) {
+            // bearing of segment (in radians, east = 0, north = pi/2 — standard math)
+            const lat1 = toRad(prev[0]), lng1 = toRad(prev[1]);
+            const lat2 = toRad(next[0]), lng2 = toRad(next[1]);
+            const dLng = lng2 - lng1;
+            const bearing = Math.atan2(
+                Math.sin(dLng) * Math.cos(lat2),
+                Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng)
+            );
+            // perpendicular = bearing - pi/2 (right of direction of travel)
+            const perp = bearing - Math.PI / 2;
+            const R = 6371000;
+            const lat0 = toRad(pt[0]);
+            const lng0 = toRad(pt[1]);
+            const angDist = metres / R;
+            const newLat = Math.asin(
+                Math.sin(lat0) * Math.cos(angDist) +
+                Math.cos(lat0) * Math.sin(angDist) * Math.cos(perp)
+            );
+            const newLng = lng0 + Math.atan2(
+                Math.sin(perp) * Math.sin(angDist) * Math.cos(lat0),
+                Math.cos(angDist) - Math.sin(lat0) * Math.sin(newLat)
+            );
+            return [newLat * 180 / Math.PI, newLng * 180 / Math.PI];
+        }
+
+        // Offset an entire polyline's nodes by `metres` to the right of travel
+        function offsetPolyline(nodes, metres) {
+            if (nodes.length < 2) return nodes;
+            return nodes.map(function(pt, i) {
+                const prev = nodes[Math.max(0, i - 1)];
+                const next = nodes[Math.min(nodes.length - 1, i + 1)];
+                // For end points use the single adjacent segment
+                const a = i === 0 ? next : prev;
+                const b = i === 0 ? pt   : (i === nodes.length - 1 ? nodes[i - 1] : next);
+                const segPrev = i === 0 ? pt : prev;
+                const segNext = i === nodes.length - 1 ? pt : next;
+                return offsetPoint(pt, segPrev, segNext, metres);
+            });
+        }
+
+        // ── Turn arrow SVG icons ───────────────────────────────────────────────
+
+        function turnArrowSvg(turn, colour) {
+            colour = colour || '#555';
+            // Arrow paths for common turn types — all drawn in a 24x24 viewbox
+            const paths = {
+                through:       'M12 4 L12 20 M12 4 L8 9 M12 4 L16 9',
+                left:          'M12 20 L12 10 Q12 4 6 4 M6 4 L10 8 M6 4 L10 0',
+                slight_left:   'M12 20 L12 12 Q12 6 8 4 M8 4 L12 7 M8 4 L5 8',
+                right:         'M12 20 L12 10 Q12 4 18 4 M18 4 L14 8 M18 4 L14 0',
+                slight_right:  'M12 20 L12 12 Q12 6 16 4 M16 4 L12 7 M16 4 L19 8',
+                merge_to_left: 'M16 20 Q10 14 12 4 M12 4 L8 8 M12 4 L16 8',
+                merge_to_right:'M8 20 Q14 14 12 4 M12 4 L8 8 M12 4 L16 8',
+                none:          'M12 20 L12 4',
+            };
+            const d = paths[turn] || paths['through'];
+            return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">'
+                + '<path d="' + d + '" stroke="' + colour + '" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'
+                + '</svg>';
+        }
+
+        function makeTurnIcon(turn, colour) {
+            const svg = turnArrowSvg(turn, colour);
+            return L.icon({
+                iconUrl: 'data:image/svg+xml;base64,' + btoa(svg),
+                iconSize: [18, 18],
+                iconAnchor: [9, 9],
+            });
+        }
+
+        // ── Lane rendering ─────────────────────────────────────────────────────
+
+        // OSM highway type -> [total, fwd, bwd] lane defaults
+        // oneway types get all lanes forward; bidirectional split evenly
+        const HIGHWAY_LANE_DEFAULTS = {
+            motorway:        [4, 2, 2],
+            motorway_link:   [1, 1, 0],
+            trunk:           [4, 2, 2],
+            trunk_link:      [1, 1, 0],
+            primary:         [2, 1, 1],
+            primary_link:    [1, 1, 0],
+            secondary:       [2, 1, 1],
+            secondary_link:  [1, 1, 0],
+            tertiary:        [2, 1, 1],
+            tertiary_link:   [1, 1, 0],
+            unclassified:    [2, 1, 1],
+            residential:     [2, 1, 1],
+            living_street:   [2, 1, 1],
+            service:         [1, 1, 0],
+        };
+
+        function renderLanesIntoGroup(elements, laneLayerGroup) {
+            elements.forEach(function(way) {
+                if (!way.geometry || way.geometry.length < 2) return;
+
+                const tags    = way.tags || {};
+                const nodes   = way.geometry.map(function(g) { return [g.lat, g.lon]; });
+                const highway = tags['highway'] || '';
+                const oneway  = tags['oneway'] === 'yes' || tags['oneway'] === '1'
+                             || highway === 'motorway' || highway === 'motorway_link';
+
+                const taggedLanes = parseInt(tags['lanes']) || 0;
+                const defaults    = HIGHWAY_LANE_DEFAULTS[highway] || [2, 1, 1];
+                const totalLanes  = taggedLanes || defaults[0];
+                const estimated   = taggedLanes === 0;
+
+                const fwdLanes  = parseInt(tags['lanes:forward'])  || null;
+                const bwdLanes  = parseInt(tags['lanes:backward']) || null;
+
+                // Determine forward/backward lane counts
+                let nFwd, nBwd;
+                if (oneway) {
+                    nFwd = totalLanes;
+                    nBwd = 0;
+                } else if (fwdLanes !== null && bwdLanes !== null) {
+                    nFwd = fwdLanes;
+                    nBwd = bwdLanes;
+                } else if (fwdLanes !== null) {
+                    nFwd = fwdLanes;
+                    nBwd = totalLanes - fwdLanes;
+                } else if (bwdLanes !== null) {
+                    nBwd = bwdLanes;
+                    nFwd = totalLanes - bwdLanes;
+                } else if (estimated) {
+                    nFwd = defaults[1];
+                    nBwd = defaults[2];
+                } else {
+                    nFwd = Math.ceil(totalLanes / 2);
+                    nBwd = Math.floor(totalLanes / 2);
+                }
+
+                // Parse turn:lanes tags (pipe-separated per lane, left-to-right)
+                const turnFwd = parseTurnLanes(tags['turn:lanes'] || tags['turn:lanes:forward'] || '');
+                const turnBwd = parseTurnLanes(tags['turn:lanes:backward'] || '');
+
+                // Road total half-width in metres
+                const halfWidth = totalLanes * LANE_WIDTH_M / 2;
+
+                const edgeOpacity = estimated ? 0.4 : 0.9;
+                const laneOpacity = estimated ? 0.30 : 0.55;
+                const edgeDash    = estimated ? '6 6' : null;
+
+                // Draw backward lanes
+                for (let i = 0; i < nBwd; i++) {
+                    const centreOffset = (i + 0.5) * LANE_WIDTH_M;
+                    const laneNodes = offsetPolyline(nodes, centreOffset);
+                    const reversed = laneNodes.slice().reverse();
+                    const turn = turnBwd[i] || 'none';
+                    const col = LANE_COLOURS.backward;
+                    drawLane(reversed, col, turn, TURN_COLOUR[turn] || '#555', laneOpacity, estimated, laneLayerGroup);
+                    if (i < nBwd - 1) {
+                        const sepNodes = offsetPolyline(nodes, (i + 1) * LANE_WIDTH_M);
+                        L.polyline(sepNodes, { color: LANE_SEPARATOR, weight: 1, opacity: estimated ? 0.4 : 0.8, dashArray: '4 6', interactive: false }).addTo(laneLayerGroup);
+                    }
+                }
+
+                // Centre line between forward and backward directions
+                if (nFwd > 0 && nBwd > 0) {
+                    L.polyline(nodes, { color: CENTRE_LINE, weight: 2, opacity: estimated ? 0.4 : 0.9, dashArray: '8 6', interactive: false }).addTo(laneLayerGroup);
+                }
+
+                // Draw forward lanes
+                for (let i = 0; i < nFwd; i++) {
+                    const centreOffset = -((i + 0.5) * LANE_WIDTH_M);
+                    const laneNodes = offsetPolyline(nodes, centreOffset);
+                    const turn = turnFwd[i] || 'none';
+                    const col = oneway ? LANE_COLOURS.both : LANE_COLOURS.forward;
+                    drawLane(laneNodes, col, turn, TURN_COLOUR[turn] || '#555', laneOpacity, estimated, laneLayerGroup);
+                    if (i < nFwd - 1) {
+                        const sepNodes = offsetPolyline(nodes, -((i + 1) * LANE_WIDTH_M));
+                        L.polyline(sepNodes, { color: LANE_SEPARATOR, weight: 1, opacity: estimated ? 0.4 : 0.8, dashArray: '4 6', interactive: false }).addTo(laneLayerGroup);
+                    }
+                }
+
+                // Road edge lines (dashed when estimated)
+                const leftEdge  = offsetPolyline(nodes, -(nFwd * LANE_WIDTH_M));
+                const rightEdge = offsetPolyline(nodes,   nBwd * LANE_WIDTH_M);
+                L.polyline(leftEdge,  { color: 'rgba(255,255,255,0.9)', weight: 2, opacity: edgeOpacity, dashArray: edgeDash, interactive: false }).addTo(laneLayerGroup);
+                L.polyline(rightEdge, { color: 'rgba(255,255,255,0.9)', weight: 2, opacity: edgeOpacity, dashArray: edgeDash, interactive: false }).addTo(laneLayerGroup);
+            });
+        }
+
+        function parseTurnLanes(str) {
+            if (!str) return [];
+            return str.split('|').map(function(s) {
+                // A lane can have multiple values (e.g. "through;left") — use the first
+                return s.trim().split(';')[0].trim() || 'none';
+            });
+        }
+
+        function drawLane(nodes, colour, turn, turnColour, opacity, estimated, group) {
+            L.polyline(nodes, {
+                color: colour,
+                weight: Math.max(2, LANE_WIDTH_M * map.getZoom() * 0.25),
+                opacity: opacity,
+                dashArray: estimated ? '8 5' : null,
+                interactive: false,
+            }).addTo(group);
+
+            // Turn arrows only on OSM-tagged lanes (not estimated)
+            if (!estimated && turn && turn !== 'none') {
+                const mid = Math.floor(nodes.length / 2);
+                const icon = makeTurnIcon(turn, turnColour);
+                L.marker(nodes[mid], { icon, interactive: false, zIndexOffset: -100 }).addTo(group);
+            }
+        }
+
+        // Pre-render any tiles already in localStorage for the current viewport
+        (function() {
+            const keys = Object.keys(localStorage)
+                .filter(function(k) { return k.startsWith(LS_PREFIX); })
+                .map(function(k) { return k.slice(LS_PREFIX.length); });
+            keys.forEach(function(key) {
+                const elements = lsLoadElements(key);
+                if (elements) {
+                    tileCache[key] = { state: 'loading', layers: null };
+                    renderTileElements(key, elements);
+                }
+            });
+        })();
+
+        // Trigger initial lane load
+        scheduleLaneRefresh();
 
         // ── Store / load ───────────────────────────────────────────────────────
 
@@ -566,7 +1134,7 @@
                         const d = document.createElement('div');
                         d.className = 'search-result';
                         d.textContent = r.display_name;
-                        d.onclick = function() { map.setView([parseFloat(r.lat), parseFloat(r.lon)], 15); searchResults.style.display = 'none'; searchInput.value = ''; };
+                        d.onclick = function() { map.setView([parseFloat(r.lat), parseFloat(r.lon)], 17); searchResults.style.display = 'none'; searchInput.value = ''; };
                         searchResults.appendChild(d);
                     });
                 } else { searchResults.style.display = 'none'; }

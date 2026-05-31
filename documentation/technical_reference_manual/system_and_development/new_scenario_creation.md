@@ -13,6 +13,12 @@ cp template.launch.py my_custom_scenario.launch.py
 ```bash
 chromium "http://localhost:8888/?tab=goal-picker"
 ```
+or
+```
+chromium http://localhost:8888/goal_picker
+```
+
+
 or use the direct link:
 [http://localhost:8888/?tab=goal-picker](http://localhost:8888/?tab=goal-picker)
 
@@ -22,7 +28,7 @@ or use the direct link:
    - On the start point set the heading flag (this can be clicked and dragged). 
    - Toggle between start and goal placement modes
    - View coordinates in both Lat/Long and UTM formats
-   - Copy the generated Python code directly from the text boxes
+   - Copy the generated Python code directly from the text boxes into a scenario launch file
 ---
 ### 3. Get Start and Goal Coordinates
 You can obtain coordinates using one of these methods:
