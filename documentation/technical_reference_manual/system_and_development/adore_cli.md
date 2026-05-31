@@ -14,8 +14,8 @@
 -->
 ## ADORe command line interface (CLI)
 
-The ADORe CLI is a docker run-time context that provides a complete set of tools
-for execution and development within adore. For more information on this tool
+The ADORe CLI is a docker run-time context that provides a complete development
+and deployment environment for ADORe. For more information on this tool
 please visit https://github.com/eclipse-adore/adore_cli
 
 The ADORe CLI context provides the following features: 
@@ -66,9 +66,6 @@ curl
 wget
 htop
 ```
-
-
-
 
 #### How do I know if I am in the ADORe CLI context?
 

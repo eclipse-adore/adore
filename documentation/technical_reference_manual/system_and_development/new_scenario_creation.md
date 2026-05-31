@@ -39,27 +39,11 @@ You can obtain coordinates using one of these methods:
 ---
 ### 4. Define Positions Using the New Position Class
 You can now define positions using either **Lat/Long** or **UTM** coordinates with the new Position class:
-
-**Option A: Using Lat/Long coordinates**
 ```python
-from scenario_helpers.simulated_vehicle import Position
-
-start_position = Position(lat_long=(52.314562, 10.560474), psi=0.0)
-goal_position = Position(lat_long=(52.313533, 10.560554))
-```
-
-**Option B: Using UTM coordinates**
-```python
-from scenario_helpers.simulated_vehicle import Position
-
-start_position = Position(utm=(606372, 5797172, 32, 'N'), psi=0.0)
-goal_position = Position(utm=(606380, 5797058, 32, 'N'))
-```
-
-**Option C: Legacy tuple format (still supported)**
-```python
-start_position = (606529.67, 5797315.01, -3.23)
-goal_position = (606447.98, 5797272.22)
+start_position = Position(lat_long=(52.315849, 10.562169), psi=0.0)
+goal_positions = [
+    Waypoint(Position(utm=(606471.04, 5797161.11, 32, "U")), WaypointBehavior.STOP),
+]
 ```
 
 > **💡TIP:** The Position class automatically converts between coordinate systems, so you can use whichever format is most convenient for your source data.
@@ -68,22 +52,35 @@ goal_position = (606447.98, 5797272.22)
 Open your scenario file and update the position definitions:
 
 ```python
-from scenario_helpers.simulated_vehicle import Position
+from launch import LaunchDescription
+from launch_ros.actions import Node
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
+from position import Position, Waypoint, WaypointBehavior
+from simulated_vehicle import create_simulated_vehicle
+from visualizer import create_visualizer
 
-start_position = Position(lat_long=(52.314562, 10.560474), psi=3.04)
-goal_position = Position(lat_long=(52.313533, 10.560554))
+start_position = Position(lat_long=(52.315849, 10.562169), psi=0.0)
+goal_positions = [
+    Waypoint(Position(utm=(606471.04, 5797161.11, 32, "U")), WaypointBehavior.STOP),
+]
 
 def generate_launch_description():
     return LaunchDescription([
-        *create_simulated_vehicle_nodes(
+        *create_simulated_vehicle(
             namespace="ego_vehicle",
-            start_position=start_position,
-            goal_position=goal_position,
-            map_file=map_file,
-            model_file=vehicle_model_file,
-            # ... other parameters
+            start_position_utm=start_position.get_utm_coordinates(),
+            goals=goal_positions,
+            vehicle_id=111,
+            v2x_id=0,
+        ),
+        *create_visualizer(
+            whitelist=["ego_vehicle"],
+            visualization_offset=start_position.get_utm_coordinates(),
         )
     ])
+
 ```
 ---
 ### 6. Set the Start Heading
@@ -91,22 +88,6 @@ The **start heading** (orientation in radians) can be critical for correct vehic
 - Try an initial value like `0.0` or `1.57` (90°).
 - Adjust the heading using a **trial-and-error method** until the vehicle starts in the correct direction.
 - The heading is specified as the `psi` parameter in the Position class or as the third element in the legacy tuple format.
+- The heading can be calculated with the goal picker.
 ---
-## ✅ Example Entry
-
-**New Position class format:**
-```python
-from scenario_helpers.simulated_vehicle import Position
-
-start_position = Position(lat_long=(52.314562, 10.560474), psi=3.04)
-goal_position = Position(lat_long=(52.313533, 10.560554))
-```
-
-**Alternative UTM format:**
-```python
-from scenario_helpers.simulated_vehicle import Position
-
-start_position = Position(utm=(606372, 5797172, 32, 'N'), psi=3.04)
-goal_position = Position(utm=(606380, 5797058, 32, 'N'))
-```
 
