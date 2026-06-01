@@ -1,0 +1,4504 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../adore_mission_control/">
+      
+      
+        <link rel="next" href="../api_reference_curl_examples/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../../../../img/favicon.ico">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>ADORE API Reference - ADORe Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#adore-api-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="ADORe Documentation" class="md-header__button md-logo" aria-label="ADORe Documentation" data-md-component="logo">
+      
+  <img src="../../../../../img/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            ADORe Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ADORE API Reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/eclipse-adore/adore" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="ADORe Documentation" class="md-nav__button md-logo" aria-label="ADORe Documentation" data-md-component="logo">
+      
+  <img src="../../../../../img/logo.png" alt="logo">
+
+    </a>
+    ADORe Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/eclipse-adore/adore" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About ADORe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting_started/getting_started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting_started/system_requirements/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Requirements
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../system_and_development/anonymous_cloning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Anonymous Cloning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting_started/prerequisites/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prerequisites
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting_started/installing_docker/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installing Docker
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting_started/running_your_first_scenario/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running Your First Scenario In ADORe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Technical Reference Manual
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Technical Reference Manual
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../technical_reference_manual/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Table of Contents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../system_and_development/documentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Documentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../configuring_adore/configuring_adore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuring ADORe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../adore_embedded/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADORe Embedded
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../ROS_NODES_SUMMARY/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADORe ROS Nodes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../modules/adore_ros2_msgs/README.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADORe ROS Messages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adore_ros2_msgs/topics.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADORe ROS Topics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_8" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3_8" id="__nav_3_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADORe Mission Control Dashboard & REST API
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_8_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ADORe Mission Control Dashboard & REST API
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About The ADORe REST API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adore_mission_control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADORe Mission Control Web Interface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADORE API Reference
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADORE API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scenario Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#start-scenario" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Start Scenario
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stop-scenario" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stop Scenario
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#restart-scenario" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Restart Scenario
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#halt-all-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Halt All Scenarios
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-scenario-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Scenario Output
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-scenario-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Scenario Status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-available-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Available Scenarios
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-scenario-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Scenario Content
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#save-scenario" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Save Scenario
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#set-loop-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Set Loop Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-checking-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Checking Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Model Checking Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#start-online-model-checking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Start Online Model Checking
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-model-check-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Model Check Results
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cancel-model-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cancel Model Check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#download-model-check-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Download Model Check Results
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bag-recording-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bag Recording Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Bag Recording Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#start-bag-recording" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Start Bag Recording
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stop-bag-recording" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stop Bag Recording
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-bag-recording-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Bag Recording Status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list-bag-recordings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        List Bag Recordings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-bag-recording-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Bag Recording Output
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#topic-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Topic Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Topic Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#subscribe-to-topic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subscribe to Topic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#publish-to-topic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Publish to Topic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list-active-topics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        List Active Topics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-topic-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Topic Information
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#position-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Position Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Position Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-stored-positions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Stored Positions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#set-positions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Set Positions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clear-positions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Clear Positions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ros2-system-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ROS2 System Information
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ROS2 System Information">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-ros2-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get ROS2 Nodes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-running-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Running Nodes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-node-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Node Information
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ros2-topics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get ROS2 Topics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-topic-information_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Topic Information
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ros2-datatypes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get ROS2 Datatypes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-datatype-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Datatype Information
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ros2-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get ROS2 Graph
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ros2-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get ROS2 Status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#refresh-ros2-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Refresh ROS2 Cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#system-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System Status
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="System Status">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-api-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get API Status
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#continuous-monitoring-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Continuous Monitoring API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Continuous Monitoring API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#start-continuous-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Start Continuous Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stop-continuous-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stop Continuous Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-continuous-monitoring-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Continuous Monitoring Status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-live-violations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Live Violations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-filtered-violations-excluding-disabled-propositions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Filtered Violations (excluding disabled propositions)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#set-disabled-propositions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Set Disabled Propositions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-continuous-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Continuous Results
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-checker-configuration-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Checker Configuration API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Model Checker Configuration API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#list-configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        List Configs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#save-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Save Config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Delete Config
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-checker-history-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Checker History API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Model Checker History API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#list-run-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        List Run History
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-run-log" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Run Log
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-checker-log-stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Checker Log Stream
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Model Checker Log Stream">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#stream-api-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stream API Logs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ros-topics-extended-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ROS Topics Extended API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ROS Topics Extended API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#measure-topic-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measure Topic Rate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#echo-one-message" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Echo One Message
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stream-topic-sse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stream Topic (SSE)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ros-workspace-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ROS Workspace API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ROS Workspace API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workspace-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workspace Status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clean-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Clean Workspace
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build Workspace
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workspace-build-log-stream-sse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workspace Build Log Stream (SSE)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api_reference_curl_examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADORE API Examples
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../system_and_development/creating_a_new_node/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Creating A New Node
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../getting_started/running_your_first_scenario/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Running Your First Scenario In ADORe
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../visualization/lichtblick/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scenario Visualization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_12" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_12" id="__nav_3_12_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scenario Model Checking
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_12_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_12">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Scenario Model Checking
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adore_model_checker/model_checking_quick_start.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scenario Model Checking Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adore_model_checker/model_checking_api_quick_start.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scenario Model Checking API Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adore_model_checker/README.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scenario Model Checking README
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../system_and_development/model_checking_with_the_adore_mission_control/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Scenario Model Checking With The ADORe Mission Control
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_13" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_13" id="__nav_3_13_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interfaces to ADORe
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_13_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_13">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Interfaces to ADORe
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../carla_bridge/README.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADORe And CARLa
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../system_and_development/sumo_bridge/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADORe And SUMO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../system_and_development/eclipse_zenoh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADORe And Eclipse Zenoh
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../system_and_development/mqtt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADORe And MQTT
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../system_and_development/scenario_generation.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Creating A New Scenario
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_15" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_15" id="__nav_3_15_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADORe CLI
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_15_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_15">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    ADORe CLI
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adore_cli/README.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADORe CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../system_and_development/multiarch_support/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-arch Build Support
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_16" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_16" id="__nav_3_16_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Testing
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_16_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_16">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Testing
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../system_and_development/system_tests/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    System Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../system_and_development/ros_unit_testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ROS Unit Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../system_and_development/library_testing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    C++ Library Testing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../modules/modules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Submodules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../problems_and_solutions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../licensing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Licensing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../THIRD-PARTY/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Third-Party
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../NOTICE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Notices
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../publications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Publicaitons
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../CONTRIBUTING/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../CODE_OF_CONDUCT/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code of Conduct
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../styleguide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Style Guide
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../contact/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contact
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scenario Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scenario Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#start-scenario" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Start Scenario
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stop-scenario" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stop Scenario
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#restart-scenario" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Restart Scenario
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#halt-all-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Halt All Scenarios
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-scenario-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Scenario Output
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-scenario-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Scenario Status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-available-scenarios" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Available Scenarios
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-scenario-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Scenario Content
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#save-scenario" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Save Scenario
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#set-loop-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Set Loop Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-checking-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Checking Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Model Checking Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#start-online-model-checking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Start Online Model Checking
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-model-check-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Model Check Results
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cancel-model-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cancel Model Check
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#download-model-check-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Download Model Check Results
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bag-recording-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bag Recording Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Bag Recording Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#start-bag-recording" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Start Bag Recording
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stop-bag-recording" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stop Bag Recording
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-bag-recording-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Bag Recording Status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list-bag-recordings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        List Bag Recordings
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-bag-recording-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Bag Recording Output
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#topic-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Topic Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Topic Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#subscribe-to-topic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Subscribe to Topic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#publish-to-topic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Publish to Topic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#list-active-topics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        List Active Topics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-topic-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Topic Information
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#position-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Position Management
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Position Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-stored-positions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Stored Positions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#set-positions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Set Positions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clear-positions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Clear Positions
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ros2-system-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ROS2 System Information
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ROS2 System Information">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-ros2-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get ROS2 Nodes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-running-nodes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Running Nodes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-node-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Node Information
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ros2-topics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get ROS2 Topics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-topic-information_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Topic Information
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ros2-datatypes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get ROS2 Datatypes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-datatype-information" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Datatype Information
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ros2-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get ROS2 Graph
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-ros2-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get ROS2 Status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#refresh-ros2-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Refresh ROS2 Cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#system-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        System Status
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="System Status">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#get-api-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get API Status
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#continuous-monitoring-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Continuous Monitoring API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Continuous Monitoring API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#start-continuous-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Start Continuous Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stop-continuous-monitoring" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stop Continuous Monitoring
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-continuous-monitoring-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Continuous Monitoring Status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-live-violations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Live Violations
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-filtered-violations-excluding-disabled-propositions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Filtered Violations (excluding disabled propositions)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#set-disabled-propositions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Set Disabled Propositions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-continuous-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Continuous Results
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-checker-configuration-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Checker Configuration API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Model Checker Configuration API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#list-configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        List Configs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#save-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Save Config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#delete-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Delete Config
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-checker-history-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Checker History API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Model Checker History API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#list-run-history" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        List Run History
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#get-run-log" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Get Run Log
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#model-checker-log-stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model Checker Log Stream
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Model Checker Log Stream">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#stream-api-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stream API Logs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ros-topics-extended-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ROS Topics Extended API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ROS Topics Extended API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#measure-topic-rate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Measure Topic Rate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#echo-one-message" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Echo One Message
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stream-topic-sse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stream Topic (SSE)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ros-workspace-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ROS Workspace API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ROS Workspace API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#workspace-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workspace Status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#clean-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Clean Workspace
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#build-workspace" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Build Workspace
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workspace-build-log-stream-sse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Workspace Build Log Stream (SSE)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="adore-api-reference">ADORe API Reference</h1>
+<p>Overview</p>
+<p>The ADORe API provides comprehensive control over scenario management, model checking, bag recording, and ROS2 system integration. All endpoints return JSON responses with appropriate HTTP status codes.</p>
+<h2 id="scenario-management">Scenario Management</h2>
+<h3 id="start-scenario">Start Scenario</h3>
+<p><strong>POST</strong> <code>/api/scenario/start</code></p>
+<p>Start a scenario using either a file path or launch file content.</p>
+<p><strong>Request Body:</strong></p>
+<pre><code class="language-json">{
+  &quot;scenario&quot;: &quot;path/to/scenario.launch.py&quot; | &quot;launch file content&quot;,
+  &quot;is_file&quot;: true | false
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Scenario started successfully&quot;
+}
+</code></pre>
+<h3 id="stop-scenario">Stop Scenario</h3>
+<p><strong>POST</strong> <code>/api/scenario/stop</code></p>
+<p>Stop the currently running scenario.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Scenario stopped&quot;
+}
+</code></pre>
+<h3 id="restart-scenario">Restart Scenario</h3>
+<p><strong>POST</strong> <code>/api/scenario/restart</code></p>
+<p>Restart the current scenario (halts all processes first, then restarts).</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Scenario restarted successfully&quot;
+}
+</code></pre>
+<h3 id="halt-all-scenarios">Halt All Scenarios</h3>
+<p><strong>POST</strong> <code>/api/scenario/halt</code></p>
+<p>Halt all running scenarios and ROS2 processes.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;All scenarios halted&quot;
+}
+</code></pre>
+<h3 id="get-scenario-output">Get Scenario Output</h3>
+<p><strong>GET</strong> <code>/api/scenario/output?lines=1000</code></p>
+<p>Get stdout/stderr output from the running scenario.</p>
+<p><strong>Query Parameters:</strong>
+- <code>lines</code>: number of lines to return (default: 1000)</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;output&quot;: &quot;scenario output text...&quot;
+}
+</code></pre>
+<h3 id="get-scenario-status">Get Scenario Status</h3>
+<p><strong>GET</strong> <code>/api/scenario/status</code></p>
+<p>Get current scenario status and details.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;running&quot; | &quot;idle&quot; | &quot;failed&quot;,
+  &quot;scenario&quot;: &quot;current_scenario_name&quot;,
+  &quot;scenario_content&quot;: &quot;launch file content&quot;,
+  &quot;loop_mode&quot;: true | false,
+  &quot;loop_delay&quot;: 0,
+  &quot;default_runtime&quot;: 60,
+  &quot;runtime&quot;: 45.2,
+  &quot;pid&quot;: 12345
+}
+</code></pre>
+<h3 id="get-available-scenarios">Get Available Scenarios</h3>
+<p><strong>GET</strong> <code>/api/scenario/get</code></p>
+<p>Get list of available scenario files.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;scenarios&quot;: [&quot;scenario1.launch.py&quot;, &quot;scenario2.launch.py&quot;]
+}
+</code></pre>
+<h3 id="get-scenario-content">Get Scenario Content</h3>
+<p><strong>GET</strong> <code>/api/scenario/content/&amp;lt;path:scenario_path&amp;gt;</code></p>
+<p>Get the content of a specific scenario file.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;content&quot;: &quot;scenario file content...&quot;,
+  &quot;path&quot;: &quot;scenario1.launch.py&quot;
+}
+</code></pre>
+<h3 id="save-scenario">Save Scenario</h3>
+<p><strong>POST</strong> <code>/api/scenario/save</code></p>
+<p>Save a new scenario file.</p>
+<p><strong>Request Body:</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;my_scenario.launch.py&quot;,
+  &quot;content&quot;: &quot;scenario content...&quot;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Scenario saved as my_scenario.launch.py&quot;
+}
+</code></pre>
+<h3 id="set-loop-mode">Set Loop Mode</h3>
+<p><strong>POST</strong> <code>/api/scenario/loop</code></p>
+<p>Configure loop mode for automatic scenario restarts.</p>
+<p><strong>Request Body:</strong></p>
+<pre><code class="language-json">{
+  &quot;enabled&quot;: true,
+  &quot;delay&quot;: 5,
+  &quot;runtime&quot;: 60
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Loop mode enabled&quot;
+}
+</code></pre>
+<h2 id="model-checking-management">Model Checking Management</h2>
+<h3 id="start-online-model-checking">Start Online Model Checking</h3>
+<p><strong>POST</strong> <code>/api/model_check/online</code></p>
+<p>Start online model checking session monitoring live ROS2 data.</p>
+<p><strong>Request Body:</strong></p>
+<pre><code class="language-json">{
+  &quot;config_file&quot;: &quot;config/default.yaml&quot;,
+  &quot;duration&quot;: 60.0,
+  &quot;vehicle_id&quot;: 0
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;run_id&quot;: 12345,
+  &quot;message&quot;: &quot;Model checking started successfully&quot;
+}
+</code></pre>
+<h3 id="get-model-check-results">Get Model Check Results</h3>
+<p><strong>GET</strong> <code>/api/model_check/result/&amp;#x5b;run_id&amp;#x5d;</code></p>
+<p>Get results of a specific model checking run.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;run_id&quot;: 12345,
+  &quot;status&quot;: &quot;completed&quot; | &quot;running&quot; | &quot;failed&quot; | &quot;cancelled&quot;,
+  &quot;mode&quot;: &quot;online&quot;,
+  &quot;results&quot;: {
+    &quot;SUMMARY&quot;: {
+      &quot;total_propositions&quot;: 10,
+      &quot;passed&quot;: 8,
+      &quot;failed&quot;: 2,
+      &quot;success_rate&quot;: 0.8,
+      &quot;overall_result&quot;: &quot;PASS&quot;
+    },
+    &quot;proposition_name&quot;: {
+      &quot;status&quot;: &quot;pass&quot; | &quot;fail&quot;,
+      &quot;description&quot;: {...},
+      &quot;formula_description&quot;: &quot;...&quot;,
+      &quot;result&quot;: 0.95
+    }
+  },
+  &quot;stdout&quot;: &quot;model checking output...&quot;
+}
+</code></pre>
+<h3 id="cancel-model-check">Cancel Model Check</h3>
+<p><strong>POST</strong> <code>/api/model_check/cancel/&amp;lt;run_id&amp;gt;</code></p>
+<p>Cancel a running model checking job.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;message&quot;: &quot;Model checking cancelled successfully&quot;
+}
+</code></pre>
+<h3 id="download-model-check-results">Download Model Check Results</h3>
+<p><strong>GET</strong> <code>/api/model_check/result/&lt;run_id&gt;/download</code></p>
+<p>Download model checking results as JSON file.</p>
+<h2 id="bag-recording-management">Bag Recording Management</h2>
+<h3 id="start-bag-recording">Start Bag Recording</h3>
+<p><strong>POST</strong> <code>/api/bag/start</code></p>
+<p>Start bag recording with optional duration and topic selection.</p>
+<p><strong>Request Body:</strong></p>
+<pre><code class="language-json">{
+  &quot;duration&quot;: 60,
+  &quot;topics&quot;: [&quot;/topic1&quot;, &quot;/topic2&quot;]
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Recording started: scenario_20250721T143022Z&quot;,
+  &quot;bag_name&quot;: &quot;scenario_20250721T143022Z&quot;,
+  &quot;bag_path&quot;: &quot;/full/path/to/bag&quot;,
+  &quot;topics&quot;: [&quot;/topic1&quot;, &quot;/topic2&quot;],
+  &quot;duration&quot;: 60
+}
+</code></pre>
+<h3 id="stop-bag-recording">Stop Bag Recording</h3>
+<p><strong>POST</strong> <code>/api/bag/stop</code></p>
+<p>Stop the currently running bag recording.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Recording stopped: scenario_20250721T143022Z&quot;,
+  &quot;bag_name&quot;: &quot;scenario_20250721T143022Z&quot;,
+  &quot;relative_path&quot;: &quot;bag_file_recordings/scenario_20250721T143022Z&quot;
+}
+</code></pre>
+<h3 id="get-bag-recording-status">Get Bag Recording Status</h3>
+<p><strong>GET</strong> <code>/api/bag/status</code></p>
+<p>Get current bag recording status.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;idle&quot; | &quot;recording&quot; | &quot;stopped&quot; | &quot;completed&quot; | &quot;failed&quot;,
+  &quot;bag_name&quot;: &quot;scenario_20250721T143022Z&quot;,
+  &quot;bag_path&quot;: &quot;/full/path/to/bag&quot;,
+  &quot;topics&quot;: [&quot;all&quot;] | [&quot;/topic1&quot;, &quot;/topic2&quot;],
+  &quot;duration&quot;: 60,
+  &quot;runtime&quot;: 45.2,
+  &quot;pid&quot;: 12345
+}
+</code></pre>
+<h3 id="list-bag-recordings">List Bag Recordings</h3>
+<p><strong>GET</strong> <code>/api/bag/list</code></p>
+<p>List all recorded bag files.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;bags&quot;: [
+    {
+      &quot;name&quot;: &quot;scenario_20250721T143022Z&quot;,
+      &quot;path&quot;: &quot;/full/path/to/bag&quot;,
+      &quot;relative_path&quot;: &quot;bag_file_recordings/scenario_20250721T143022Z&quot;,
+      &quot;created&quot;: &quot;2025-07-21T14:30:22&quot;,
+      &quot;size_mb&quot;: 125.4
+    }
+  ]
+}
+</code></pre>
+<h3 id="get-bag-recording-output">Get Bag Recording Output</h3>
+<p><strong>GET</strong> <code>/api/bag/output?lines=100</code></p>
+<p>Get stdout/stderr output from the bag recording process.</p>
+<p><strong>Query Parameters:</strong>
+- <code>lines</code>: number of lines to return (default: 100)</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;output&quot;: &quot;bag recording output text...&quot;
+}
+</code></pre>
+<h2 id="topic-management">Topic Management</h2>
+<h3 id="subscribe-to-topic">Subscribe to Topic</h3>
+<p><strong>GET</strong> <code>/api/topic/subscribe?topic=/topic_name&amp;limit=10&amp;wait_timeout=1.0</code></p>
+<p>Subscribe to a ROS2 topic and get recent messages.</p>
+<p><strong>Query Parameters:</strong>
+- <code>topic</code>: ROS2 topic name (required)
+- <code>limit</code>: maximum number of messages to return (default: 10)
+- <code>wait_timeout</code>: time to wait for messages if new subscriber (default: 1.0 seconds)</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;topic&quot;: &quot;/topic_name&quot;,
+  &quot;messages&quot;: [
+    {
+      &quot;timestamp&quot;: 1642780800.0,
+      &quot;topic&quot;: &quot;/topic_name&quot;,
+      &quot;datatype&quot;: &quot;std_msgs/msg/String&quot;,
+      &quot;data&quot;: {&quot;data&quot;: &quot;hello world&quot;}
+    }
+  ],
+  &quot;count&quot;: 1,
+  &quot;new_subscriber&quot;: true,
+  &quot;waited&quot;: 0.5
+}
+</code></pre>
+<h3 id="publish-to-topic">Publish to Topic</h3>
+<p><strong>POST</strong> <code>/api/topic/publish</code></p>
+<p>Publish a message to a ROS2 topic.</p>
+<p><strong>Request Body:</strong></p>
+<pre><code class="language-json">{
+  &quot;topic&quot;: &quot;/topic_name&quot;,
+  &quot;data&quot;: {&quot;data&quot;: &quot;hello world&quot;},
+  &quot;datatype&quot;: &quot;std_msgs/msg/String&quot;
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Message published to /topic_name&quot;,
+  &quot;topic&quot;: &quot;/topic_name&quot;,
+  &quot;datatype&quot;: &quot;std_msgs/msg/String&quot;
+}
+</code></pre>
+<h3 id="list-active-topics">List Active Topics</h3>
+<p><strong>GET</strong> <code>/api/topic/list</code></p>
+<p>List all active ROS topics in the system and those being managed by the API.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;managed_topics&quot;: {
+    &quot;active_subscribers&quot;: 2,
+    &quot;active_publishers&quot;: 1,
+    &quot;subscriber_topics&quot;: [&quot;/topic1&quot;, &quot;/topic2&quot;],
+    &quot;publisher_topics&quot;: [&quot;/topic3&quot;],
+    &quot;ros_available&quot;: true
+  },
+  &quot;system_topics&quot;: [&quot;/rosout&quot;, &quot;/parameter_events&quot;, &quot;/cmd_vel&quot;, &quot;/scan&quot;]
+}
+</code></pre>
+<h3 id="get-topic-information">Get Topic Information</h3>
+<p><strong>GET</strong> <code>/api/topic/info/&amp;lt;path:topic_name&amp;gt;</code></p>
+<p>Get detailed information about a specific ROS2 topic.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;topic&quot;: &quot;/topic_name&quot;,
+  &quot;datatype&quot;: &quot;std_msgs/msg/String&quot;,
+  &quot;managed&quot;: true
+}
+</code></pre>
+<h2 id="position-management">Position Management</h2>
+<h3 id="get-stored-positions">Get Stored Positions</h3>
+<p><strong>GET</strong> <code>/api/positions/get</code></p>
+<p>Get stored start and goal positions from the goal picker.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;start&quot;: {
+    &quot;lat&quot;: 52.5200,
+    &quot;lng&quot;: 13.4050,
+    &quot;utm&quot;: {
+      &quot;easting&quot;: 606372,
+      &quot;northing&quot;: 5797172,
+      &quot;zone&quot;: 32,
+      &quot;hemisphere&quot;: &quot;N&quot;
+    }
+  },
+  &quot;goal&quot;: {
+    &quot;lat&quot;: 52.5300,
+    &quot;lng&quot;: 13.4150,
+    &quot;utm&quot;: {
+      &quot;easting&quot;: 606380,
+      &quot;northing&quot;: 5797058,
+      &quot;zone&quot;: 32,
+      &quot;hemisphere&quot;: &quot;N&quot;
+    }
+  }
+}
+</code></pre>
+<h3 id="set-positions">Set Positions</h3>
+<p><strong>POST</strong> <code>/api/positions/set</code></p>
+<p>Store start and/or goal positions.</p>
+<p><strong>Request Body:</strong></p>
+<pre><code class="language-json">{
+  &quot;start&quot;: {&quot;lat&quot;: 52.5200, &quot;lng&quot;: 13.4050},
+  &quot;goal&quot;: {&quot;lat&quot;: 52.5300, &quot;lng&quot;: 13.4150}
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Positions stored successfully&quot;
+}
+</code></pre>
+<h3 id="clear-positions">Clear Positions</h3>
+<p><strong>POST</strong> <code>/api/positions/clear</code></p>
+<p>Clear all stored positions.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;success&quot;: true,
+  &quot;message&quot;: &quot;Positions cleared&quot;
+}
+</code></pre>
+<h2 id="ros2-system-information">ROS2 System Information</h2>
+<h3 id="get-ros2-nodes">Get ROS2 Nodes</h3>
+<p><strong>GET</strong> <code>/api/ros2/nodes</code></p>
+<p>Get cached information about all ROS2 nodes.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;nodes&quot;: {
+    &quot;/node_name&quot;: {
+      &quot;name&quot;: &quot;/node_name&quot;,
+      &quot;topics&quot;: [...],
+      &quot;services&quot;: [...],
+      &quot;actions&quot;: [...]
+    }
+  },
+  &quot;count&quot;: 5,
+  &quot;last_updated&quot;: 1642780800.0
+}
+</code></pre>
+<h3 id="get-running-nodes">Get Running Nodes</h3>
+<p><strong>GET</strong> <code>/api/ros2/nodes/running</code></p>
+<p>Get list of currently running ROS2 node names.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;running_nodes&quot;: [&quot;/node1&quot;, &quot;/node2&quot;, &quot;/node3&quot;],
+  &quot;count&quot;: 3
+}
+</code></pre>
+<h3 id="get-node-information">Get Node Information</h3>
+<p><strong>GET</strong> <code>/api/ros2/nodes/&amp;lt;node_name&amp;gt;</code></p>
+<p>Get detailed information about a specific ROS2 node.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;/node_name&quot;,
+  &quot;topics&quot;: [
+    {
+      &quot;topic&quot;: &quot;/topic_name&quot;,
+      &quot;datatype&quot;: &quot;std_msgs/msg/String&quot;,
+      &quot;role&quot;: &quot;publisher&quot; | &quot;subscriber&quot;
+    }
+  ],
+  &quot;services&quot;: [...],
+  &quot;actions&quot;: [...]
+}
+</code></pre>
+<h3 id="get-ros2-topics">Get ROS2 Topics</h3>
+<p><strong>GET</strong> <code>/api/ros2/topics</code></p>
+<p>Get information about all ROS2 topics.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;topics&quot;: {
+    &quot;/topic_name&quot;: {
+      &quot;name&quot;: &quot;/topic_name&quot;,
+      &quot;datatype&quot;: &quot;std_msgs/msg/String&quot;,
+      &quot;publishers&quot;: [&quot;/node1&quot;],
+      &quot;subscribers&quot;: [&quot;/node2&quot;, &quot;/node3&quot;]
+    }
+  },
+  &quot;count&quot;: 10,
+  &quot;last_updated&quot;: 1642780800.0
+}
+</code></pre>
+<h3 id="get-topic-information_1">Get Topic Information</h3>
+<p><strong>GET</strong> <code>/api/ros2/topics/&amp;lt;topic_name&amp;gt;</code></p>
+<p>Get detailed information about a specific ROS2 topic.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;/topic_name&quot;,
+  &quot;datatype&quot;: &quot;std_msgs/msg/String&quot;,
+  &quot;publishers&quot;: [&quot;/node1&quot;],
+  &quot;subscribers&quot;: [&quot;/node2&quot;, &quot;/node3&quot;]
+}
+</code></pre>
+<h3 id="get-ros2-datatypes">Get ROS2 Datatypes</h3>
+<p><strong>GET</strong> <code>/api/ros2/datatypes</code></p>
+<p>Get information about all ROS2 message datatypes.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;datatypes&quot;: {
+    &quot;std_msgs/msg/String&quot;: {
+      &quot;name&quot;: &quot;std_msgs/msg/String&quot;,
+      &quot;interface_text&quot;: &quot;string data&quot;,
+      &quot;interface&quot;: [...],
+      &quot;topics&quot;: [&quot;/topic1&quot;, &quot;/topic2&quot;]
+    }
+  },
+  &quot;count&quot;: 25,
+  &quot;last_updated&quot;: 1642780800.0
+}
+</code></pre>
+<h3 id="get-datatype-information">Get Datatype Information</h3>
+<p><strong>GET</strong> <code>/api/ros2/datatypes/&amp;lt;datatype_name&amp;gt;</code></p>
+<p>Get detailed information about a specific ROS2 datatype.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;std_msgs/msg/String&quot;,
+  &quot;interface_text&quot;: &quot;string data&quot;,
+  &quot;interface&quot;: [...],
+  &quot;topics&quot;: [&quot;/topic1&quot;, &quot;/topic2&quot;]
+}
+</code></pre>
+<h3 id="get-ros2-graph">Get ROS2 Graph</h3>
+<p><strong>GET</strong> <code>/api/ros2/graph</code></p>
+<p>Get ROS2 computation graph data.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;graph&quot;: {
+    &quot;nodes&quot;: [...],
+    &quot;edges&quot;: [...],
+    &quot;metadata&quot;: {...}
+  },
+  &quot;last_updated&quot;: 1642780800.0
+}
+</code></pre>
+<h3 id="get-ros2-status">Get ROS2 Status</h3>
+<p><strong>GET</strong> <code>/api/ros2/status</code></p>
+<p>Get ROS2 API worker status and cache statistics.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;worker_running&quot;: true,
+  &quot;last_updated&quot;: {
+    &quot;nodes&quot;: 1642780800.0,
+    &quot;topics&quot;: 1642780801.0,
+    &quot;datatypes&quot;: 1642780802.0
+  },
+  &quot;cache_stats&quot;: {
+    &quot;nodes&quot;: 5,
+    &quot;topics&quot;: 10,
+    &quot;datatypes&quot;: 25
+  }
+}
+</code></pre>
+<h3 id="refresh-ros2-cache">Refresh ROS2 Cache</h3>
+<p><strong>POST</strong> <code>/api/ros2/refresh</code></p>
+<p>Force refresh of ROS2 system cache.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;message&quot;: &quot;Cache refreshed successfully&quot;
+}
+</code></pre>
+<h2 id="system-status">System Status</h2>
+<h3 id="get-api-status">Get API Status</h3>
+<p><strong>GET</strong> <code>/api/status</code></p>
+<p>Get overall API status and feature availability.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;adore_api&quot;: &quot;running&quot;,
+  &quot;model_checker_available&quot;: true,
+  &quot;ros_marshaller_available&quot;: true,
+  &quot;bag_recording_available&quot;: true
+}
+</code></pre>
+<h2 id="error-handling">Error Handling</h2>
+<p>All endpoints return appropriate HTTP status codes:</p>
+<ul>
+<li><strong>200 OK</strong>: Successful operation</li>
+<li><strong>400 Bad Request</strong>: Invalid request parameters or body</li>
+<li><strong>404 Not Found</strong>: Resource not found</li>
+<li><strong>500 Internal Server Error</strong>: Server error</li>
+</ul>
+<p>Error responses include a descriptive message:</p>
+<pre><code class="language-json">{
+  &quot;success&quot;: false,
+  &quot;message&quot;: &quot;Error description&quot;
+}
+</code></pre>
+<h2 id="continuous-monitoring-api">Continuous Monitoring API</h2>
+<p>The continuous monitoring API enables real-time proposition checking against live ROS2 data streams.</p>
+<h3 id="start-continuous-monitoring">Start Continuous Monitoring</h3>
+<p><strong>POST</strong> <code>/api/model_checker/continuous/start</code></p>
+<p>Start a continuous monitoring session.</p>
+<p><strong>Request Body:</strong></p>
+<pre><code class="language-json">{
+  &quot;config_file&quot;: &quot;config/default.yaml&quot;,
+  &quot;vehicle_id&quot;: 0
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;session_id&quot;: &quot;abc123&quot;,
+  &quot;status&quot;: &quot;running&quot;,
+  &quot;message&quot;: &quot;Continuous monitoring started&quot;
+}
+</code></pre>
+<h3 id="stop-continuous-monitoring">Stop Continuous Monitoring</h3>
+<p><strong>POST</strong> <code>/api/model_checker/continuous/stop</code></p>
+<p>Stop the active continuous monitoring session.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;stopped&quot;,
+  &quot;message&quot;: &quot;Monitoring stopped&quot;
+}
+</code></pre>
+<h3 id="get-continuous-monitoring-status">Get Continuous Monitoring Status</h3>
+<p><strong>GET</strong> <code>/api/model_checker/continuous/status</code></p>
+<p>Get the status of the current continuous monitoring session.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;running&quot;: true,
+  &quot;session_id&quot;: &quot;abc123&quot;,
+  &quot;uptime_s&quot;: 42.3,
+  &quot;messages_processed&quot;: 1200,
+  &quot;active_propositions&quot;: 10
+}
+</code></pre>
+<h3 id="get-live-violations">Get Live Violations</h3>
+<p><strong>GET</strong> <code>/api/model_checker/continuous/violations</code></p>
+<p>Get current violation events from the running monitoring session.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;violations&quot;: [
+    {
+      &quot;proposition&quot;: &quot;SAFE_DISTANCE&quot;,
+      &quot;timestamp&quot;: 1642780800.0,
+      &quot;value&quot;: 0.42,
+      &quot;threshold&quot;: 0.5,
+      &quot;severity&quot;: &quot;warning&quot;
+    }
+  ],
+  &quot;count&quot;: 1,
+  &quot;session_id&quot;: &quot;abc123&quot;
+}
+</code></pre>
+<h3 id="get-filtered-violations-excluding-disabled-propositions">Get Filtered Violations (excluding disabled propositions)</h3>
+<p><strong>GET</strong> <code>/api/model_checker/continuous/violations/filtered</code></p>
+<p>Returns violations excluding any propositions disabled via the <code>/api/model_checker/continuous/disabled</code> endpoint.</p>
+<p><strong>Response:</strong> Same shape as <code>/violations</code>.</p>
+<h3 id="set-disabled-propositions">Set Disabled Propositions</h3>
+<p><strong>POST</strong> <code>/api/model_checker/continuous/disabled</code></p>
+<p>Suppress specific propositions from violation output.</p>
+<p><strong>Request Body:</strong></p>
+<pre><code class="language-json">{
+  &quot;disabled_propositions&quot;: [&quot;PROP_NAME_A&quot;, &quot;PROP_NAME_B&quot;]
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{ &quot;ok&quot;: true }
+</code></pre>
+<h3 id="get-continuous-results">Get Continuous Results</h3>
+<p><strong>GET</strong> <code>/api/model_checker/continuous/results</code></p>
+<p>Get the aggregated results from the current or most recently completed continuous session.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;results&quot;: {
+    &quot;SUMMARY&quot;: {
+      &quot;total_propositions&quot;: 10,
+      &quot;passed&quot;: 8,
+      &quot;failed&quot;: 2,
+      &quot;success_rate&quot;: 0.8,
+      &quot;overall_result&quot;: &quot;FAIL&quot;
+    },
+    &quot;PROP_NAME&quot;: {
+      &quot;status&quot;: &quot;fail&quot;,
+      &quot;description&quot;: { &quot;title&quot;: &quot;...&quot;, &quot;description&quot;: &quot;...&quot; },
+      &quot;formula_description&quot;: &quot;...&quot;,
+      &quot;result&quot;: 0.43,
+      &quot;statistics&quot;: {
+        &quot;duration_s&quot;: 42.3,
+        &quot;messages_processed&quot;: 1200,
+        &quot;violation_count&quot;: 3,
+        &quot;safety_grade&quot;: &quot;C, 3.0&quot;
+      }
+    }
+  }
+}
+</code></pre>
+<h2 id="model-checker-configuration-api">Model Checker Configuration API</h2>
+<h3 id="list-configs">List Configs</h3>
+<p><strong>GET</strong> <code>/api/model_checker/configs</code></p>
+<p>List all available YAML configuration files.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;configs&quot;: [
+    { &quot;name&quot;: &quot;default.yaml&quot;, &quot;size&quot;: 2048, &quot;modified&quot;: &quot;2025-07-01T12:00:00Z&quot; }
+  ]
+}
+</code></pre>
+<h3 id="get-config">Get Config</h3>
+<p><strong>GET</strong> <code>/api/model_checker/configs/&lt;name&gt;</code></p>
+<p>Read a specific configuration file.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{ &quot;name&quot;: &quot;default.yaml&quot;, &quot;content&quot;: &quot;# yaml content...&quot; }
+</code></pre>
+<h3 id="save-config">Save Config</h3>
+<p><strong>POST</strong> <code>/api/model_checker/configs</code></p>
+<p>Create or overwrite a configuration file.</p>
+<p><strong>Request Body:</strong></p>
+<pre><code class="language-json">{ &quot;name&quot;: &quot;my_config.yaml&quot;, &quot;content&quot;: &quot;# yaml content...&quot; }
+</code></pre>
+<h3 id="delete-config">Delete Config</h3>
+<p><strong>DELETE</strong> <code>/api/model_checker/configs/&lt;name&gt;</code></p>
+<p>Delete a configuration file.</p>
+<h2 id="model-checker-history-api">Model Checker History API</h2>
+<h3 id="list-run-history">List Run History</h3>
+<p><strong>GET</strong> <code>/api/model_checker/history</code></p>
+<p>List all completed model checking runs.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;runs&quot;: [
+    {
+      &quot;run_id&quot;: 1,
+      &quot;status&quot;: &quot;completed&quot;,
+      &quot;overall_result&quot;: &quot;PASS&quot;,
+      &quot;config_file&quot;: &quot;config/default.yaml&quot;,
+      &quot;completed_at&quot;: &quot;2025-07-01T12:00:00Z&quot;
+    }
+  ]
+}
+</code></pre>
+<h3 id="get-run-log">Get Run Log</h3>
+<p><strong>GET</strong> <code>/api/model_checker/history/&lt;run_id&gt;/log</code></p>
+<p>Retrieve the log output for a specific historical run.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{ &quot;log&quot;: &quot;full log text...&quot; }
+</code></pre>
+<h2 id="model-checker-log-stream">Model Checker Log Stream</h2>
+<h3 id="stream-api-logs">Stream API Logs</h3>
+<p><strong>GET</strong> <code>/api/model_checker/logs/stream</code></p>
+<p>Server-Sent Events stream of all API log output. Connect with <code>EventSource</code>.</p>
+<p><strong>Event format:</strong></p>
+<pre><code class="language-json">{ &quot;text&quot;: &quot;log line&quot;, &quot;stream&quot;: &quot;stdout&quot;, &quot;time&quot;: &quot;14:30:00&quot; }
+</code></pre>
+<h2 id="ros-topics-extended-api">ROS Topics Extended API</h2>
+<h3 id="measure-topic-rate">Measure Topic Rate</h3>
+<p><strong>POST</strong> <code>/api/topic/hz</code></p>
+<p>Run <code>ros2 topic hz -w 10</code> for a topic and return the output (waits up to 12 seconds for window of 10 messages).</p>
+<p><strong>Request Body:</strong></p>
+<pre><code class="language-json">{ &quot;topic&quot;: &quot;/your/topic&quot; }
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{ &quot;success&quot;: true, &quot;topic&quot;: &quot;/your/topic&quot;, &quot;output&quot;: &quot;average rate: 10.000\n...&quot; }
+</code></pre>
+<h3 id="echo-one-message">Echo One Message</h3>
+<p><strong>POST</strong> <code>/api/topic/echo</code></p>
+<p>Receive a single message from a topic (<code>ros2 topic echo --once</code>) and return it as raw text.</p>
+<p><strong>Request Body:</strong></p>
+<pre><code class="language-json">{ &quot;topic&quot;: &quot;/your/topic&quot; }
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{ &quot;success&quot;: true, &quot;topic&quot;: &quot;/your/topic&quot;, &quot;raw&quot;: &quot;header:\n  stamp: ...&quot; }
+</code></pre>
+<h3 id="stream-topic-sse">Stream Topic (SSE)</h3>
+<p><strong>GET</strong> <code>/api/topic/stream?topic=&lt;topic_name&gt;</code></p>
+<p>Server-Sent Events stream of <code>ros2 topic echo</code> output for continuous observation.</p>
+<p><strong>Query Parameters:</strong>
+- <code>topic</code>: the ROS 2 topic name (required)</p>
+<p><strong>Event format:</strong></p>
+<pre><code class="language-json">{ &quot;text&quot;: &quot;line from ros2 topic echo&quot;, &quot;time&quot;: &quot;14:30:00&quot; }
+</code></pre>
+<h2 id="ros-workspace-api">ROS Workspace API</h2>
+<h3 id="workspace-status">Workspace Status</h3>
+<p><strong>GET</strong> <code>/api/ros_workspace/status</code></p>
+<p>Returns the current state of the <code>ros2_workspace</code> directory.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;workspace_dir&quot;: &quot;/path/to/ros2_workspace&quot;,
+  &quot;workspace_exists&quot;: true,
+  &quot;makefile_exists&quot;: true,
+  &quot;build_dir_exists&quot;: true,
+  &quot;install_dir_exists&quot;: true,
+  &quot;running&quot;: { &quot;clean&quot;: false, &quot;build&quot;: false }
+}
+</code></pre>
+<h3 id="clean-workspace">Clean Workspace</h3>
+<p><strong>POST</strong> <code>/api/ros_workspace/clean</code></p>
+<p>Runs <code>make clean</code> inside the <code>ros2_workspace</code> directory. Output is streamed via <code>/api/ros_workspace/log/stream</code>.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{ &quot;success&quot;: true, &quot;message&quot;: &quot;make clean started&quot; }
+</code></pre>
+<h3 id="build-workspace">Build Workspace</h3>
+<p><strong>POST</strong> <code>/api/ros_workspace/build</code></p>
+<p>Runs <code>make build</code> inside the <code>ros2_workspace</code> directory. Output is streamed via <code>/api/ros_workspace/log/stream</code>.</p>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{ &quot;success&quot;: true, &quot;message&quot;: &quot;make build started&quot; }
+</code></pre>
+<h3 id="workspace-build-log-stream-sse">Workspace Build Log Stream (SSE)</h3>
+<p><strong>GET</strong> <code>/api/ros_workspace/log/stream</code></p>
+<p>Server-Sent Events stream of stdout/stderr from <code>make clean</code> or <code>make build</code> invocations.</p>
+<p><strong>Event format:</strong></p>
+<pre><code class="language-json">{ &quot;text&quot;: &quot;log line&quot;, &quot;stream&quot;: &quot;stdout&quot;, &quot;time&quot;: &quot;14:30:00&quot; }
+</code></pre>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.copy"], "search": "../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

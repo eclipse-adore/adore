@@ -1,0 +1,9 @@
+digraph "ros_image_streamer.viewer_node.ViewerNode"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="{ros_image_streamer.viewer\l_node.ViewerNode\n|- _shutdown\l- _display_thread\l- _topic\l- _window_name\l- _queue_depth\l- _compressed\l- _latest_frame\l- _latest_header\l- _latest_encoding\l- _frame_lock\l- _show_header\l- _freq_lock\l- _sub\l- _last_msg_t\l|+ __init__()\l+ shutdown()\l+ is_shutdown()\l- _handle_frame()\l- _raw_image_callback()\l- _compressed_image_callback()\l- _get_stats()\l- _display_loop()\l}",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",arrowtail="onormal",fontname="Helvetica"];
+  Node2 [label="{Node\n||}",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+}

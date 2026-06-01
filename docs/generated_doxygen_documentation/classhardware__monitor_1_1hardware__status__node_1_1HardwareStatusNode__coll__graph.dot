@@ -1,0 +1,9 @@
+digraph "hardware_monitor.hardware_status_node.HardwareStatusNode"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="{hardware_monitor.hardware\l_status_node.HardwareStatusNode\n|- _node_name\l- _topic_host\l- _cpu_warn\l- _ram_warn\l- _disk_warn\l- _temp_warn\l- _pub\l- _timer\l- _psutil\l|+ __init__()\l- _warn_level()\l- _run_cmd()\l- _read_file()\l- _collect_cpu()\l- _collect_ram()\l- _collect_gpu()\l- _collect_disk()\l- _collect_temperatures()\l- _collect_network()\l- _collect_ntp()\l- _collect_processes()\l- _publish_status()\l}",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",arrowtail="onormal",fontname="Helvetica"];
+  Node2 [label="{Node\n||}",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+}

@@ -1,0 +1,31 @@
+digraph "zenoh_message_bridge.bridge_node.ROS2ZenohBridge._setup_ros2_to_zenoh"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="zenoh_message_bridge.bridge\l_node.ROS2ZenohBridge._setup\l_ros2_to_zenoh",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="zenoh_message_bridge.bridge\l_node._liveliness_keyexpr",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacezenoh__message__bridge_1_1bridge__node.html#a511fb901da9420ec9370ddd3e4b1dd8a",tooltip=" "];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="zenoh_message_bridge.bridge\l_node._type_hash",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacezenoh__message__bridge_1_1bridge__node.html#aef05f28f95fee280cc7c898cac008195",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="zenoh_message_bridge.bridge\l_node._make_attachment",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacezenoh__message__bridge_1_1bridge__node.html#a27a47a2d6ddd72a6366e28a011941f0e",tooltip=" "];
+  Node1 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="zenoh_message_bridge.bridge\l_node._make_gid",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacezenoh__message__bridge_1_1bridge__node.html#a934d5fca4fc75117387bdf45a175c0ad",tooltip=" "];
+  Node1 -> Node6 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="zenoh_message_bridge.bridge\l_node._qos_from_mapping",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacezenoh__message__bridge_1_1bridge__node.html#a5e936889a860683515d237662415b689",tooltip=" "];
+  Node1 -> Node7 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="zenoh_message_bridge.bridge\l_node._serializer",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacezenoh__message__bridge_1_1bridge__node.html#a00a44d655fb2009a348f559d1608e598",tooltip=" "];
+  Node7 -> Node8 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="mqtt_message_bridge.utils.msg\l_to_cdr_json",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacemqtt__message__bridge_1_1utils.html#a9bbf3c79cf0cbc49bb43e2a52a032781",tooltip=" "];
+  Node7 -> Node9 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="mqtt_message_bridge.utils.msg\l_to_json",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacemqtt__message__bridge_1_1utils.html#a1bc8e06f6a79a8cf5af705af86969300",tooltip=" "];
+  Node1 -> Node10 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="zenoh_message_bridge.bridge\l_node._topic_keyexpr",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacezenoh__message__bridge_1_1bridge__node.html#afe059df76ed1cbb5a60ef6c834206054",tooltip=" "];
+  Node10 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node11 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="zenoh_message_bridge.bridge\l_node._wire_type",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacezenoh__message__bridge_1_1bridge__node.html#a5ded50ab4240f42ec91d015ccde9816d",tooltip=" "];
+  Node1 -> Node12 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="mqtt_message_bridge.utils.load\l_msg_type",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacemqtt__message__bridge_1_1utils.html#a06e61570c053a331bd43558d2202b8c1",tooltip=" "];
+}

@@ -1,0 +1,9 @@
+digraph "zenoh_message_bridge.bridge_node.ROS2ZenohBridge"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node1 [label="{zenoh_message_bridge.bridge\l_node.ROS2ZenohBridge\n|+ config\l+ zenoh_session\l+ zenoh_subs\l+ zenoh_pubs\l+ zenoh_lv_tokens\l+ ros_subs\l+ ros_pubs\l- _ros_domain_id\l- _zenoh_bridge_id\l- _rmw_target\l- _z2r_queue\l- _shutdown_event\l- _session_id\l|+ __init__()\l+ shutdown()\l- _setup_zenoh()\l- _setup_ros2_to_zenoh()\l- _setup_zenoh_to_ros2()\l- _drain_z2r_queue()\l}",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node2 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",arrowtail="onormal",fontname="Helvetica"];
+  Node2 [label="{Node\n||}",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled",tooltip=" "];
+}

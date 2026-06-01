@@ -1,0 +1,10 @@
+digraph "hardware_monitor.hardware_status_node.HardwareStatusNode._collect_ram"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="RL";
+  Node1 [label="hardware_monitor.hardware\l_status_node.HardwareStatusNode.\l_collect_ram",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="hardware_monitor.hardware\l_status_node.HardwareStatusNode.\l_publish_status",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classhardware__monitor_1_1hardware__status__node_1_1HardwareStatusNode.html#ad0de613b0a783eced5dacb97b5c66b39",tooltip=" "];
+}

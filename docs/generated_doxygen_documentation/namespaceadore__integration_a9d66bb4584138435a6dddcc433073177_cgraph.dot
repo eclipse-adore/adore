@@ -1,0 +1,16 @@
+digraph "adore_integration.register_with_adore_app"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="adore_integration.register\l_with_adore_app",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="hardware_monitor.hardware\l_monitor_api.get_hardware\l_monitor_blueprint",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacehardware__monitor_1_1hardware__monitor__api.html#a3ab92ff1ec2d1b2d008e59b8e015d56c",tooltip=" "];
+  Node2 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="hardware_monitor.hardware\l_monitor_api._start_node\l_supervisor",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacehardware__monitor_1_1hardware__monitor__api.html#a3b3d1f8e47c693c3dc3fe909c036dd6a",tooltip=" "];
+  Node2 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="hardware_monitor.hardware\l_monitor_api._start_ros\l_subscribers",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacehardware__monitor_1_1hardware__monitor__api.html#a6493418c681a3c491a671ebfcff6d9dc",tooltip=" "];
+  Node4 -> Node5 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="hardware_monitor.hardware\l_monitor_api._ensure_path",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacehardware__monitor_1_1hardware__monitor__api.html#af9b0cd733db8494075aec36fa3aa9428",tooltip=" "];
+}

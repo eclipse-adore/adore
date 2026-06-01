@@ -1,0 +1,14 @@
+digraph "zenoh_message_bridge.bridge_node._deserializer"
+{
+ // LATEX_PDF_SIZE
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="zenoh_message_bridge.bridge\l_node._deserializer",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black",tooltip=" "];
+  Node1 -> Node2 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="mqtt_message_bridge.utils.bytes\l_to_msg",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacemqtt__message__bridge_1_1utils.html#a2ae0a754295f1f60c7bd7f7d71589b10",tooltip=" "];
+  Node1 -> Node3 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="mqtt_message_bridge.utils.cdr\l_json_to_msg",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacemqtt__message__bridge_1_1utils.html#a9c6196b31a7e40a58199410af2d4544b",tooltip=" "];
+  Node1 -> Node4 [color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="mqtt_message_bridge.utils.json\l_to_msg",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$namespacemqtt__message__bridge_1_1utils.html#a62dc4ddec89d7f9120428fa0585ef2ca",tooltip=" "];
+}
