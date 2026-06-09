@@ -41,7 +41,7 @@ int main( int argc, char* argv[] )
   std::filesystem::remove_all( "cache" ); 
 
   // Initialize the configuration from a properties file
-  Config cfg( "../../../../adore_test_programs/adore_map_downloader_test/config/r2s_wfs_config_bs.json" );
+  Config cfg( "../../../src/adore_test_programs/adore_map_downloader_test/config/r2s_wfs_config_bs.json" );
   // Use current directory for file cache and enable debug mode
   MapDownloader map_downloader( cfg.server_url, cfg.username, cfg.password, cfg.project_name, cfg.target_srs, 
     cfg.bbox, "", true, true, true ); // curl_global_init, curl_global_cleanup, debug: 
