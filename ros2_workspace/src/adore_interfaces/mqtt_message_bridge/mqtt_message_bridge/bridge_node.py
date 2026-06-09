@@ -11,6 +11,11 @@ from .utils import load_msg_type, msg_to_bytes, bytes_to_msg, msg_to_json, json_
 
 _STR_TYPE = 'std_msgs/msg/String'
 
+_PROTOCOL_MAP = {
+    'mqtt':   mqtt.MQTTv311,
+    'mqttv5': mqtt.MQTTv5,
+}
+
 def _serializer(ros_type: str, fmt: str):
     if fmt == 'json':
         return lambda msg, rt=ros_type: msg_to_json(msg, rt)
@@ -50,8 +55,6 @@ class ROS2MQTTBridge(Node):
     def __init__(self):
         super().__init__('mqtt_bridge_node')
         self.declare_parameter('config_path', '')
-        self.declare_parameter('mqtt_broker', 'localhost')
-        self.declare_parameter('mqtt_port', 1883)
 
         config_path = self.get_parameter('config_path').get_parameter_value().string_value
         if not config_path or not os.path.exists(config_path):
@@ -70,25 +73,107 @@ class ROS2MQTTBridge(Node):
         self.ros_pubs = {}
         self._m2r_queue = queue.Queue()
         self._shutdown_event = threading.Event()
-
-        # Map MQTT topic -> (ros_publisher, msg_type) for inbound routing
         self._mqtt_topic_map = {}
 
+        self._load_env_file(self.config.get('mqtt', {}).get('env_file'))
         self._setup_mqtt()
         self._setup_ros2_to_mqtt()
         self._setup_mqtt_to_ros2()
         self.mqtt_client.loop_start()
         self.create_timer(0.01, self._drain_m2r_queue)
 
-    def _setup_mqtt(self):
-        broker = self.get_parameter('mqtt_broker').get_parameter_value().string_value
-        port = self.get_parameter('mqtt_port').get_parameter_value().integer_value
+    def _load_env_file(self, env_file: str | None):
+        if not env_file:
+            return
+        if not os.path.exists(env_file):
+            self.get_logger().warning(f"env_file not found: {env_file}")
+            return
+        with open(env_file) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#') or '=' not in line:
+                    continue
+                key, _, value = line.partition('=')
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                os.environ.setdefault(key, value)
+        self.get_logger().info(f"Loaded env file: {env_file}")
 
-        self.mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    @staticmethod
+    def _env_or(cfg: dict, key: str, default=None):
+        env_var = cfg.get(f'{key}_env')
+        if env_var:
+            val = os.environ.get(env_var)
+            if val is not None:
+                return val
+        return cfg.get(key, default)
+
+    def _setup_mqtt(self):
+        cfg = self.config.get('mqtt', {})
+
+        host      = self._env_or(cfg, 'host', 'localhost')
+        port      = int(self._env_or(cfg, 'port', 1883))
+        keepalive = int(self._env_or(cfg, 'keepalive', 60))
+        transport = self._env_or(cfg, 'transport', 'tcp')
+        protocol  = _PROTOCOL_MAP.get(self._env_or(cfg, 'protocol', 'mqtt'), mqtt.MQTTv311)
+
+        self.mqtt_client = mqtt.Client(
+            mqtt.CallbackAPIVersion.VERSION2,
+            protocol=protocol,
+            transport=transport,
+        )
         self.mqtt_client.on_connect = self._on_mqtt_connect
         self.mqtt_client.on_message = self._on_mqtt_message
-        self.mqtt_client.connect(broker, port)
-        self.get_logger().info(f'Connecting to MQTT broker: {broker}:{port}')
+
+        self._configure_auth(cfg)
+        self._configure_tls(cfg)
+        self._configure_reconnect(cfg)
+
+        self.mqtt_client.connect(host, port, keepalive=keepalive)
+        self.get_logger().info(f'Connecting to MQTT broker: {host}:{port}')
+
+    def _configure_auth(self, cfg: dict):
+        auth = cfg.get('auth')
+        if not auth:
+            return
+
+        username_env = auth.get('username_env')
+        password_env = auth.get('password_env')
+
+        username = os.environ.get(username_env) if username_env else None
+        password = os.environ.get(password_env) if password_env else None
+
+        if not username:
+            self.get_logger().warning(
+                f"MQTT auth enabled but env var '{username_env}' is not set or empty"
+            )
+            return
+
+        self.mqtt_client.username_pw_set(username, password)
+        self.get_logger().info(f"MQTT auth configured from env vars (user: '{username_env}')")
+
+    def _configure_tls(self, cfg: dict):
+        tls = cfg.get('tls')
+        if not tls:
+            return
+
+        self.mqtt_client.tls_set(
+            ca_certs=tls.get('ca_certs'),
+            certfile=tls.get('certfile'),
+            keyfile=tls.get('keyfile'),
+        )
+        if tls.get('insecure', False):
+            self.mqtt_client.tls_insecure_set(True)
+            self.get_logger().warning('TLS certificate verification is disabled')
+
+    def _configure_reconnect(self, cfg: dict):
+        delay     = self._env_or(cfg, 'reconnect_delay')
+        max_delay = self._env_or(cfg, 'reconnect_max_delay')
+        if delay is not None or max_delay is not None:
+            self.mqtt_client.reconnect_delay_set(
+                min_delay=int(delay or 1),
+                max_delay=int(max_delay or 120),
+            )
 
     def _on_mqtt_connect(self, client, userdata, flags, reason_code, properties):
         if reason_code == 0:

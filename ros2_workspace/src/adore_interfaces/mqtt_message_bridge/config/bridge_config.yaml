@@ -1,3 +1,39 @@
+mqtt:
+  host: "localhost"
+  port: 1883
+  # protocol: mqtt  # 'mqtt' (default, MQTTv311) or 'mqttv5'
+  # transport: tcp  # 'tcp' (default) or 'websockets'
+  # keepalive: 60
+  # reconnect_delay: 5
+  # reconnect_max_delay: 120
+
+  # Each parameter above can be overridden by an environment variable.
+  # Set the *_env key to the name of the env var to read.
+  # The env var takes precedence over the plain value when both are set.
+  host_env: "MQTT_HOST"
+  port_env: "MQTT_PORT"
+  # protocol_env: "MQTT_PROTOCOL"
+  # transport_env: "MQTT_TRANSPORT"
+  # keepalive_env: "MQTT_KEEPALIVE"
+  # reconnect_delay_env: "MQTT_RECONNECT_DELAY"
+  # reconnect_max_delay_env: "MQTT_RECONNECT_MAX_DELAY"
+
+  # Path to a .env file to load before resolving any env vars below.
+  # Variables already present in the environment take precedence.
+  # env_file: "/path/to/mqtt.env"
+
+  # TLS settings (optional).
+  # tls:
+  #   ca_certs: "/path/to/ca.crt"
+  #   certfile: "/path/to/client.crt"
+  #   keyfile: "/path/to/client.key"
+  #   insecure: false  # Set true to skip certificate verification.
+
+  # Authentication (optional).
+  auth:
+    username_env: "MQTT_USERNAME"  # Name of the env var holding the username.
+    password_env: "MQTT_PASSWORD"  # Name of the env var holding the password.
+
 # Bridge ROS2 DDS topics to MQTT.
 ros2_to_mqtt:
   - ros_topic: "/ros2_chatter"

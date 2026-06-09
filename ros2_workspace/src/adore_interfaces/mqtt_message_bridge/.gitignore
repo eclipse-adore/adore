@@ -1,1 +1,2 @@
 mqtt_message_bridge/__pycache__
+.mqtt_secrets.env
