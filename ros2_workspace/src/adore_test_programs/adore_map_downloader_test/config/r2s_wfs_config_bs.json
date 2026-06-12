@@ -7,5 +7,5 @@
   "password" : "Enter Your Password Here",
   "reference_lines" : "adore-urbandrive-r2s-referenceline",
   "laneborders" : "adore-urbandrive-r2s-laneborder",
-  "output" : "../../../../adore_test_programs/adore_map_downloader_test/tracks/de_bs_borders_wfs"
+  "output" : "../../../src/adore_test_programs/adore_map_downloader_test/tracks/de_bs_borders_wfs"
 }
