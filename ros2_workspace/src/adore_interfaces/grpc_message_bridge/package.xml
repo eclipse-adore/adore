@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>grpc_message_bridge</name>
+  <version>1.0.0</version>
+  <description>Bridge between ROS 2 and gRPC</description>
+  <maintainer email="you@example.com">Eclipse ADORe</maintainer>
+  <license>Apache-2.0</license>
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>rosidl_runtime_py</depend>
+  <exec_depend>grpcio</exec_depend>
+  <exec_depend>grpcio-tools</exec_depend>
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

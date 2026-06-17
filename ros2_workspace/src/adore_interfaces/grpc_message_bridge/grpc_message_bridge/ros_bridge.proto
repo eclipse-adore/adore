@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package ros_bridge;
+
+service RosBridge {
+  rpc Publish(stream RosMessage) returns (Ack);
+  rpc Subscribe(SubscribeRequest) returns (stream RosMessage);
+}
+
+message RosMessage {
+  string topic    = 1;
+  string ros_type = 2;
+  string format   = 3;
+  bytes  payload  = 4;
+  int64  seq      = 5;
+  int64  stamp_ns = 6;
+}
+
+message SubscribeRequest {
+  string topic    = 1;
+  string ros_type = 2;
+  string format   = 3;
+}
+
+message Ack {
+  bool   ok      = 1;
+  string message = 2;
+}
