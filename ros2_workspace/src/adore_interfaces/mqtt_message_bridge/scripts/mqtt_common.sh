@@ -1,46 +1,32 @@
 #!/usr/bin/env bash
-# Sourced by other scripts. Reads broker settings from a .env file if provided,
-# then falls back to environment variables, then to defaults.
+# Sourced by other scripts. Resolves connection settings from bridge_config.yaml
+# (the single source of truth) and exposes them as the _broker_args array.
+# Precedence: real environment > env_file in the config > config defaults.
 #
-# Usage: source mqtt_common.sh [/path/to/mqtt.env]
+# Usage: source mqtt_common.sh [/path/to/bridge_config.yaml]
+# Defaults to <pkg>/bridge_config.yaml.
 
-_env_file="${1:-${MQTT_ENV_FILE:-}}"
+_COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+_PKG_ROOT="$(cd "$_COMMON_DIR/.." && pwd)"
+export MQTT_BRIDGE_CERT_DIR="${MQTT_BRIDGE_CERT_DIR:-$_PKG_ROOT/certs}"
 
-if [[ -n "$_env_file" ]]; then
-    if [[ ! -f "$_env_file" ]]; then
-        echo "ERROR: env file not found: $_env_file" >&2
-        exit 1
-    fi
-    set -a
-    # shellcheck disable=SC1090
-    source "$_env_file"
-    set +a
+_config="${1:-$_PKG_ROOT/bridge_config.yaml}"
+if [[ ! -f "$_config" ]]; then
+    echo "ERROR: bridge config not found: $_config" >&2
+    exit 1
 fi
 
-MQTT_HOST="${MQTT_HOST:-localhost}"
-MQTT_PORT="${MQTT_PORT:-1883}"
-MQTT_USERNAME="${MQTT_USERNAME:-}"
-MQTT_PASSWORD="${MQTT_PASSWORD:-}"
-# TLS: set MQTT_TLS=1 to enable. Provide MQTT_CA_CERT for a custom CA,
-# or leave unset to use the system CA store (/etc/ssl/certs).
-MQTT_TLS="${MQTT_TLS:-}"
-MQTT_CA_CERT="${MQTT_CA_CERT:-}"
-
-_auth_args=()
-if [[ -n "$MQTT_USERNAME" ]]; then
-    _auth_args+=(-u "$MQTT_USERNAME")
-fi
-if [[ -n "$MQTT_PASSWORD" ]]; then
-    _auth_args+=(-P "$MQTT_PASSWORD")
+mapfile -d '' _broker_args < <(python3 "$_COMMON_DIR/bridge_mqtt_args.py" "$_config")
+if [[ ${#_broker_args[@]} -eq 0 ]]; then
+    echo "ERROR: failed to parse bridge config: $_config" >&2
+    exit 1
 fi
 
-_tls_args=()
-if [[ -n "$MQTT_TLS" ]]; then
-    if [[ -n "$MQTT_CA_CERT" ]]; then
-        _tls_args+=(--cafile "$MQTT_CA_CERT")
-    else
-        _tls_args+=(--capath /etc/ssl/certs)
-    fi
-fi
-
-_broker_args=(-h "$MQTT_HOST" -p "$MQTT_PORT" "${_auth_args[@]}" "${_tls_args[@]}")
+MQTT_HOST=""; MQTT_PORT=""; MQTT_USERNAME=""
+for ((_i = 0; _i < ${#_broker_args[@]}; _i++)); do
+    case "${_broker_args[_i]}" in
+        -h) MQTT_HOST="${_broker_args[_i + 1]}" ;;
+        -p) MQTT_PORT="${_broker_args[_i + 1]}" ;;
+        -u) MQTT_USERNAME="${_broker_args[_i + 1]}" ;;
+    esac
+done
