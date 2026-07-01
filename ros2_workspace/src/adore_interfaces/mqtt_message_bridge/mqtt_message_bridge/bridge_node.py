@@ -4,12 +4,21 @@ import threading
 import yaml
 import paho.mqtt.client as mqtt
 import rclpy
+from ament_index_python.packages import get_package_share_directory
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy, HistoryPolicy
-from .utils import load_msg_type, msg_to_bytes, bytes_to_msg, msg_to_json, json_to_msg, msg_to_cdr_json, cdr_json_to_msg
+from .utils import load_msg_type, msg_to_bytes, bytes_to_msg, msg_to_json, json_to_msg, msg_to_cdr_json, cdr_json_to_msg, ensure_self_signed_cert
 
 _STR_TYPE = 'std_msgs/msg/String'
+
+_PKG_SHARE = get_package_share_directory('mqtt_message_bridge')
+_CERT_DIR = os.environ.get('MQTT_BRIDGE_CERT_DIR') or os.path.join(_PKG_SHARE, 'certs')
+
+def _resolve(path, base=_CERT_DIR):
+    if not path or os.path.isabs(path):
+        return path
+    return os.path.join(base, path)
 
 _PROTOCOL_MAP = {
     'mqtt':   mqtt.MQTTv311,
@@ -75,7 +84,10 @@ class ROS2MQTTBridge(Node):
         self._shutdown_event = threading.Event()
         self._mqtt_topic_map = {}
 
-        self._load_env_file(self.config.get('mqtt', {}).get('env_file'))
+        env_file = self.config.get('mqtt', {}).get('env_file')
+        if env_file and not os.path.isabs(env_file):
+            env_file = os.path.join(os.path.dirname(os.path.abspath(config_path)), env_file)
+        self._load_env_file(env_file)
         self._setup_mqtt()
         self._setup_ros2_to_mqtt()
         self._setup_mqtt_to_ros2()
@@ -100,10 +112,10 @@ class ROS2MQTTBridge(Node):
         self.get_logger().info(f"Loaded env file: {env_file}")
 
     @staticmethod
-    def _env_or(cfg: dict, key: str, default=None):
-        env_var = cfg.get(f'{key}_env')
-        if env_var:
-            val = os.environ.get(env_var)
+    def _env_or(cfg: dict, key: str, default=None, env_var: str = None):
+        name = cfg.get(f'{key}_env') or env_var
+        if name:
+            val = os.environ.get(name)
             if val is not None:
                 return val
         return cfg.get(key, default)
@@ -111,8 +123,8 @@ class ROS2MQTTBridge(Node):
     def _setup_mqtt(self):
         cfg = self.config.get('mqtt', {})
 
-        host      = self._env_or(cfg, 'host', 'localhost')
-        port      = int(self._env_or(cfg, 'port', 1883))
+        host      = self._env_or(cfg, 'host', 'localhost', env_var='MQTT_HOST')
+        port      = int(self._env_or(cfg, 'port', 1883, env_var='MQTT_PORT'))
         keepalive = int(self._env_or(cfg, 'keepalive', 60))
         transport = self._env_or(cfg, 'transport', 'tcp')
         protocol  = _PROTOCOL_MAP.get(self._env_or(cfg, 'protocol', 'mqtt'), mqtt.MQTTv311)
@@ -137,8 +149,8 @@ class ROS2MQTTBridge(Node):
         if not auth:
             return
 
-        username_env = auth.get('username_env')
-        password_env = auth.get('password_env')
+        username_env = auth.get('username_env', 'MQTT_USERNAME')
+        password_env = auth.get('password_env', 'MQTT_PASSWORD')
 
         username = os.environ.get(username_env) if username_env else None
         password = os.environ.get(password_env) if password_env else None
@@ -157,10 +169,32 @@ class ROS2MQTTBridge(Node):
         if not tls:
             return
 
+        enabled = self._env_or(tls, 'enabled', False, env_var='MQTT_TLS')
+        if isinstance(enabled, str):
+            enabled = enabled.lower() in ('1', 'true', 'yes')
+        if not enabled:
+            return
+
+        ca_certs = _resolve(self._env_or(tls, 'ca_certs', env_var='MQTT_CA_CERT'))
+        certfile = _resolve(self._env_or(tls, 'certfile', env_var='MQTT_CLIENT_CERT'))
+        keyfile  = _resolve(self._env_or(tls, 'keyfile', env_var='MQTT_CLIENT_KEY'))
+
+        if tls.get('generate'):
+            gen = tls['generate']
+            store_dir    = _resolve(gen.get('store_dir'))
+            common_name  = gen.get('common_name', 'mqtt_bridge')
+            validity_days = int(gen.get('validity_days', 3650))
+            certfile, keyfile = ensure_self_signed_cert(store_dir, common_name, validity_days)
+            self.get_logger().info(f'TLS client cert ready: {certfile}')
+
         self.mqtt_client.tls_set(
-            ca_certs=tls.get('ca_certs'),
-            certfile=tls.get('certfile'),
-            keyfile=tls.get('keyfile'),
+            ca_certs=ca_certs,
+            certfile=certfile,
+            keyfile=keyfile,
+        )
+        self.get_logger().info(
+            f'TLS enabled -- CA: {ca_certs or "system"}'
+            + (f', cert: {certfile}' if certfile else '')
         )
         if tls.get('insecure', False):
             self.mqtt_client.tls_insecure_set(True)

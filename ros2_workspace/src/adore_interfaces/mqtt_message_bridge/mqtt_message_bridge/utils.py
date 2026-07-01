@@ -1,7 +1,66 @@
 import importlib
 import json
+import os
+import datetime
 from rclpy.serialization import serialize_message, deserialize_message
 from rosidl_runtime_py import message_to_ordereddict, set_message_fields
+
+
+def ensure_self_signed_cert(
+    store_dir: str | None = None,
+    common_name: str = 'mqtt_bridge',
+    validity_days: int = 3650,
+) -> tuple[str, str]:
+    """Return (certfile, keyfile) paths, generating them if they don't exist.
+
+    Files are written to store_dir (default: ~/.ros/mqtt_bridge/) and are
+    only created once -- subsequent calls are a no-op as long as the files exist.
+    """
+    from cryptography import x509
+    from cryptography.x509.oid import NameOID
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
+    if store_dir is None:
+        store_dir = os.path.join(os.path.expanduser('~'), '.ros', 'mqtt_bridge')
+
+    os.makedirs(store_dir, mode=0o700, exist_ok=True)
+
+    key_path  = os.path.join(store_dir, 'client.key')
+    cert_path = os.path.join(store_dir, 'client.crt')
+
+    if os.path.exists(key_path) and os.path.exists(cert_path):
+        return cert_path, key_path
+
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+
+    with open(key_path, 'wb') as f:
+        f.write(key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.TraditionalOpenSSL,
+            encryption_algorithm=serialization.NoEncryption(),
+        ))
+    os.chmod(key_path, 0o600)
+
+    subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, common_name)])
+    now = datetime.datetime.now(datetime.timezone.utc)
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(subject)
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now)
+        .not_valid_after(now + datetime.timedelta(days=validity_days))
+        .add_extension(x509.BasicConstraints(ca=False, path_length=None), critical=True)
+        .sign(key, hashes.SHA256())
+    )
+
+    with open(cert_path, 'wb') as f:
+        f.write(cert.public_bytes(serialization.Encoding.PEM))
+
+    return cert_path, key_path
+
 
 
 def load_msg_type(msg_type_str: str):

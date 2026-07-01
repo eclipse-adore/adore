@@ -28,8 +28,7 @@ fi
 echo "Starting mqtt_message_bridge -> ${LOGFILE}"
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 ros2 launch mqtt_message_bridge bridge.launch.py \
-    mqtt_broker:="${MQTT_BROKER_HOST:-localhost}" \
-    mqtt_port:="${MQTT_BROKER_PORT:-1883}" \
+    config_path:="${MQTT_BRIDGE_CONFIG}" \
     >> "${LOGFILE}" 2>&1 &
 BRIDGE_PID=$!
 echo $BRIDGE_PID > "${PIDFILE}"

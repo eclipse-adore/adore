@@ -1,63 +1,46 @@
 mqtt:
-  host: "localhost"
+  host: localhost
   port: 1883
-  # protocol: mqtt  # 'mqtt' (default, MQTTv311) or 'mqttv5'
-  # transport: tcp  # 'tcp' (default) or 'websockets'
-  # keepalive: 60
-  # reconnect_delay: 5
-  # reconnect_max_delay: 120
+  # host_env: MQTT_HOST
+  # port_env: MQTT_PORT
+  keepalive: 60
+  transport: tcp        # tcp | websockets
+  protocol: mqtt        # mqtt (v3.1.1) | mqttv5
+  env_file: .mqtt_secrets.env
 
-  # Each parameter above can be overridden by an environment variable.
-  # Set the *_env key to the name of the env var to read.
-  # The env var takes precedence over the plain value when both are set.
-  host_env: "MQTT_HOST"
-  port_env: "MQTT_PORT"
-  # protocol_env: "MQTT_PROTOCOL"
-  # transport_env: "MQTT_TRANSPORT"
-  # keepalive_env: "MQTT_KEEPALIVE"
-  # reconnect_delay_env: "MQTT_RECONNECT_DELAY"
-  # reconnect_max_delay_env: "MQTT_RECONNECT_MAX_DELAY"
-
-  # Path to a .env file to load before resolving any env vars below.
-  # Variables already present in the environment take precedence.
-  # env_file: "/path/to/mqtt.env"
-
-  # TLS settings (optional).
-  # tls:
-  #   ca_certs: "/path/to/ca.crt"
-  #   certfile: "/path/to/client.crt"
-  #   keyfile: "/path/to/client.key"
-  #   insecure: false  # Set true to skip certificate verification.
-
-  # Authentication (optional).
   auth:
-    username_env: "MQTT_USERNAME"  # Name of the env var holding the username.
-    password_env: "MQTT_PASSWORD"  # Name of the env var holding the password.
+    username_env: MQTT_USERNAME
+    password_env: MQTT_PASSWORD
 
-# Bridge ROS2 DDS topics to MQTT.
-ros2_to_mqtt:
-  - ros_topic: "/ros2_chatter"
-    mqtt_topic: "ros2/chatter"
-    msg_type: "std_msgs/msg/String"
-    # format: cdr       # Serialization format: 'cdr' (default) or 'json'.
-    #                   # 'json': serializes message fields as a JSON string with
-    #                   #   'datatype' metadata appended.
-    #                   #   The MQTT payload is a UTF-8 JSON string.
-    #                   # 'cdr': raw CDR bytes.
-    # qos_reliability: best_effort  # 'best_effort' (default) or 'reliable'
-    # qos_durability: volatile      # 'volatile' (default) or 'transient_local'
-    # qos_depth: 1                  # History depth. Defaults to 1.
+  # TLS configuration.
+  # enabled / ca_certs / certfile / keyfile all support _env variants,
+  # e.g. enabled_env: MQTT_TLS, ca_certs_env: MQTT_CA_CERT, etc.
+  tls:
+    enabled: false
+    ca_certs: broker.crt
+    certfile: client.crt
+    keyfile:  client.key
 
-# Bridge MQTT topics to ROS2 DDS.
-mqtt_to_ros2:
-  - mqtt_topic: "mqtt/chatter"
-    ros_topic: "/mqtt_chatter"
-    msg_type: "std_msgs/msg/String"
-    # format: cdr       # Serialization format: 'cdr' (default) or 'json'.
-    #                   # 'json': expects a JSON string payload with 'datatype'
-    #                   #   metadata. Deserializes back into msg_type before
-    #                   #   publishing to DDS.
-    #                   # 'cdr': raw CDR bytes.
-    # qos_reliability: best_effort  # 'best_effort' (default) or 'reliable'
-    # qos_durability: volatile      # 'volatile' (default) or 'transient_local'
-    # qos_depth: 1                  # History depth. Defaults to 1.
+    # Set true only to disable hostname verification (testing only).
+    insecure: false
+
+  reconnect_delay: 1
+  reconnect_max_delay: 120
+
+ros2_to_mqtt: []
+  # - ros_topic: /example/ros_topic
+  #   mqtt_topic: example/mqtt_topic
+  #   msg_type: std_msgs/msg/String
+  #   format: cdr          # cdr | json | cdr_json
+  #   qos_depth: 10
+  #   qos_durability: volatile      # volatile | transient_local
+  #   qos_reliability: best_effort  # best_effort | reliable
+
+mqtt_to_ros2: []
+  # - mqtt_topic: example/mqtt_topic
+  #   ros_topic: /example/ros_topic
+  #   msg_type: std_msgs/msg/String
+  #   format: cdr
+  #   qos_depth: 10
+  #   qos_durability: volatile
+  #   qos_reliability: best_effort
