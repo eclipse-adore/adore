@@ -344,7 +344,7 @@ def scenario_7(valid_token):
 # ---------------------------------------------------------------------------
 
 def inspect(duration=30, vehicle_ids=None, sub_type=stream_pb2.ALL):
-    from google.protobuf.json_format import MessageToJson
+    import base64
 
     status, data = _fetch_token(os.environ['CLIENT_ID'], os.environ['CLIENT_SECRET'])
     if status != 200 or 'access_token' not in data:
@@ -386,10 +386,36 @@ def inspect(duration=30, vehicle_ids=None, sub_type=stream_pb2.ALL):
 
             counts[field] = counts.get(field, 0) + 1
             ts = time.strftime('%H:%M:%S')
-            payload = getattr(msg, field)
-            print(f'[{ts}] {field.upper()}')
-            print(MessageToJson(payload, preserving_proto_field_name=True, indent=2))
-            print()
+
+            if field == 'telemetry':
+                t = msg.telemetry
+                tel = t.telemetry
+                print(f'[{ts}] TELEMETRY  vehicle={t.vehicle_id}  connected={t.is_connected}')
+                print(f'         state={tel.state}  '
+                      f'pos=({tel.position.lat:.5f}, {tel.position.lon:.5f})  '
+                      f'heading={tel.heading:.3f}rad  '
+                      f'velocity={tel.velocity:.2f}km/h  '
+                      f'battery={tel.battery:.1f}%  '
+                      f'passengers={tel.passengers}  '
+                      f'obstacles={len(tel.obstacles)}')
+
+            elif field == 'notification':
+                n = msg.notification.notification
+                print(f'[{ts}] NOTIFICATION  id={msg.notification.id}  '
+                      f'vehicle={msg.notification.vehicle_id}')
+                print(f'         [{n.severity}] {n.title}: {n.message}  '
+                      f'node={n.ros_node}')
+
+            elif field == 'ack':
+                print(f'[{ts}] ACK  ok={msg.ack.success}  msg={msg.ack.error_msg!r}')
+
+            elif field == 'signal_message':
+                s = msg.signal_message
+                inner = s.WhichOneof('payload')
+                print(f'[{ts}] SIGNAL  session={s.session_id}  peer={s.peer_id}  type={inner}')
+
+            else:
+                print(f'[{ts}] {field.upper()}  {getattr(msg, field)}')
 
     except KeyboardInterrupt:
         if call[0]:

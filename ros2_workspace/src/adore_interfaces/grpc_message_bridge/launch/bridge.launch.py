@@ -1,24 +1,28 @@
 from launch import LaunchDescription
-from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
-from ament_index_python.packages import get_package_share_directory
-import os
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
+
 
 def generate_launch_description():
-    pkg_share = get_package_share_directory('grpc_message_bridge')
-    bridge_config = os.path.join(pkg_share, 'config', 'bridge_config.yaml')
+    pkg = FindPackageShare('grpc_message_bridge')
 
     return LaunchDescription([
+        DeclareLaunchArgument('config_path',
+            default_value=PathJoinSubstitution([pkg, 'config', 'bridge_config.yaml'])),
         DeclareLaunchArgument('grpc_host', default_value='0.0.0.0'),
         DeclareLaunchArgument('grpc_port', default_value='50051'),
+
         Node(
-            package='grpc_message_bridge',
-            executable='bridge_node',
-            parameters=[{
-                'config_path':  bridge_config,
-                'grpc_host':    LaunchConfiguration('grpc_host'),
-                'grpc_port':    LaunchConfiguration('grpc_port'),
-            }]
-        )
+            package    = 'grpc_message_bridge',
+            executable = 'bridge_node',
+            name       = 'grpc_bridge_node',
+            parameters = [{
+                'config_path': LaunchConfiguration('config_path'),
+                'grpc_host':   LaunchConfiguration('grpc_host'),
+                'grpc_port':   LaunchConfiguration('grpc_port'),
+            }],
+            output = 'screen',
+        ),
     ])

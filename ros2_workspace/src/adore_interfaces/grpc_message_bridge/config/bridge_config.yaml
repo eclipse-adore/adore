@@ -1,41 +1,5 @@
-# ROS2 domain ID this bridge node subscribes/publishes on.
-# Defaults to $ROS_DOMAIN if unset.
-ros_domain_id: 0
+enabled_streams:
+  - client.ClientService.ClientStream
 
-# Bridge ROS2 topics to a remote gRPC server.
-# The remote end must be running a grpc_message_bridge with grpc_to_ros2 configured
-# for the same topic.
-ros2_to_grpc:
-  - ros_topic: "/ros2_chatter"
-    msg_type: "std_msgs/msg/String"
-    grpc_address: "localhost:50052"   # Remote bridge gRPC server address
-    # format: cdr         # 'cdr' (default): raw CDR bytes.
-    #                     # 'json': raw JSON bytes with 'datatype' metadata.
-    #                     #   Bridge-to-bridge only.
-    #                     # 'cdr_json': CDR-serialized std_msgs/msg/String whose
-    #                     #   'data' field contains JSON with 'datatype' metadata.
-    # qos_reliability: reliable     # 'reliable' (default) or 'best_effort'
-    # qos_durability: volatile      # 'volatile' (default) or 'transient_local'
-    # qos_depth: 1
-
-# Accept inbound gRPC Publish streams and forward to ROS2 topics.
-# The sending end must be running a grpc_message_bridge with ros2_to_grpc configured
-# for the same topic pointing at this node's grpc_port.
-grpc_to_ros2:
-  - ros_topic: "/grpc_chatter"
-    msg_type: "std_msgs/msg/String"
-    # format: cdr
-    # qos_reliability: best_effort  # 'best_effort' (default) or 'reliable'
-    # qos_durability: volatile
-    # qos_depth: 1
-
-# Connect as a gRPC client subscriber to a remote bridge server and publish
-# the received messages locally on ROS2. Complements ros2_to_grpc on the remote side.
-# grpc_subscribe_from:
-#   - ros_topic: "/remote_chatter"
-#     msg_type: "std_msgs/msg/String"
-#     grpc_address: "localhost:50052"
-#     # format: cdr
-#     # qos_reliability: best_effort
-#     # qos_durability: volatile
-#     # qos_depth: 1
+client_streams:
+  - stream: client.ClientService.ClientStream
