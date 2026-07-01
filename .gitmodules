@@ -7,6 +7,9 @@
 [submodule "mission_control"]
 	path = ros2_workspace/src/adore_ros2_nodes/mission_control
 	url = git@github.com:eclipse-adore/adore_mission_control.git
+[submodule "vendor/libOpenDRIVE/libOpenDRIVE"]
+	path = vendor/libOpenDRIVE/libOpenDRIVE
+    url = https://github.com/DLR-TS/libOpenDRIVE.git
 [submodule "nodes/adore_visualizer"]
 	path = ros2_workspace/src/adore_ros2_nodes/visualizer
 	url = git@github.com:eclipse-adore/adore_visualizer.git
