@@ -7,9 +7,6 @@
 [submodule "mission_control"]
 	path = ros2_workspace/src/adore_ros2_nodes/mission_control
 	url = git@github.com:eclipse-adore/adore_mission_control.git
-[submodule "vendor/libOpenDRIVE/libOpenDRIVE"]
-	path = vendor/libOpenDRIVE/libOpenDRIVE
-    url = https://github.com/DLR-TS/libOpenDRIVE.git
 [submodule "nodes/adore_visualizer"]
 	path = ros2_workspace/src/adore_ros2_nodes/visualizer
 	url = git@github.com:eclipse-adore/adore_visualizer.git
@@ -86,7 +83,6 @@
 [submodule "vendor/mathematics_toolbox"]
 	path = vendor/mathematics_toolbox
 	url = git@github.com:dlr-ts/mathematics_toolbox.git
-
 [submodule "vendor/ros2_observer"]
 	path = vendor/ros2_observer
 	url = git@github.com:dlr-ts/ros2_observer.git
