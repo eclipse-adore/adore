@@ -92,7 +92,7 @@
 	url = https://github.com/Lichtblick-Suite/lichtblick.git
 [submodule "vendor/libOpenDRIVE/libOpenDRIVE"]
 	path = vendor/libOpenDRIVE/libOpenDRIVE
-	url = git@github.com:pageldev/libOpenDRIVE.git
+	url = https://github.com/DLR-TS/libopendrive.git
 [submodule "ros2_workspace/src/vendor/osqp-eigen"]
 	path = ros2_workspace/src/vendor/osqp_eigen
 	url = https://github.com/robotology/osqp-eigen.git
@@ -102,9 +102,6 @@
 [submodule "ros2_workspace/src/vendor/osqp"]
 	path = ros2_workspace/src/vendor/osqp/osqp
 	url = https://github.com/osqp/osqp.git
-[submodule "ros2_workspace/src/vendor/libOpenDRIVE"]
-	path = ros2_workspace/src/vendor/libOpenDRIVE
-	url = git@github.com:pageldev/libOpenDRIVE.git
 [submodule "ros2_workspace/src/vendor/qdldl"]
 	path = ros2_workspace/src/vendor/osqp/qdldl
 	url = git@github.com:osqp/qdldl.git

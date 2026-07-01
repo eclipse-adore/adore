@@ -104,7 +104,7 @@ inspect:
 		--env-file $(SECRETS_ENV) \
 		-e PYTHONPATH=/ws/src/grpc_message_bridge/proto/generated \
 		$(IMAGE_NAME):$(IMAGE_TAG) \
-		python3 /ws/src/grpc_message_bridge/scripts/test_integration.py \
+		python3 /ws/src/grpc_message_bridge/tools/test_integration.py \
 		--inspect --duration $(or $(DURATION),30) $(if $(VEHICLE),--vehicle $(VEHICLE),) $(if $(TYPE),--type $(TYPE),)
 
 .PHONY: test
@@ -115,7 +115,7 @@ test:
 		--env-file $(SECRETS_ENV) \
 		-e PYTHONPATH=/ws/src/grpc_message_bridge/proto/generated \
 		$(IMAGE_NAME):$(IMAGE_TAG) \
-		python3 /ws/src/grpc_message_bridge/scripts/test_integration.py
+		python3 /ws/src/grpc_message_bridge/tools/test_integration.py
 
 .PHONY: clean
 clean: stop
