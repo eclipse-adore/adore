@@ -89,8 +89,8 @@
 [submodule "tools/lichtblick/lichtblick"]
 	path = tools/lichtblick/lichtblick
 	url = https://github.com/Lichtblick-Suite/lichtblick.git
-[submodule "vendor/libOpenDRIVE/libOpenDRIVE"]
-	path = vendor/libOpenDRIVE/libOpenDRIVE
+[submodule "ros2_workspace/src/vendor/libOpenDRIVE"]
+	path = ros2_workspace/src/vendor/libOpenDRIVE
 	url = https://github.com/DLR-TS/libopendrive.git
 [submodule "ros2_workspace/src/vendor/osqp-eigen"]
 	path = ros2_workspace/src/vendor/osqp_eigen
