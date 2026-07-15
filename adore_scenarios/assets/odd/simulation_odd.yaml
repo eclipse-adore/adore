@@ -1,0 +1,14 @@
+id: simulation_odd
+taxonomy:
+- path: vehicle.speed
+  comparison: less_or_equal
+  value: 70.0
+- path: environment.road.width
+  comparison: greater_or_equal
+  value: 2.0
+- path: vehicle.base.operational_hour_of_the_day
+  comparison: greater_or_equal
+  value: 0
+- path: vehicle.base.operational_hour_of_the_day
+  comparison: less_or_equal
+  value: 24
