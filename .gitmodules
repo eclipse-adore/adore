@@ -117,6 +117,15 @@
 [submodule "vendor/adore_model_checker"]
 	path = vendor/adore_model_checker
 	url = git@github.com:DLR-TS/adore_model_checker.git
-[submodule "ros2_workspace/src/adore_ros2_nodes/operational_design_domain"]
-	path = ros2_workspace/src/adore_ros2_nodes/operational_design_domain
-	url = git@github.com:DLR-TS/operational_design_domain.git
+[submodule "ros2_workspace/src/vendor/open_odd"]
+	path = ros2_workspace/src/vendor/open_odd
+	url = git@github.com:DLR-TS/open_odd.git
+[submodule "ros2_workspace/src/vendor/open_odd_ros2_msgs"]
+	path = ros2_workspace/src/vendor/open_odd_ros2_msgs
+	url = git@github.com:DLR-TS/open_odd_ros2_msgs.git
+[submodule "ros2_workspace/src/vendor/open_odd_ros2_conversions"]
+	path = ros2_workspace/src/vendor/open_odd_ros2_conversions
+	url = git@github.com:DLR-TS/open_odd_ros2_conversions.git
+[submodule "ros2_workspace/src/adore_ros2_nodes/adore_odd_monitor"]
+	path = ros2_workspace/src/adore_ros2_nodes/odd_monitor
+	url = git@github.com:DLR-TS/adore_odd_monitor.git
