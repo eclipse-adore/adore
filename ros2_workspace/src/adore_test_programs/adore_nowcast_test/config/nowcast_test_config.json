@@ -1,0 +1,9 @@
+{
+  "url" : "https://ts.dlr.de/mumme-server/",
+  "project_name" : "in2action",
+  "target_srs" : "EPSG:4326",
+  "bbox" : [ 10.378418087832927, 44.4616700263095, 12.597656369082927, 46.6809083075595 ],
+  "username" : "adore-ts_reader",
+  "password" : "Enter Your Password Here",
+  "nowcast" : "in2action:thunderstorm_probability_sample"
+}
