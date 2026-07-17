@@ -129,3 +129,6 @@
 [submodule "ros2_workspace/src/adore_ros2_nodes/adore_odd_monitor"]
 	path = ros2_workspace/src/adore_ros2_nodes/odd_monitor
 	url = git@github.com:DLR-TS/adore_odd_monitor.git
+[submodule "ros2_workspace/src/adore_libraries/adore_tridap"]
+	path = ros2_workspace/src/adore_libraries/adore_tridap
+	url = git@github.com:s0nofab1t/adore_tridap.git
