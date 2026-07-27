@@ -7,10 +7,10 @@ stays free of serialization concerns.
 
 import json
 import sys
+import uuid
 from typing import Any, Callable, Optional
 
 from rclpy.serialization import serialize_message, deserialize_message
-from rosidl_runtime_py import message_to_ordereddict, set_message_fields
 
 _STR_TYPE = 'std_msgs/msg/String'
 
@@ -35,20 +35,14 @@ def wire_ros_type(ros_type: str, fmt: str) -> str:
 # ---------------------------------------------------------------------------
 
 def make_ros_serializer(ros_type: str, fmt: str) -> Callable:
+    """For json/cdr_json the wire type is std_msgs/String and `data` carries the proto JSON."""
     if fmt == 'json':
-        def _to_json(msg, rt=ros_type) -> bytes:
-            obj = message_to_ordereddict(msg)
-            obj['datatype'] = rt
-            return json.dumps(obj).encode()
-        return _to_json
+        return lambda msg: msg.data.encode()
 
     if fmt == 'cdr_json':
-        def _to_cdr_json(msg, rt=ros_type) -> bytes:
+        def _to_cdr_json(msg) -> bytes:
             from std_msgs.msg import String
-            obj = message_to_ordereddict(msg)
-            obj['datatype'] = rt
-            wrapper = String(data=json.dumps(obj))
-            return serialize_message(wrapper)
+            return serialize_message(String(data=msg.data))
         return _to_cdr_json
 
     return serialize_message
@@ -56,25 +50,15 @@ def make_ros_serializer(ros_type: str, fmt: str) -> Callable:
 
 def make_ros_deserializer(msg_type, fmt: str) -> Callable:
     if fmt == 'json':
-        def _from_json(data: bytes, mt=msg_type):
-            obj = json.loads(data.decode())
-            obj.pop('datatype', None)
-            obj.pop('topic', None)
-            msg = mt()
-            set_message_fields(msg, obj)
-            return msg
+        def _from_json(data: bytes):
+            from std_msgs.msg import String
+            return String(data=data.decode())
         return _from_json
 
     if fmt == 'cdr_json':
-        def _from_cdr_json(data: bytes, mt=msg_type):
+        def _from_cdr_json(data: bytes):
             from std_msgs.msg import String
-            wrapper = deserialize_message(data, String)
-            obj = json.loads(wrapper.data)
-            obj.pop('datatype', None)
-            obj.pop('topic', None)
-            msg = mt()
-            set_message_fields(msg, obj)
-            return msg
+            return deserialize_message(data, String)
         return _from_cdr_json
 
     return lambda data, mt=msg_type: deserialize_message(data, mt)
@@ -114,6 +98,21 @@ def proto_field_to_bytes(proto_msg: Any, field_name: str, fmt: str) -> Optional[
     return value.SerializeToString()
 
 
+def _populate_metadata(instance: Any) -> None:
+    """Fill the non-oneof metadata envelope the gateway requires alongside every payload."""
+    desc = type(instance).DESCRIPTOR.fields_by_name.get('metadata')
+    if desc is None or desc.type != desc.TYPE_MESSAGE:
+        return
+
+    md     = getattr(instance, 'metadata')
+    fields = desc.message_type.fields_by_name
+
+    if 'message_id' in fields and not md.message_id:
+        md.message_id = str(uuid.uuid4())
+    if 'timestamp' in fields:
+        md.timestamp.GetCurrentTime()
+
+
 def proto_field_set(proto_msg_cls, field_name: str, payload: bytes, fmt: str) -> Any:
     """
     Create a new proto message of proto_msg_cls with field_name set from payload bytes.
@@ -127,6 +126,7 @@ def proto_field_set(proto_msg_cls, field_name: str, payload: bytes, fmt: str) ->
     # Scalar bytes/string -- set directly.
     if field_desc.type in (field_desc.TYPE_BYTES, field_desc.TYPE_STRING):
         setattr(instance, field_name, payload)
+        _populate_metadata(instance)
         return instance
 
     # Nested message -- find its class and populate.
@@ -140,6 +140,7 @@ def proto_field_set(proto_msg_cls, field_name: str, payload: bytes, fmt: str) ->
     else:
         getattr(instance, field_name).MergeFrom(nested_cls.FromString(payload))
 
+    _populate_metadata(instance)
     return instance
 
 
@@ -163,7 +164,7 @@ def active_oneof_field(proto_msg: Any) -> str:
 def _proto_to_dict(msg) -> dict:
     """Shallow proto-message-to-dict, suitable for JSON serialization."""
     from google.protobuf.json_format import MessageToDict
-    return MessageToDict(msg, preserving_proto_field_name=True, including_default_value_fields=False)
+    return MessageToDict(msg, preserving_proto_field_name=True)
 
 
 def _dict_to_proto(proto_cls, d: dict, target=None):

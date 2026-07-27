@@ -1,7 +1,9 @@
+import logging
 import os
 import queue
 import threading
 import time
+import traceback
 
 import grpc
 import rclpy
@@ -63,10 +65,14 @@ class ROS2GrpcBridge(Node):
         self.ros_subs:          list  = []
         self.ros_publish_queue        = queue.Queue()
         self.stream_send_queues: dict = {}   # stream.key -> Queue[proto_msg]
+        self._last_sent:         dict = {}   # stream.key -> {oneof_field: proto_msg}
         self.shutdown_event           = threading.Event()
 
         self._grpc_server    = None
         self._grpc_channels: dict = {}
+
+        from . import codec as _codec
+        self.get_logger().info(f'codec module: {_codec.__file__}')
 
         self._setup_publishers()
         self._setup_grpc_server()
@@ -91,7 +97,7 @@ class ROS2GrpcBridge(Node):
                 wire_type = wire_ros_type(fm.ros_msg_type, fm.format)
                 ros_type  = load_ros_type(wire_type)
                 self.ros_pubs[fm.ros_topic] = self.create_publisher(
-                    ros_type, fm.ros_topic, _qos({}, 'best_effort'))
+                    ros_type, fm.ros_topic, _qos(self.config.get('qos', {}), 'reliable'))
                 self.get_logger().info(f'Publisher: {fm.ros_topic}')
 
     # ------------------------------------------------------------------
@@ -140,13 +146,16 @@ class ROS2GrpcBridge(Node):
             self._setup_send_subscriptions(stream)
             send_queue = self.stream_send_queues.setdefault(stream.key, queue.Queue())
 
-            def _sender(sq=send_queue, shutdown=self.shutdown_event):
-                """Yield queued messages, keeping the stream open until shutdown."""
+            def _sender(sq=send_queue, shutdown=self.shutdown_event, s=stream):
+                """Replay the last message per oneof field, then stream live ones until shutdown."""
+                for msg in list(self._last_sent.get(s.key, {}).values()):
+                    yield msg
                 while not shutdown.is_set():
                     try:
                         msg = sq.get(timeout=0.5)
                         if msg is None:
                             return
+                        self._last_sent.setdefault(s.key, {})[active_oneof_field(msg)] = msg
                         yield msg
                     except queue.Empty:
                         continue
@@ -174,6 +183,9 @@ class ROS2GrpcBridge(Node):
                         self.get_logger().warn(
                             f'[{s.key}] {e.code().name}: {e.details()} -- reconnecting in 2s')
                         time.sleep(2)
+                    except Exception:
+                        self.get_logger().error(f'[{s.key}] worker: {traceback.format_exc()}')
+                        time.sleep(2)
 
             threading.Thread(target=_worker, daemon=True).start()
             self.get_logger().info(f'Client stream: {key} -> {remote_addr}')
@@ -196,8 +208,9 @@ class ROS2GrpcBridge(Node):
             if any(s.topic_name == fm.ros_topic for s in self.ros_subs):
                 continue  # already subscribed
 
-            ros_type  = load_ros_type(fm.ros_msg_type)
-            serialize = make_ros_serializer(fm.ros_msg_type, fm.format)
+            wire_type = wire_ros_type(fm.ros_msg_type, fm.format)
+            ros_type  = load_ros_type(wire_type)
+            serialize = make_ros_serializer(wire_type, fm.format)
             send_queue = self.stream_send_queues.setdefault(stream.key, queue.Queue())
 
             def cb(ros_msg, f=fm, cls=stream.send_msg_cls, sq=send_queue, ser=serialize):
@@ -209,7 +222,8 @@ class ROS2GrpcBridge(Node):
                     self.get_logger().error(
                         f'[{stream.key}] pack {f.field_name}: {e}')
 
-            sub = self.create_subscription(ros_type, fm.ros_topic, cb, _qos({}, 'reliable'))
+            sub = self.create_subscription(ros_type, fm.ros_topic, cb,
+                                          _qos(self.config.get('qos', {}), 'reliable'))
             self.ros_subs.append(sub)
             self.get_logger().info(f'Send sub: {fm.ros_topic} -> {stream.key}.{fm.field_name}')
 
@@ -264,6 +278,7 @@ class ROS2GrpcBridge(Node):
 
 
 def main(args=None):
+    logging.basicConfig(level=logging.INFO, format='[auth] %(levelname)s %(message)s')
     rclpy.init(args=args)
     node = ROS2GrpcBridge()
     executor = MultiThreadedExecutor()
