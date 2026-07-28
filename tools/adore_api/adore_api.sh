@@ -124,7 +124,11 @@ workspace_status_adore_api() {
 
     echo "--- Workspace ---"
     if command -v curl > /dev/null 2>&1; then
-        curl -sf "http://localhost:${APP_PORT}/api/workspace/status" 2>/dev/null \
+        local auth_header=()
+        if [ -n "${ADORE_API_TOKEN:-}" ]; then
+            auth_header=(-H "X-ADORE-API-Token: ${ADORE_API_TOKEN}")
+        fi
+        curl -sf "${auth_header[@]}" "http://localhost:${APP_PORT}/api/workspace/status" 2>/dev/null \
             | python3 -c "
 import sys, json
 try:

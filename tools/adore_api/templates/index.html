@@ -112,9 +112,6 @@
                             <button id="restartBtn" class="btn-warning" disabled>↺ Restart</button>
                             <button id="haltBtn" class="btn-danger">■ Halt All</button>
                         </div>
-                        <div class="action-buttons">
-                            <button id="copySelectedBtn" class="btn-info">⎘ Copy to Editor</button>
-                        </div>
 
                         <div class="info-box info-box-loop">
                             Loop mode runs the scenario for the runtime, halts all processes, waits the delay, then restarts automatically.
@@ -131,32 +128,13 @@
                             <div class="no-stored-positions">No positions stored</div>
                         </div>
                         <div class="action-buttons">
-                            <button id="applyPositionsBtn" class="btn-info">Apply to Editor</button>
                             <button id="clearPositionsBtn" class="btn-danger">Clear</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right: log + editor -->
+                <!-- Right: live output -->
                 <div class="split-right">
-                    <div class="log-editor-tabs">
-                        <button class="log-tab" data-logtab="editor-panel">Editor</button>
-                        <button class="log-tab active" data-logtab="scenario-log-panel">Live Output</button>
-                    </div>
-
-                    <div id="editor-panel" class="log-tab-content">
-                        <div class="control-panel editor-panel">
-                            <div class="code-editor-container" id="codeEditor"></div>
-                            <textarea id="scenarioTextarea" class="scenario-textarea" style="display:none"></textarea>
-                            <div class="editor-footer">
-                                <input type="text" id="scenarioName" placeholder="Scenario name to save…">
-                                <button id="saveBtn" class="btn-success">💾 Save</button>
-                                <button id="clearEditorBtn" class="btn-warning">✕ Clear</button>
-                                <button id="runCustomBtn" class="btn-success">▶ Run from Editor</button>
-                            </div>
-                        </div>
-                    </div>
-
                     <div id="scenario-log-panel" class="log-tab-content active">
                         <div class="control-panel log-panel-full">
                             <div class="log-header">
@@ -551,7 +529,6 @@
 </div><!-- /app-layout -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
@@ -567,3 +544,5 @@
 <script src="/static/main.js"></script>
 </body>
 </html>
+:xa!
+
