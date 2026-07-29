@@ -18,8 +18,10 @@ import threading
 import time
 import json
 import hashlib
+import hmac
 import logging
 import queue
+from urllib.parse import urlsplit
 from datetime import datetime, timezone
 from collections import deque, defaultdict
 from flask import Flask, render_template, request, jsonify, Response
@@ -134,7 +136,80 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__,
             template_folder=os.path.join(_HERE, 'templates'),
             static_folder=os.path.join(_HERE, 'static'))
-CORS(app)
+
+
+def _env_list(name):
+    return [item.strip().rstrip('/') for item in
+            os.environ.get(name, '').split(',') if item.strip()]
+
+
+# ── Security configuration ───────────────────────────────────────────────────
+# The scenario endpoints hand attacker-controlled Python to `ros2 launch`, so the
+# API must never be reachable from an origin the operator did not opt into.
+# Cross-origin access is denied unless ADORE_API_CORS_ORIGINS lists explicit
+# origins; the bundled Mission Control UI is same-origin and unaffected.
+ALLOWED_ORIGINS = _env_list('ADORE_API_CORS_ORIGINS')
+API_TOKEN = (os.environ.get('ADORE_API_TOKEN') or '').strip() or None
+TOKEN_COOKIE = 'adore_api_token'
+SAFE_METHODS = frozenset(('GET', 'HEAD', 'OPTIONS'))
+
+CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=False)
+
+
+def _origin_allowed(source):
+    parts = urlsplit(source)
+    if not parts.netloc:
+        return False
+    if parts.netloc == request.host:
+        return True
+    origin = f"{parts.scheme}://{parts.netloc}"
+    return any(origin == allowed for allowed in ALLOWED_ORIGINS)
+
+
+def _presented_token():
+    header = request.headers.get('Authorization', '')
+    if header.startswith('Bearer '):
+        return header[len('Bearer '):].strip()
+    return (request.headers.get('X-ADORE-API-Token')
+            or request.args.get('token')
+            or request.cookies.get(TOKEN_COOKIE))
+
+
+@app.before_request
+def _enforce_access_control():
+    if API_TOKEN is not None:
+        presented = _presented_token()
+        if not presented or not hmac.compare_digest(
+                presented.encode('utf-8', 'replace'), API_TOKEN.encode('utf-8')):
+            return jsonify({
+                "success": False,
+                "message": "Missing or invalid API token",
+            }), 401
+
+    if request.method in SAFE_METHODS:
+        return None
+
+    # State-changing requests carry an Origin (or at least a Referer) when they
+    # come from a browser. Anything not on the allowlist is a cross-site request
+    # the operator never initiated.
+    source = request.headers.get('Origin') or request.headers.get('Referer')
+    if source and not _origin_allowed(source):
+        return jsonify({
+            "success": False,
+            "message": "Cross-origin request rejected",
+        }), 403
+
+    return None
+
+
+@app.after_request
+def _persist_token_cookie(response):
+    if API_TOKEN is None or response.status_code == 401:
+        return response
+    if request.args.get('token') and not request.cookies.get(TOKEN_COOKIE):
+        response.set_cookie(TOKEN_COOKIE, API_TOKEN, httponly=True,
+                            samesite='Strict', secure=request.is_secure)
+    return response
 
 # Register hardware monitor blueprint
 # adore_api.py lives at tools/adore_api/adore_api.py
@@ -509,7 +584,6 @@ class ScenarioManager:
         self.scenario_start_time = None
         self.loop_active = False
         self.loop_restarting = False
-        self.current_scenario_is_file = True
         self.model_check_enabled = True
         self.model_check_config = "config/default.yaml"
         self.current_model_check_run_id = None
@@ -531,9 +605,23 @@ class ScenarioManager:
                     scenarios.append(rel_path)
         return scenarios
 
+    def resolve_scenario_path(self, scenario_path):
+        """
+        Resolve a client-supplied path against base_directory and refuse anything
+        that escapes it (absolute paths, '..' traversal, symlinks pointing out).
+        """
+        if not scenario_path or not isinstance(scenario_path, str):
+            raise ValueError("Scenario path is required")
+
+        base = os.path.realpath(self.base_directory)
+        full_path = os.path.realpath(os.path.join(base, scenario_path))
+        if full_path != base and not full_path.startswith(base + os.sep):
+            raise ValueError(f"Scenario path outside scenario directory: {scenario_path}")
+        return full_path
+
     def get_scenario_content(self, scenario_path):
         try:
-            full_path = os.path.join(self.base_directory, scenario_path)
+            full_path = self.resolve_scenario_path(scenario_path)
             if os.path.exists(full_path):
                 with open(full_path, 'r') as f:
                     return {"success": True, "content": f.read(), "path": scenario_path}
@@ -542,23 +630,7 @@ class ScenarioManager:
         except Exception as e:
             return {"success": False, "message": f"Error reading scenario: {str(e)}"}
 
-    def save_scenario(self, scenario_name, content):
-        try:
-            if not scenario_name.endswith('.launch.py'):
-                scenario_name += '.launch.py'
-
-            full_path = os.path.join(self.base_directory, scenario_name)
-
-            os.makedirs(os.path.dirname(full_path), exist_ok=True)
-
-            with open(full_path, 'w') as f:
-                f.write(content)
-
-            return {"success": True, "message": f"Scenario saved as {scenario_name}"}
-        except Exception as e:
-            return {"success": False, "message": f"Error saving scenario: {str(e)}"}
-
-    def start_model_check_then_scenario(self, scenario_input, is_file=True, model_check_enabled=True, model_check_config="config/default.yaml"):
+    def start_model_check_then_scenario(self, scenario_input, model_check_enabled=True, model_check_config="config/default.yaml"):
         """Start scenario first, wait for ROS nodes to publish, then start model checker"""
         if self.current_process and self.current_process.poll() is None:
             return {"success": False, "message": "Scenario already running"}
@@ -570,7 +642,7 @@ class ScenarioManager:
 
             # Step 1: Start the scenario
             print("Starting scenario...")
-            scenario_result = self.start_scenario(scenario_input, is_file)
+            scenario_result = self.start_scenario(scenario_input)
             if not scenario_result["success"]:
                 return scenario_result
 
@@ -696,63 +768,46 @@ class ScenarioManager:
             traceback.print_exc()
             return {"success": False, "message": f"Exception starting model check: {str(e)}"}
 
-    def start_scenario(self, scenario_input, is_file=True):
+    def start_scenario(self, scenario_input):
         if self.current_process and self.current_process.poll() is None:
             return {"success": False, "message": "Scenario already running"}
 
         try:
-            if is_file:
-                # scenario_input like:
-                #   "adore_simulation_scenarios/dlr_118_to_gate.launch.py"
-                # relative to self.base_directory (which points at adore_scenarios/)
-                scenario_path = os.path.join(
-                    self.base_directory, scenario_input)
-                full_path = os.path.abspath(scenario_path)
+            # scenario_input like:
+            #   "adore_simulation_scenarios/dlr_118_to_gate.launch.py"
+            # relative to self.base_directory (which points at adore_scenarios/)
+            try:
+                full_path = self.resolve_scenario_path(scenario_input)
+            except ValueError as e:
+                return {"success": False, "message": str(e)}
 
-                if not os.path.exists(full_path):
-                    return {
-                        "success": False,
-                        "message": f"Scenario file not found: {full_path}",
-                    }
+            if not full_path.endswith(('.launch.py', '.launch.xml')):
+                return {
+                    "success": False,
+                    "message": "Scenario must be a .launch.py or .launch.xml file",
+                }
 
-                # Store content for status/debug
-                with open(full_path, "r") as f:
-                    self.current_scenario_content = f.read()
+            if not os.path.exists(full_path):
+                return {
+                    "success": False,
+                    "message": f"Scenario file not found: {full_path}",
+                }
 
-                # 🔧 Important: use absolute path, not package/file
-                # This maps directly onto the working CLI command:
-                #   ros2 launch /abs/path/to/launch.py
-                cmd = ["ros2", "launch", full_path]
-                cwd = None
-                self.current_scenario = scenario_input
-                self.current_scenario_is_file = True
+            # Store content for status/debug
+            with open(full_path, "r") as f:
+                self.current_scenario_content = f.read()
 
-                print(
-                    f"[ScenarioManager] Starting scenario via ros2 launch: "
-                    f"{full_path} (base_directory='{self.base_directory}')"
-                )
-            else:
-                # Always write the temp file into simulation_scenarios/ so
-                # that sys.path.append(os.path.dirname(__file__)) inside the
-                # launch file resolves position.py, simulated_vehicle.py etc.
-                scenario_dir = os.path.join(self.base_directory, "simulation_scenarios")
-                os.makedirs(scenario_dir, exist_ok=True)
-                temp_file = os.path.join(scenario_dir, "temp_custom_scenario.launch.py")
-                full_path = os.path.abspath(temp_file)
+            # 🔧 Important: use absolute path, not package/file
+            # This maps directly onto the working CLI command:
+            #   ros2 launch /abs/path/to/launch.py
+            cmd = ["ros2", "launch", full_path]
+            cwd = None
+            self.current_scenario = scenario_input
 
-                with open(full_path, "w") as f:
-                    f.write(scenario_input)
-
-                self.current_scenario_content = scenario_input
-                self.current_scenario = os.path.relpath(full_path, self.base_directory)
-                self.current_scenario_is_file = False
-
-                cmd = ["ros2", "launch", full_path]
-                cwd = None
-
-                print(
-                    f"[ScenarioManager] Starting custom scenario from temp file: {full_path}"
-                )
+            print(
+                f"[ScenarioManager] Starting scenario via ros2 launch: "
+                f"{full_path} (base_directory='{self.base_directory}')"
+            )
 
             scenario_env = _source_workspace_env()
             self.current_process = subprocess.Popen(
@@ -905,7 +960,6 @@ class ScenarioManager:
         if self.current_scenario:
             return self.start_model_check_then_scenario(
                 self.current_scenario,
-                is_file=True,
                 model_check_enabled=self.model_check_enabled,
                 model_check_config=self.model_check_config
             )
@@ -1090,13 +1144,10 @@ class ScenarioManager:
                 return
 
             scenario = self.current_scenario
-            scenario_content = self.current_scenario_content
-            is_file = self.current_scenario_is_file
 
             print(f"Loop: Restarting scenario: {scenario}")
             self.start_model_check_then_scenario(
-                scenario if is_file else scenario_content,
-                is_file=is_file,
+                scenario,
                 model_check_enabled=self.model_check_enabled,
                 model_check_config=self.model_check_config
             )
@@ -1113,12 +1164,9 @@ class ScenarioManager:
                     self._loop_restart("process ended")
                 elif not self.current_process:
                     scenario = self.current_scenario
-                    scenario_content = self.current_scenario_content
-                    is_file = self.current_scenario_is_file
                     print(f"Loop: No process running, starting scenario: {scenario}")
                     self.start_model_check_then_scenario(
-                        scenario if is_file else scenario_content,
-                        is_file=is_file,
+                        scenario,
                         model_check_enabled=self.model_check_enabled,
                         model_check_config=self.model_check_config
                     )
@@ -1441,24 +1489,22 @@ def start_scenario_route():
     scenario_input = data.get(
         'scenario', "simulation_scenarios/simulation_test.launch.py"
     )
-    is_file = data.get('is_file', True)
     model_check_enabled = data.get('model_check_enabled', False)
     if isinstance(model_check_enabled, str):
         model_check_enabled = model_check_enabled.lower() == 'true'
     model_check_config = data.get('model_check_config', 'config/default.yaml')
 
-    if not scenario_input:
+    if not scenario_input or not isinstance(scenario_input, str):
         return jsonify({"success": False, "message": "No scenario provided"}), 400
 
     if model_check_enabled:
         result = scenario_manager.start_model_check_then_scenario(
             scenario_input,
-            is_file,
             model_check_enabled,
             model_check_config,
         )
     else:
-        result = scenario_manager.start_scenario(scenario_input, is_file)
+        result = scenario_manager.start_scenario(scenario_input)
 
     return jsonify(result)
 
@@ -1506,19 +1552,6 @@ def get_scenarios():
 @app.route('/api/scenario/content/<path:scenario_path>')
 def get_scenario_content(scenario_path):
     result = scenario_manager.get_scenario_content(scenario_path)
-    return jsonify(result)
-
-
-@app.route('/api/scenario/save', methods=['POST'])
-def save_scenario():
-    data = request.json
-    scenario_name = data.get('name')
-    content = data.get('content')
-
-    if not scenario_name or not content:
-        return jsonify({"success": False, "message": "Name and content are required"}), 400
-
-    result = scenario_manager.save_scenario(scenario_name, content)
     return jsonify(result)
 
 
@@ -1863,8 +1896,7 @@ def start_scenario_model_checked():
         if model_check_blueprint is None:
             # Just run scenario for the duration without model checking
             print("Model checker not available, running scenario only")
-            scenario_result = scenario_manager.start_scenario(
-                scenario, is_file=True)
+            scenario_result = scenario_manager.start_scenario(scenario)
             if not scenario_result["success"]:
                 return jsonify({
                     "success": False,
@@ -1896,7 +1928,6 @@ def start_scenario_model_checked():
         # Use the synchronized method
         result = scenario_manager.start_model_check_then_scenario(
             scenario,
-            is_file=True,
             model_check_enabled=True,
             model_check_config='config/default.yaml'
         )
@@ -3135,6 +3166,10 @@ def main():
                         help='Directory for logs and bag recordings')
     parser.add_argument('--port', type=str,
                         help='TCP listining port. DEFAULT: 8888')
+    parser.add_argument('--host', type=str,
+                        help='Bind address. DEFAULT: 127.0.0.1. Binding to a '
+                             'non-loopback address exposes an interface that can '
+                             'execute arbitrary code.')
     parser.add_argument('--workspace-root', type=str,
                         help='Repository root containing ros2_workspace/. Defaults to two levels above this script.')
 
@@ -3142,6 +3177,7 @@ def main():
 
     LOG_DIRECTORY = args.log_directory or os.environ.get('LOG_DIRECTORY')
     PORT = args.port or 8888
+    HOST = args.host or os.environ.get('ADORE_API_HOST') or '127.0.0.1'
 
     workspace_root = (
         args.workspace_root
@@ -3201,10 +3237,19 @@ def main():
         print(f"✗ Failed to register ros2tools blueprint: {e}")
         print("✗ ros2tools functionality will not be available")
 
-    print(f"\n🚀 Starting ADORe API server on http://0.0.0.0:{PORT}")
+    print(f"\n🚀 Starting ADORe API server on http://{HOST}:{PORT}")
     print(f"📊 API status available at: http://localhost:{PORT}/api/status")
     print(f"🔧 Workspace status at: http://localhost:{PORT}/api/workspace/status")
-    app.run(debug=False, use_reloader=False, host='0.0.0.0', port=PORT)
+
+    if HOST not in ('127.0.0.1', 'localhost', '::1'):
+        print(f"⚠  Bound to {HOST}: this API can execute arbitrary code and has "
+              f"no transport security. Set ADORE_API_TOKEN and keep the network isolated.")
+    if API_TOKEN is None:
+        print("⚠  No ADORE_API_TOKEN set: every request to this API is anonymous.")
+    if ALLOWED_ORIGINS:
+        print(f"✓ Cross-origin requests allowed from: {', '.join(ALLOWED_ORIGINS)}")
+
+    app.run(debug=False, use_reloader=False, host=HOST, port=PORT)
 
 
 if __name__ == '__main__':
