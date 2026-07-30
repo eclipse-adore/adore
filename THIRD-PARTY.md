@@ -21,6 +21,7 @@ Paths indicate where the content lives in this repository or how it is consumed
 | spline.h           | GNU General Public License v2    | `libraries/lib/adore_math/include/spline.h`      | https://kluge.in-chemnitz.de/opensource/spline/spline.h |
 | Tracecompass       | Eclipse Public License 2.0       | `vendor/ros2_observer/trace_compass`             | https://github.com/eclipse-tracecompass/org.eclipse.tracecompass |
 | lttng-scope        | Eclipse Public License 1.0       | `vendor/ros2_observer/lttng_scope`               | https://github.com/lttng/lttng-scope |
+| adore_tridap       | Eclipse Public License 2.0       | `ros2_workspace/src/adore_libraries/adore_tridap`| https://github.com/s0nofab1t/adore_tridap |
 | caches             | BSD 3-Clause License             | `vendor/caches/LICENSE.md`                       | https://github.com/s0nofab1t/caches (fork of https://github.com/vpetrigo/caches) |
 | open_odd           | Apache License 2.0               | `ros2_workspace/src/vendor/open_odd/LICENSE.md`                     | https://github.com/DLR-TS/open_odd |
 | open_odd_ros2_msgs | Apache License 2.0               | `ros2_workspace/src/vendor/open_odd_ros2_msgs/LICENSE.md`           | https://github.com/DLR-TS/open_odd_ros2_msgs |

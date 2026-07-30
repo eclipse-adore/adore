@@ -13,11 +13,11 @@
 
 #include <iostream>
 #include <string>
-#include <curl/curl.h>
 #include <filesystem>
-#include "adore_map/map_downloader.hpp"
-#include "adore_map/config.hpp"
-#include "helpers.hpp"
+#include "adore_tridap/map_downloader.hpp"
+#include "adore_tridap/helpers.hpp"
+
+using namespace adore::tridap;
 
 /**
  * @brief Test program to download map data from WFS and save as JSON files
@@ -41,7 +41,7 @@ int main( int argc, char* argv[] )
   std::filesystem::remove_all( "cache" ); 
 
   // Initialize the configuration from a properties file
-  Config cfg( "../../../src/adore_test_programs/adore_map_downloader_test/config/r2s_wfs_config_bs.json" );
+  ConfigMapDownloader cfg( "../../../src/adore_test_programs/adore_map_downloader_test/config/r2s_wfs_config_bs.json" );
   // Use current directory for file cache and enable debug mode
   MapDownloader map_downloader( cfg.server_url, cfg.username, cfg.password, cfg.project_name, cfg.target_srs, 
     cfg.bbox, "", true, true, true ); // curl_global_init, curl_global_cleanup, debug: 
