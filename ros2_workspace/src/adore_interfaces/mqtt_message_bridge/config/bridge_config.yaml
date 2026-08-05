@@ -15,8 +15,10 @@ mqtt:
   # TLS configuration.
   # enabled / ca_certs / certfile / keyfile all support _env variants,
   # e.g. enabled_env: MQTT_TLS, ca_certs_env: MQTT_CA_CERT, etc.
+  # Relative paths resolve against MQTT_BRIDGE_CERT_DIR.
+  # The broker enforces mTLS, so certfile and keyfile are both required.
   tls:
-    enabled: false
+    enabled: true
     ca_certs: broker.crt
     certfile: client.crt
     keyfile:  client.key
@@ -27,20 +29,56 @@ mqtt:
   reconnect_delay: 1
   reconnect_max_delay: 120
 
-ros2_to_mqtt: []
-  # - ros_topic: /example/ros_topic
-  #   mqtt_topic: example/mqtt_topic
-  #   msg_type: std_msgs/msg/String
-  #   format: cdr          # cdr | json | cdr_json
-  #   qos_depth: 10
-  #   qos_durability: volatile      # volatile | transient_local
-  #   qos_reliability: best_effort  # best_effort | reliable
+# Northbound: ROS 2 -> MQTT -> Supervision ingest -> gRPC ClientStream.
+# `raw` publishes msg.data verbatim, so the ROS String must already hold the
+# gateway JSON. Anything else nests it inside a bridge envelope.
+# The imoger_dlr ACL grants od_imoger/# only.
+ros2_to_mqtt:
+  - ros_topic: /supervision/telemetry
+    mqtt_topic: od_imoger/adore/MV-001/telemetry
+    msg_type: std_msgs/msg/String
+    format: raw
+    qos_depth: 1
+    qos_reliability: best_effort
+    qos_durability: volatile
 
-mqtt_to_ros2: []
-  # - mqtt_topic: example/mqtt_topic
-  #   ros_topic: /example/ros_topic
-  #   msg_type: std_msgs/msg/String
-  #   format: cdr
-  #   qos_depth: 10
-  #   qos_durability: volatile
-  #   qos_reliability: best_effort
+  - ros_topic: /supervision/notifications
+    mqtt_topic: od_imoger/adore/MV-001/notifications
+    msg_type: std_msgs/msg/String
+    format: raw
+    qos_depth: 20
+    qos_reliability: reliable
+    qos_durability: volatile
+
+# Loopback for local verification: whatever lands on the northbound topics comes
+# back into ROS so `ros2 topic echo` can inspect the exact bytes on the wire.
+mqtt_to_ros2:
+  - mqtt_topic: od_imoger/adore/MV-001/telemetry
+    ros_topic: /supervision/telemetry_echo
+    msg_type: std_msgs/msg/String
+    format: raw
+    qos_depth: 1
+    qos_reliability: reliable
+    qos_durability: transient_local
+
+  - mqtt_topic: od_imoger/adore/MV-001/notifications
+    ros_topic: /supervision/notifications_echo
+    msg_type: std_msgs/msg/String
+    format: raw
+    qos_depth: 20
+    qos_reliability: reliable
+    qos_durability: transient_local
+  
+  - mqtt_topic: od_imoger/solbox/+/notifications
+    ros_topic: /imoger/solbox/notifications
+    msg_type: std_msgs/msg/String
+    format: raw
+    qos_depth: 20
+    qos_reliability: reliable
+
+  - mqtt_topic: od_imoger/vehicles/dlr1/nmea
+    ros_topic: /imoger/vehicles/dlr1/nmea
+    msg_type: std_msgs/msg/String
+    format: raw
+    qos_depth: 50
+    qos_reliability: best_effort

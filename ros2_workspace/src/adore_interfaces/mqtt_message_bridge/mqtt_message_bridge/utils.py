@@ -118,3 +118,15 @@ def cdr_json_to_msg(data: bytes, msg_type):
     msg = msg_type()
     set_message_fields(msg, obj)
     return msg
+
+
+def raw_to_str_msg(data: bytes):
+    """Wrap an opaque MQTT payload verbatim in std_msgs/msg/String."""
+    from std_msgs.msg import String
+    msg = String()
+    msg.data = data.decode('utf-8', errors='replace')
+    return msg
+
+
+def str_msg_to_raw(msg) -> bytes:
+    return msg.data.encode('utf-8')

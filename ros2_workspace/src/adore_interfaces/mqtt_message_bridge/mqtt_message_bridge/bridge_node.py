@@ -8,7 +8,7 @@ from ament_index_python.packages import get_package_share_directory
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy, HistoryPolicy
-from .utils import load_msg_type, msg_to_bytes, bytes_to_msg, msg_to_json, json_to_msg, msg_to_cdr_json, cdr_json_to_msg, ensure_self_signed_cert
+from .utils import load_msg_type, msg_to_bytes, bytes_to_msg, msg_to_json, json_to_msg, msg_to_cdr_json, cdr_json_to_msg, raw_to_str_msg, str_msg_to_raw, ensure_self_signed_cert
 
 _STR_TYPE = 'std_msgs/msg/String'
 
@@ -20,12 +20,29 @@ def _resolve(path, base=_CERT_DIR):
         return path
     return os.path.join(base, path)
 
+def _package_root(start_path: str):
+    """Nearest ancestor of start_path containing package.xml.
+
+    realpath() is used so that a symlink-installed config resolves back into
+    the source tree rather than the install space.
+    """
+    directory = os.path.dirname(os.path.realpath(start_path))
+    while True:
+        if os.path.isfile(os.path.join(directory, 'package.xml')):
+            return directory
+        parent = os.path.dirname(directory)
+        if parent == directory:
+            return None
+        directory = parent
+
 _PROTOCOL_MAP = {
     'mqtt':   mqtt.MQTTv311,
     'mqttv5': mqtt.MQTTv5,
 }
 
 def _serializer(ros_type: str, fmt: str):
+    if fmt == 'raw':
+        return str_msg_to_raw
     if fmt == 'json':
         return lambda msg, rt=ros_type: msg_to_json(msg, rt)
     if fmt == 'cdr_json':
@@ -33,6 +50,8 @@ def _serializer(ros_type: str, fmt: str):
     return msg_to_bytes
 
 def _deserializer(msg_type, fmt: str):
+    if fmt == 'raw':
+        return raw_to_str_msg
     if fmt == 'json':
         return lambda data, mt=msg_type: json_to_msg(data, mt)
     if fmt == 'cdr_json':
@@ -40,7 +59,7 @@ def _deserializer(msg_type, fmt: str):
     return lambda data, mt=msg_type: bytes_to_msg(data, mt)
 
 def _wire_type(ros_type: str, fmt: str) -> str:
-    return _STR_TYPE if fmt in ('json', 'cdr_json') else ros_type
+    return _STR_TYPE if fmt in ('json', 'cdr_json', 'raw') else ros_type
 
 _DURABILITY = {
     'volatile':        DurabilityPolicy.VOLATILE,
@@ -83,10 +102,14 @@ class ROS2MQTTBridge(Node):
         self._m2r_queue = queue.Queue()
         self._shutdown_event = threading.Event()
         self._mqtt_topic_map = {}
+        self._mqtt_wildcards = []
+        self._topic_cache = {}
+        self._pending_subs = {}
 
         env_file = self.config.get('mqtt', {}).get('env_file')
         if env_file and not os.path.isabs(env_file):
-            env_file = os.path.join(os.path.dirname(os.path.abspath(config_path)), env_file)
+            base = _package_root(config_path) or os.path.dirname(os.path.abspath(config_path))
+            env_file = os.path.normpath(os.path.join(base, env_file))
         self._load_env_file(env_file)
         self._setup_mqtt()
         self._setup_ros2_to_mqtt()
@@ -136,6 +159,7 @@ class ROS2MQTTBridge(Node):
         )
         self.mqtt_client.on_connect = self._on_mqtt_connect
         self.mqtt_client.on_message = self._on_mqtt_message
+        self.mqtt_client.on_subscribe = self._on_mqtt_subscribe
 
         self._configure_auth(cfg)
         self._configure_tls(cfg)
@@ -213,22 +237,50 @@ class ROS2MQTTBridge(Node):
         if reason_code == 0:
             self.get_logger().info('Connected to MQTT broker')
             for mqtt_topic in self._mqtt_topic_map:
-                client.subscribe(mqtt_topic)
-                self.get_logger().info(f'Subscribed to MQTT topic: {mqtt_topic}')
+                self._subscribe(mqtt_topic)
         else:
             self.get_logger().error(f'MQTT connection failed with code: {reason_code}')
+
+    def _subscribe(self, mqtt_topic: str):
+        result, mid = self.mqtt_client.subscribe(mqtt_topic)
+        self._pending_subs[mid] = mqtt_topic
+        self.get_logger().info(f'SUBSCRIBE sent for: {mqtt_topic}')
+
+    def _on_mqtt_subscribe(self, client, userdata, mid, reason_codes, properties):
+        topic = self._pending_subs.pop(mid, f'<mid {mid}>')
+        for reason in reason_codes:
+            if reason.is_failure:
+                self.get_logger().error(f'SUBSCRIBE denied for {topic}: {reason}')
+            else:
+                self.get_logger().info(f'SUBSCRIBE granted for {topic} (QoS {reason.value})')
 
     def _on_mqtt_message(self, client, userdata, message):
         if self._shutdown_event.is_set():
             return
-        entry = self._mqtt_topic_map.get(message.topic)
+        entry = self._resolve_topic(message.topic)
         if entry is None:
             return
+        self.get_logger().debug(f'M2R: {message.topic} ({len(message.payload)} bytes)')
         pub, msg_type, ros_topic, deserialize = entry
         try:
             self._m2r_queue.put((pub, deserialize(message.payload)))
         except Exception as e:
             self.get_logger().error(f'Deser failed on {ros_topic}: {e}')
+
+    def _resolve_topic(self, topic: str):
+        entry = self._mqtt_topic_map.get(topic)
+        if entry is not None:
+            return entry
+        if topic in self._topic_cache:
+            return self._topic_cache[topic]
+        for topic_filter in self._mqtt_wildcards:
+            if mqtt.topic_matches_sub(topic_filter, topic):
+                entry = self._mqtt_topic_map[topic_filter]
+                break
+        if entry is None:
+            self.get_logger().warning(f'No mapping matched inbound MQTT topic: {topic}')
+        self._topic_cache[topic] = entry
+        return entry
 
     def _setup_ros2_to_mqtt(self):
         for mapping in self.config.get('ros2_to_mqtt', []):
@@ -258,10 +310,12 @@ class ROS2MQTTBridge(Node):
             deserialize = _deserializer(m_type, fmt)
             self.ros_pubs[mqtt_topic] = pub
             self._mqtt_topic_map[mqtt_topic] = (pub, m_type, ros_topic, deserialize)
+            if '+' in mqtt_topic or '#' in mqtt_topic:
+                self._mqtt_wildcards.append(mqtt_topic)
 
         if self.mqtt_client.is_connected():
             for mqtt_topic in self._mqtt_topic_map:
-                self.mqtt_client.subscribe(mqtt_topic)
+                self._subscribe(mqtt_topic)
 
     def _drain_m2r_queue(self):
         while not self._m2r_queue.empty():
