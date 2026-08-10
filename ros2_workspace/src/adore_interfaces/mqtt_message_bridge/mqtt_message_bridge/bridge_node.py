@@ -8,6 +8,7 @@ from ament_index_python.packages import get_package_share_directory
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy, HistoryPolicy
+from .diagnostics import failure_hints, is_auth_failure, reason_text
 from .utils import load_msg_type, msg_to_bytes, bytes_to_msg, msg_to_json, json_to_msg, msg_to_cdr_json, cdr_json_to_msg, raw_to_str_msg, str_msg_to_raw, ensure_self_signed_cert
 
 _STR_TYPE = 'std_msgs/msg/String'
@@ -86,15 +87,13 @@ class ROS2MQTTBridge(Node):
 
         config_path = self.get_parameter('config_path').get_parameter_value().string_value
         if not config_path or not os.path.exists(config_path):
-            self.get_logger().error(f"Config file not found: {config_path}")
-            return
+            raise SystemExit(f'Config file not found: {config_path or "<config_path parameter unset>"}')
 
         try:
             with open(config_path, 'r') as f:
-                self.config = yaml.safe_load(f)
+                self.config = yaml.safe_load(f) or {}
         except Exception as e:
-            self.get_logger().error(f"Failed to load config: {e}")
-            return
+            raise SystemExit(f'Failed to load config {config_path}: {e}')
 
         self.mqtt_client = None
         self.ros_subs = []
@@ -105,6 +104,12 @@ class ROS2MQTTBridge(Node):
         self._mqtt_wildcards = []
         self._topic_cache = {}
         self._pending_subs = {}
+        self._mqtt_qos = {}
+        self._default_qos = 0
+        self._host = ''
+        self._port = 0
+        self._tls_enabled = False
+        self._ever_connected = False
 
         env_file = self.config.get('mqtt', {}).get('env_file')
         if env_file and not os.path.isabs(env_file):
@@ -116,6 +121,10 @@ class ROS2MQTTBridge(Node):
         self._setup_mqtt_to_ros2()
         self.mqtt_client.loop_start()
         self.create_timer(0.01, self._drain_m2r_queue)
+
+    @property
+    def broker(self) -> str:
+        return f'{self._host}:{self._port}'
 
     def _load_env_file(self, env_file: str | None):
         if not env_file:
@@ -150,6 +159,7 @@ class ROS2MQTTBridge(Node):
         port      = int(self._env_or(cfg, 'port', 1883, env_var='MQTT_PORT'))
         keepalive = int(self._env_or(cfg, 'keepalive', 60))
         transport = self._env_or(cfg, 'transport', 'tcp')
+        self._default_qos = int(self._env_or(cfg, 'qos', 0, env_var='MQTT_QOS'))
         protocol  = _PROTOCOL_MAP.get(self._env_or(cfg, 'protocol', 'mqtt'), mqtt.MQTTv311)
 
         self.mqtt_client = mqtt.Client(
@@ -158,6 +168,7 @@ class ROS2MQTTBridge(Node):
             transport=transport,
         )
         self.mqtt_client.on_connect = self._on_mqtt_connect
+        self.mqtt_client.on_disconnect = self._on_mqtt_disconnect
         self.mqtt_client.on_message = self._on_mqtt_message
         self.mqtt_client.on_subscribe = self._on_mqtt_subscribe
 
@@ -165,8 +176,19 @@ class ROS2MQTTBridge(Node):
         self._configure_tls(cfg)
         self._configure_reconnect(cfg)
 
-        self.mqtt_client.connect(host, port, keepalive=keepalive)
-        self.get_logger().info(f'Connecting to MQTT broker: {host}:{port}')
+        self._host, self._port = host, port
+        self._tls_enabled = bool(getattr(self.mqtt_client, '_ssl_context', None))
+        self.get_logger().info(
+            f'Connecting to MQTT broker {self.broker} '
+            f'(tls={"on" if self._tls_enabled else "off"}, transport={transport}, keepalive={keepalive}s)'
+        )
+        try:
+            self.mqtt_client.connect(host, port, keepalive=keepalive)
+        except Exception as e:
+            self.get_logger().error(f'Cannot connect to MQTT broker {self.broker}: {e}')
+            for hint in failure_hints(host, port, self._tls_enabled):
+                self.get_logger().error(hint)
+            raise
 
     def _configure_auth(self, cfg: dict):
         auth = cfg.get('auth')
@@ -235,22 +257,39 @@ class ROS2MQTTBridge(Node):
 
     def _on_mqtt_connect(self, client, userdata, flags, reason_code, properties):
         if reason_code == 0:
-            self.get_logger().info('Connected to MQTT broker')
+            self._ever_connected = True
+            self.get_logger().info(f'Connected to MQTT broker {self.broker}')
             for mqtt_topic in self._mqtt_topic_map:
                 self._subscribe(mqtt_topic)
         else:
-            self.get_logger().error(f'MQTT connection failed with code: {reason_code}')
+            self.get_logger().error(
+                f'Broker {self.broker} refused the connection: {reason_text(reason_code)}')
+            if is_auth_failure(reason_code):
+                self.get_logger().error(
+                    'Authentication rejected: check MQTT_USERNAME/MQTT_PASSWORD, the client '
+                    'certificate and the broker ACL for this identity')
+
+    def _on_mqtt_disconnect(self, client, userdata, flags, reason_code, properties):
+        if reason_code == 0:
+            self.get_logger().info(f'Disconnected from MQTT broker {self.broker}')
+            return
+        self.get_logger().warning(
+            f'Unexpected disconnect from {self.broker}: {reason_text(reason_code)}')
+        if not self._ever_connected:
+            for hint in failure_hints(self._host, self._port, self._tls_enabled):
+                self.get_logger().error(hint)
 
     def _subscribe(self, mqtt_topic: str):
-        result, mid = self.mqtt_client.subscribe(mqtt_topic)
+        qos = self._mqtt_qos.get(mqtt_topic, self._default_qos)
+        result, mid = self.mqtt_client.subscribe(mqtt_topic, qos=qos)
         self._pending_subs[mid] = mqtt_topic
-        self.get_logger().info(f'SUBSCRIBE sent for: {mqtt_topic}')
+        self.get_logger().info(f'SUBSCRIBE sent for: {mqtt_topic} (qos {qos})')
 
     def _on_mqtt_subscribe(self, client, userdata, mid, reason_codes, properties):
         topic = self._pending_subs.pop(mid, f'<mid {mid}>')
         for reason in reason_codes:
             if reason.is_failure:
-                self.get_logger().error(f'SUBSCRIBE denied for {topic}: {reason}')
+                self.get_logger().error(f'SUBSCRIBE denied for {topic}: {reason_text(reason)}')
             else:
                 self.get_logger().info(f'SUBSCRIBE granted for {topic} (QoS {reason.value})')
 
@@ -290,9 +329,10 @@ class ROS2MQTTBridge(Node):
             msg_type   = load_msg_type(ros_type)
             fmt        = mapping.get('format', 'cdr')
             qos        = _qos_from_mapping(mapping)
+            mqtt_qos   = int(mapping.get('mqtt_qos', self._default_qos))
             serialize  = _serializer(ros_type, fmt)
-            cb = lambda msg, t=mqtt_topic, s=serialize: (
-                self.mqtt_client.publish(t, s(msg)),
+            cb = lambda msg, t=mqtt_topic, s=serialize, q=mqtt_qos: (
+                self.mqtt_client.publish(t, s(msg), qos=q),
                 self.get_logger().debug(f'R2M: {t}')
             )
             self.ros_subs.append(self.create_subscription(msg_type, ros_topic, cb, qos))
@@ -309,6 +349,7 @@ class ROS2MQTTBridge(Node):
             pub         = self.create_publisher(pub_type, ros_topic, qos)
             deserialize = _deserializer(m_type, fmt)
             self.ros_pubs[mqtt_topic] = pub
+            self._mqtt_qos[mqtt_topic] = int(mapping.get('mqtt_qos', self._default_qos))
             self._mqtt_topic_map[mqtt_topic] = (pub, m_type, ros_topic, deserialize)
             if '+' in mqtt_topic or '#' in mqtt_topic:
                 self._mqtt_wildcards.append(mqtt_topic)
@@ -324,13 +365,19 @@ class ROS2MQTTBridge(Node):
 
     def shutdown(self):
         self._shutdown_event.set()
-        self.mqtt_client.loop_stop()
-        self.mqtt_client.disconnect()
+        if self.mqtt_client is not None:
+            self.mqtt_client.loop_stop()
+            self.mqtt_client.disconnect()
 
 
 def main(args=None):
     rclpy.init(args=args)
-    node = ROS2MQTTBridge()
+    try:
+        node = ROS2MQTTBridge()
+    except BaseException as e:
+        rclpy.shutdown()
+        raise SystemExit(f'{type(e).__name__}: {e}' if not isinstance(e, SystemExit) else e)
+
     executor = MultiThreadedExecutor()
     executor.add_node(node)
     try:

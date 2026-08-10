@@ -34,7 +34,5 @@ mosquitto_sub "${_broker_args[@]}" \
 
 echo ""
 echo "=== Active Subscriptions (sampling \$SYS for 3s) ==="
-mosquitto_sub "${_broker_args[@]}" \
-    -t '$SYS/#' \
-    -W 3 -v 2>/dev/null \
+{ mosquitto_sub "${_broker_args[@]}" -t '$SYS/#' -W 3 -v 2>/dev/null || true; } \
   | grep -i 'subscri' || echo "(none reported)"

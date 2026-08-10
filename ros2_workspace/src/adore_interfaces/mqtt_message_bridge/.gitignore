@@ -4,3 +4,7 @@ mqtt_message_bridge/__pycache__
 *.key
 certs/
 !certs/.gitkeep
+build/
+install/
+log/
+*.jsonl

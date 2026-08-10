@@ -4,13 +4,13 @@
 # Precedence: real environment > env_file in the config > config defaults.
 #
 # Usage: source mqtt_common.sh [/path/to/bridge_config.yaml]
-# Defaults to <pkg>/bridge_config.yaml.
+# Defaults to $MQTT_BRIDGE_CONFIG, else <pkg>/config/bridge_config.yaml.
 
 _COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 _PKG_ROOT="$(cd "$_COMMON_DIR/.." && pwd)"
 export MQTT_BRIDGE_CERT_DIR="${MQTT_BRIDGE_CERT_DIR:-$_PKG_ROOT/certs}"
 
-_config="${1:-$_PKG_ROOT/bridge_config.yaml}"
+_config="${1:-${MQTT_BRIDGE_CONFIG:-$_PKG_ROOT/config/bridge_config.yaml}}"
 if [[ ! -f "$_config" ]]; then
     echo "ERROR: bridge config not found: $_config" >&2
     exit 1
@@ -22,11 +22,12 @@ if [[ ${#_broker_args[@]} -eq 0 ]]; then
     exit 1
 fi
 
-MQTT_HOST=""; MQTT_PORT=""; MQTT_USERNAME=""
+MQTT_HOST=""; MQTT_PORT=""; MQTT_USERNAME=""; MQTT_PASSWORD=""
 for ((_i = 0; _i < ${#_broker_args[@]}; _i++)); do
     case "${_broker_args[_i]}" in
         -h) MQTT_HOST="${_broker_args[_i + 1]}" ;;
         -p) MQTT_PORT="${_broker_args[_i + 1]}" ;;
         -u) MQTT_USERNAME="${_broker_args[_i + 1]}" ;;
+        -P) MQTT_PASSWORD="${_broker_args[_i + 1]}" ;;
     esac
 done

@@ -1,0 +1,8 @@
+build/
+install/
+log/
+**/__pycache__/
+**/*.pyc
+.git/
+.gitignore
+*.jsonl

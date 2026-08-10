@@ -8,6 +8,9 @@ mqtt:
   protocol: mqtt        # mqtt (v3.1.1) | mqttv5
   env_file: .mqtt_secrets.env
 
+  # DiMOS 5.2 specifies QoS 1 (at least once). Per-mapping mqtt_qos overrides it.
+  qos: 1
+
   auth:
     username_env: MQTT_USERNAME
     password_env: MQTT_PASSWORD
@@ -17,11 +20,12 @@ mqtt:
   # e.g. enabled_env: MQTT_TLS, ca_certs_env: MQTT_CA_CERT, etc.
   # Relative paths resolve against MQTT_BRIDGE_CERT_DIR.
   # The broker enforces mTLS, so certfile and keyfile are both required.
+  # File names are the ones the DiMOS 5.2 interface specification hands out.
   tls:
     enabled: true
-    ca_certs: broker.crt
-    certfile: client.crt
-    keyfile:  client.key
+    ca_certs: imoger-rootCA.crt
+    certfile: dlr-client.crt
+    keyfile:  dlr-client.key
 
     # Set true only to disable hostname verification (testing only).
     insecure: false
