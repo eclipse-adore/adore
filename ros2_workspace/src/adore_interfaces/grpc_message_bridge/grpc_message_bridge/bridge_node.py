@@ -1,3 +1,4 @@
+import collections
 import json
 import logging
 import os
@@ -69,6 +70,11 @@ class ROS2GrpcBridge(Node):
         self._last_sent:         dict = {}   # stream.key -> {oneof_field: proto_msg}
         self.shutdown_event           = threading.Event()
 
+        self._recv_counts  = collections.Counter()  # oneof field -> messages off the wire
+        self._pub_counts   = collections.Counter()  # ros topic   -> messages published
+        self._drop_counts  = collections.Counter()  # reason      -> messages discarded
+        self._last_stats   = None
+
         self._grpc_server    = None
         self._grpc_channels: dict = {}
 
@@ -80,6 +86,7 @@ class ROS2GrpcBridge(Node):
         self._setup_server_streams()
         self._setup_client_streams()
         self.create_timer(0.01, self._drain_publish_queue)
+        self.create_timer(float(self.config.get('stats_interval', 5.0)), self._log_stats)
 
     # ------------------------------------------------------------------
     # Publisher setup
@@ -163,31 +170,63 @@ class ROS2GrpcBridge(Node):
                         continue
 
             def _worker(addr=remote_addr, s=stream, sq=send_queue, sender=_sender):
+                attempt = 0
                 while not self.shutdown_event.is_set():
+                    attempt += 1
+                    gen = None
+                    opened = time.monotonic()
+                    count = 0
                     try:
-                        channel = self._channel(addr)
+                        # A stream torn down by the peer can leave the cached channel
+                        # unusable, so every retry after the first gets a fresh one.
+                        channel = self._channel(addr, reset=attempt > 1)
                         stub    = s.stub_cls(channel)
                         rpc     = getattr(stub, s.rpc)
+                        seeded  = list(self._last_sent.get(s.key, {}))
+                        self.get_logger().info(
+                            f'[{s.key}] opening stream (attempt {attempt}), '
+                            f'replaying {seeded or "nothing"}')
 
                         if s.stream_type == 'bidi':
-                            for recv_msg in rpc(sender()):
+                            gen = sender()
+                            for recv_msg in rpc(gen):
+                                count += 1
+                                if count == 1:
+                                    self.get_logger().info(
+                                        f'[{s.key}] first message after '
+                                        f'{time.monotonic() - opened:.1f}s')
                                 self._dispatch_recv(s, recv_msg)
 
                         elif s.stream_type == 'server_streaming':
                             req = s.send_msg_cls()
                             for recv_msg in rpc(req):
+                                count += 1
                                 self._dispatch_recv(s, recv_msg)
 
                         elif s.stream_type == 'client_streaming':
-                            rpc(sender())
+                            gen = sender()
+                            rpc(gen)
+
+                        self.get_logger().warn(
+                            f'[{s.key}] stream ended cleanly after '
+                            f'{time.monotonic() - opened:.1f}s and {count} message(s), '
+                            f'reconnecting in 2s')
+                        time.sleep(2)
 
                     except grpc.RpcError as e:
                         self.get_logger().warn(
-                            f'[{s.key}] {e.code().name}: {e.details()} -- reconnecting in 2s')
+                            f'[{s.key}] {e.code().name} after '
+                            f'{time.monotonic() - opened:.1f}s and {count} message(s): '
+                            f'{e.details()} -- reconnecting in 2s')
                         time.sleep(2)
                     except Exception:
                         self.get_logger().error(f'[{s.key}] worker: {traceback.format_exc()}')
                         time.sleep(2)
+                    finally:
+                        # Without this the old generator stays parked on sq.get and
+                        # competes with the next connection's sender for the queue.
+                        if gen is not None:
+                            gen.close()
 
             threading.Thread(target=_worker, daemon=True).start()
             self.get_logger().info(f'Client stream: {key} -> {remote_addr}')
@@ -278,12 +317,16 @@ class ROS2GrpcBridge(Node):
 
     def _dispatch_recv(self, stream: StreamDef, proto_msg):
         field_name = active_oneof_field(proto_msg)
-        fm         = stream.recv_field_map.get(field_name)
+        self._recv_counts[field_name or '<no payload set>'] += 1
+
+        fm = stream.recv_field_map.get(field_name)
         if fm is None:
+            self._drop_counts[f'no recv_fields entry: {field_name or "<unset oneof>"}'] += 1
             return
 
         payload = proto_field_to_bytes(proto_msg, field_name, fm.format)
         if payload is None:
+            self._drop_counts[f'encode returned None: {field_name}'] += 1
             return
 
         wire_type   = wire_ros_type(fm.ros_msg_type, fm.format)
@@ -293,16 +336,38 @@ class ROS2GrpcBridge(Node):
         try:
             ros_msg = deserialize(payload)
         except Exception as e:
+            self._drop_counts[f'deserialize failed: {field_name}'] += 1
             self.get_logger().error(f'[{stream.key}] deser {field_name}: {e}')
             return
 
         pub = self.ros_pubs.get(fm.ros_topic)
-        if pub:
-            self.ros_publish_queue.put((pub, ros_msg))
+        if pub is None:
+            self._drop_counts[f'no publisher: {fm.ros_topic}'] += 1
+            self.get_logger().warn(f'[{stream.key}] no publisher for {fm.ros_topic}')
+            return
+
+        self.ros_publish_queue.put((pub, ros_msg))
+
+    def _log_stats(self):
+        state = (dict(self._recv_counts), dict(self._pub_counts), dict(self._drop_counts))
+        if state == self._last_stats:
+            return
+        self._last_stats = state
+
+        fmt = lambda c: ', '.join(f'{k}={v}' for k, v in sorted(c.items())) or 'none'
+        self.get_logger().info(f'grpc recv: {fmt(self._recv_counts)}')
+        self.get_logger().info(f'ros  pub:  {fmt(self._pub_counts)}')
+        if self._drop_counts:
+            self.get_logger().warn(f'dropped:   {fmt(self._drop_counts)}')
 
     # ------------------------------------------------------------------
 
-    def _channel(self, address: str) -> grpc.Channel:
+    def _channel(self, address: str, reset: bool = False) -> grpc.Channel:
+        if reset and address in self._grpc_channels:
+            try:
+                self._grpc_channels.pop(address).close()
+            except Exception:
+                pass
         if address not in self._grpc_channels:
             self._grpc_channels[address] = make_channel(address)
         return self._grpc_channels[address]
@@ -311,6 +376,7 @@ class ROS2GrpcBridge(Node):
         while not self.ros_publish_queue.empty():
             pub, msg = self.ros_publish_queue.get_nowait()
             pub.publish(msg)
+            self._pub_counts[pub.topic_name] += 1
 
     def shutdown(self):
         self.shutdown_event.set()
