@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import queue
@@ -145,6 +146,7 @@ class ROS2GrpcBridge(Node):
 
             self._setup_send_subscriptions(stream)
             send_queue = self.stream_send_queues.setdefault(stream.key, queue.Queue())
+            self._seed_initial_send(stream, entry)
 
             def _sender(sq=send_queue, shutdown=self.shutdown_event, s=stream):
                 """Replay the last message per oneof field, then stream live ones until shutdown."""
@@ -189,6 +191,49 @@ class ROS2GrpcBridge(Node):
 
             threading.Thread(target=_worker, daemon=True).start()
             self.get_logger().info(f'Client stream: {key} -> {remote_addr}')
+
+    # ------------------------------------------------------------------
+    # Initial send-direction messages
+    # ------------------------------------------------------------------
+
+    def _seed_initial_send(self, stream: StreamDef, entry: dict):
+        """
+        Prime _last_sent so the stream opens with these messages already queued.
+
+        Send fields are normally driven by ROS publishers, which means a stream
+        whose remote peer waits for a request (a subscription, a handshake) stays
+        silent until something publishes. _sender replays _last_sent at the start
+        of every connection, so seeding here also covers reconnects.
+        """
+        for item in entry.get('initial_send', []):
+            field = item.get('field')
+            fm    = stream.send_field_map.get(field)
+            if fm is None:
+                self.get_logger().error(
+                    f'[{stream.key}] initial_send: unknown send field {field!r}')
+                continue
+
+            payload = item.get('payload', {})
+            if not payload:
+                self.get_logger().error(
+                    f'[{stream.key}] initial_send {field}: empty payload leaves the '
+                    f'oneof unset, the peer will not see this message')
+                continue
+
+            try:
+                msg = proto_field_set(
+                    stream.send_msg_cls, field, json.dumps(payload).encode(), fm.format)
+            except Exception as e:
+                self.get_logger().error(f'[{stream.key}] initial_send {field}: {e}')
+                continue
+
+            if active_oneof_field(msg) != field:
+                self.get_logger().error(
+                    f'[{stream.key}] initial_send {field}: oneof did not take')
+                continue
+
+            self._last_sent.setdefault(stream.key, {})[field] = msg
+            self.get_logger().info(f'[{stream.key}] initial send: {field} {payload}')
 
     # ------------------------------------------------------------------
     # Server streams (identical to client but called from _setup_grpc_server)
