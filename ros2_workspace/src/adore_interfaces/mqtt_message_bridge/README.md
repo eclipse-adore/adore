@@ -29,16 +29,9 @@ Each mapping supports optional QoS overrides: `qos_depth`, `qos_durability` (`vo
 ## DiMOS 5.2 interface
 
 `config/bridge_config.yaml` targets the UseCase 5.2 broker
-(`mqtts://broker-imoger.dev.dimos-ops.com:8887`, MQTT v3.1.1, QoS 1) using the
-certificate file names the specification hands out: `imoger-rootCA.crt`,
-`dlr-client.crt`, `dlr-client.key`. Credentials come from `.mqtt_secrets.env`.
-
-Subscribed topics:
-
-| MQTT | ROS 2 |
-| --- | --- |
-| `od_imoger/solbox/+/notifications` | `/imoger/solbox/notifications` |
-| `od_imoger/vehicles/dlr1/nmea` | `/imoger/vehicles/dlr1/nmea` |
+(`mqtts://broker:8887`, MQTT v3.1.1, QoS 1) using the
+certificate file names the specification hands out: `ca.crt`,
+`client.crt`, `client.key`. Credentials come from `.mqtt_secrets.env`.
 
 Payloads are UTF-8 JSON and are bridged verbatim (`format: raw`) into
 `std_msgs/msg/String`. `scripts/dimos_message.py` builds a notification message
