@@ -1,0 +1,3 @@
+.secrets.env
+proto/generated
+proto/

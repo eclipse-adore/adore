@@ -1,4 +1,3 @@
-
 # To configure zenoh behavior see the `zenoh_bridge_config.json5`
 
 
@@ -9,18 +8,18 @@ ros_domain_id: 0
 # Domain ID embedded in zenoh key expressions.
 # Must match the ROS_DOMAIN_ID of the rmw_zenoh_cpp peers you are bridging to/from.
 # Defaults to 0 if unset.
-zenoh_bridge_id: 62
+zenoh_bridge_id: 0
 
 # Target RMW distro for zenoh key expression compatibility.
 # 'humble' uses TypeHashNotSupported (compatible with Humble and older).
 # 'jazzy'  uses the RIHS01 type hash from the local ROS installation.
 # Defaults to 'humble' if unset.
-rmw_target: humble
+rmw_target: jazzy
 
 # Bridge ROS2 DDS topics to zenoh.
 # The receiving end must be running rmw_zenoh_cpp with a matching zenoh_bridge_id.
 ros2_to_zenoh:
-  - ros_topic: "/ros2_chatter"
+  - ros_topic: "/fascar"
     msg_type: "std_msgs/msg/String"
     # format: cdr         # 'cdr' (default): raw CDR bytes. Transport type matches
     #                     #   msg_type. Consumable by rmw_zenoh_cpp natively.
@@ -36,10 +35,13 @@ ros2_to_zenoh:
     # qos_durability: volatile      # 'volatile' (default) or 'transient_local'
     # qos_depth: 1                  # History depth. Defaults to 1.
 
+  - ros_topic: "/remote_operation/backend_to_vehicle"
+    msg_type: "remote_operations_msgs/msg/RemoteOperationsBackendToVehicle"
+
 # Bridge zenoh topics to ROS2 DDS.
 # The publishing end must be running rmw_zenoh_cpp with a matching zenoh_bridge_id.
 zenoh_to_ros2:
-  - ros_topic: "/zenoh_chatter"
+  - ros_topic: "/ros2_chatter"
     msg_type: "std_msgs/msg/String"
     # format: cdr         # 'cdr' (default): raw CDR bytes. Subscribes on the
     #                     #   msg_type zenoh key.
@@ -54,3 +56,8 @@ zenoh_to_ros2:
     # qos_reliability: best_effort  # 'best_effort' (default) or 'reliable'
     # qos_durability: volatile      # 'volatile' (default) or 'transient_local'
     # qos_depth: 1                  # History depth. Defaults to 1.
+
+
+  - ros_topic: "/remote_operation/vehicle_to_backend"
+    msg_type: "remote_operations_msgs/msg/RemoteOperationsVehicleToBackend"
+```

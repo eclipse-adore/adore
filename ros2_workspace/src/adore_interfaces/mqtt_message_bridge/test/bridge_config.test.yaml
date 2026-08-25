@@ -1,0 +1,48 @@
+mqtt:
+  host: 127.0.0.1
+  port: 1883
+  keepalive: 60
+  transport: tcp
+  protocol: mqtt
+  qos: 1
+
+  tls:
+    enabled: false
+
+  reconnect_delay: 1
+  reconnect_max_delay: 5
+
+ros2_to_mqtt:
+  - ros_topic: /test/outbound
+    mqtt_topic: test/outbound
+    msg_type: std_msgs/msg/String
+    format: raw
+    qos_depth: 10
+    qos_reliability: reliable
+    qos_durability: volatile
+
+  - ros_topic: /test/outbound_cdr
+    mqtt_topic: test/outbound_cdr
+    msg_type: std_msgs/msg/String
+    format: cdr
+    qos_depth: 10
+    qos_reliability: reliable
+    qos_durability: volatile
+
+mqtt_to_ros2:
+  - mqtt_topic: test/inbound
+    ros_topic: /test/inbound
+    msg_type: std_msgs/msg/String
+    format: raw
+    mqtt_qos: 1
+    qos_depth: 10
+    qos_reliability: reliable
+    qos_durability: transient_local
+
+  - mqtt_topic: test/wildcard/+/data
+    ros_topic: /test/wildcard
+    msg_type: std_msgs/msg/String
+    format: raw
+    qos_depth: 10
+    qos_reliability: reliable
+    qos_durability: transient_local
