@@ -1,0 +1,12 @@
+enabled_streams:
+  - client.ClientService.ClientStream
+
+client_streams:
+  - stream: client.ClientService.ClientStream
+    # The gateway streams nothing until it receives a SubscriptionRequest.
+    # Replayed on every reconnect. An empty payload leaves the oneof unset.
+    initial_send:
+      - field: subscription
+        payload:
+          type: ALL
+          vehicle_ids: []

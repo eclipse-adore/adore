@@ -4,14 +4,46 @@ import threading
 import yaml
 import paho.mqtt.client as mqtt
 import rclpy
+from ament_index_python.packages import get_package_share_directory
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy, HistoryPolicy
-from .utils import load_msg_type, msg_to_bytes, bytes_to_msg, msg_to_json, json_to_msg, msg_to_cdr_json, cdr_json_to_msg
+from .diagnostics import failure_hints, is_auth_failure, reason_text
+from .utils import load_msg_type, msg_to_bytes, bytes_to_msg, msg_to_json, json_to_msg, msg_to_cdr_json, cdr_json_to_msg, raw_to_str_msg, str_msg_to_raw, ensure_self_signed_cert
 
 _STR_TYPE = 'std_msgs/msg/String'
 
+_PKG_SHARE = get_package_share_directory('mqtt_message_bridge')
+_CERT_DIR = os.environ.get('MQTT_BRIDGE_CERT_DIR') or os.path.join(_PKG_SHARE, 'certs')
+
+def _resolve(path, base=_CERT_DIR):
+    if not path or os.path.isabs(path):
+        return path
+    return os.path.join(base, path)
+
+def _package_root(start_path: str):
+    """Nearest ancestor of start_path containing package.xml.
+
+    realpath() is used so that a symlink-installed config resolves back into
+    the source tree rather than the install space.
+    """
+    directory = os.path.dirname(os.path.realpath(start_path))
+    while True:
+        if os.path.isfile(os.path.join(directory, 'package.xml')):
+            return directory
+        parent = os.path.dirname(directory)
+        if parent == directory:
+            return None
+        directory = parent
+
+_PROTOCOL_MAP = {
+    'mqtt':   mqtt.MQTTv311,
+    'mqttv5': mqtt.MQTTv5,
+}
+
 def _serializer(ros_type: str, fmt: str):
+    if fmt == 'raw':
+        return str_msg_to_raw
     if fmt == 'json':
         return lambda msg, rt=ros_type: msg_to_json(msg, rt)
     if fmt == 'cdr_json':
@@ -19,6 +51,8 @@ def _serializer(ros_type: str, fmt: str):
     return msg_to_bytes
 
 def _deserializer(msg_type, fmt: str):
+    if fmt == 'raw':
+        return raw_to_str_msg
     if fmt == 'json':
         return lambda data, mt=msg_type: json_to_msg(data, mt)
     if fmt == 'cdr_json':
@@ -26,7 +60,7 @@ def _deserializer(msg_type, fmt: str):
     return lambda data, mt=msg_type: bytes_to_msg(data, mt)
 
 def _wire_type(ros_type: str, fmt: str) -> str:
-    return _STR_TYPE if fmt in ('json', 'cdr_json') else ros_type
+    return _STR_TYPE if fmt in ('json', 'cdr_json', 'raw') else ros_type
 
 _DURABILITY = {
     'volatile':        DurabilityPolicy.VOLATILE,
@@ -50,66 +84,242 @@ class ROS2MQTTBridge(Node):
     def __init__(self):
         super().__init__('mqtt_bridge_node')
         self.declare_parameter('config_path', '')
-        self.declare_parameter('mqtt_broker', 'localhost')
-        self.declare_parameter('mqtt_port', 1883)
 
         config_path = self.get_parameter('config_path').get_parameter_value().string_value
         if not config_path or not os.path.exists(config_path):
-            self.get_logger().error(f"Config file not found: {config_path}")
-            return
+            raise SystemExit(f'Config file not found: {config_path or "<config_path parameter unset>"}')
 
         try:
             with open(config_path, 'r') as f:
-                self.config = yaml.safe_load(f)
+                self.config = yaml.safe_load(f) or {}
         except Exception as e:
-            self.get_logger().error(f"Failed to load config: {e}")
-            return
+            raise SystemExit(f'Failed to load config {config_path}: {e}')
 
         self.mqtt_client = None
         self.ros_subs = []
         self.ros_pubs = {}
         self._m2r_queue = queue.Queue()
         self._shutdown_event = threading.Event()
-
-        # Map MQTT topic -> (ros_publisher, msg_type) for inbound routing
         self._mqtt_topic_map = {}
+        self._mqtt_wildcards = []
+        self._topic_cache = {}
+        self._pending_subs = {}
+        self._mqtt_qos = {}
+        self._default_qos = 0
+        self._host = ''
+        self._port = 0
+        self._tls_enabled = False
+        self._ever_connected = False
 
+        env_file = self.config.get('mqtt', {}).get('env_file')
+        if env_file and not os.path.isabs(env_file):
+            base = _package_root(config_path) or os.path.dirname(os.path.abspath(config_path))
+            env_file = os.path.normpath(os.path.join(base, env_file))
+        self._load_env_file(env_file)
         self._setup_mqtt()
         self._setup_ros2_to_mqtt()
         self._setup_mqtt_to_ros2()
         self.mqtt_client.loop_start()
         self.create_timer(0.01, self._drain_m2r_queue)
 
-    def _setup_mqtt(self):
-        broker = self.get_parameter('mqtt_broker').get_parameter_value().string_value
-        port = self.get_parameter('mqtt_port').get_parameter_value().integer_value
+    @property
+    def broker(self) -> str:
+        return f'{self._host}:{self._port}'
 
-        self.mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    def _load_env_file(self, env_file: str | None):
+        if not env_file:
+            return
+        if not os.path.exists(env_file):
+            self.get_logger().warning(f"env_file not found: {env_file}")
+            return
+        with open(env_file) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#') or '=' not in line:
+                    continue
+                key, _, value = line.partition('=')
+                key = key.strip()
+                value = value.strip().strip('"').strip("'")
+                os.environ.setdefault(key, value)
+        self.get_logger().info(f"Loaded env file: {env_file}")
+
+    @staticmethod
+    def _env_or(cfg: dict, key: str, default=None, env_var: str = None):
+        name = cfg.get(f'{key}_env') or env_var
+        if name:
+            val = os.environ.get(name)
+            if val is not None:
+                return val
+        return cfg.get(key, default)
+
+    def _setup_mqtt(self):
+        cfg = self.config.get('mqtt', {})
+
+        host      = self._env_or(cfg, 'host', 'localhost', env_var='MQTT_HOST')
+        port      = int(self._env_or(cfg, 'port', 1883, env_var='MQTT_PORT'))
+        keepalive = int(self._env_or(cfg, 'keepalive', 60))
+        transport = self._env_or(cfg, 'transport', 'tcp')
+        self._default_qos = int(self._env_or(cfg, 'qos', 0, env_var='MQTT_QOS'))
+        protocol  = _PROTOCOL_MAP.get(self._env_or(cfg, 'protocol', 'mqtt'), mqtt.MQTTv311)
+
+        self.mqtt_client = mqtt.Client(
+            mqtt.CallbackAPIVersion.VERSION2,
+            protocol=protocol,
+            transport=transport,
+        )
         self.mqtt_client.on_connect = self._on_mqtt_connect
+        self.mqtt_client.on_disconnect = self._on_mqtt_disconnect
         self.mqtt_client.on_message = self._on_mqtt_message
-        self.mqtt_client.connect(broker, port)
-        self.get_logger().info(f'Connecting to MQTT broker: {broker}:{port}')
+        self.mqtt_client.on_subscribe = self._on_mqtt_subscribe
+
+        self._configure_auth(cfg)
+        self._configure_tls(cfg)
+        self._configure_reconnect(cfg)
+
+        self._host, self._port = host, port
+        self._tls_enabled = bool(getattr(self.mqtt_client, '_ssl_context', None))
+        self.get_logger().info(
+            f'Connecting to MQTT broker {self.broker} '
+            f'(tls={"on" if self._tls_enabled else "off"}, transport={transport}, keepalive={keepalive}s)'
+        )
+        try:
+            self.mqtt_client.connect(host, port, keepalive=keepalive)
+        except Exception as e:
+            self.get_logger().error(f'Cannot connect to MQTT broker {self.broker}: {e}')
+            for hint in failure_hints(host, port, self._tls_enabled):
+                self.get_logger().error(hint)
+            raise
+
+    def _configure_auth(self, cfg: dict):
+        auth = cfg.get('auth')
+        if not auth:
+            return
+
+        username_env = auth.get('username_env', 'MQTT_USERNAME')
+        password_env = auth.get('password_env', 'MQTT_PASSWORD')
+
+        username = os.environ.get(username_env) if username_env else None
+        password = os.environ.get(password_env) if password_env else None
+
+        if not username:
+            self.get_logger().warning(
+                f"MQTT auth enabled but env var '{username_env}' is not set or empty"
+            )
+            return
+
+        self.mqtt_client.username_pw_set(username, password)
+        self.get_logger().info(f"MQTT auth configured from env vars (user: '{username_env}')")
+
+    def _configure_tls(self, cfg: dict):
+        tls = cfg.get('tls')
+        if not tls:
+            return
+
+        enabled = self._env_or(tls, 'enabled', False, env_var='MQTT_TLS')
+        if isinstance(enabled, str):
+            enabled = enabled.lower() in ('1', 'true', 'yes')
+        if not enabled:
+            return
+
+        ca_certs = _resolve(self._env_or(tls, 'ca_certs', env_var='MQTT_CA_CERT'))
+        certfile = _resolve(self._env_or(tls, 'certfile', env_var='MQTT_CLIENT_CERT'))
+        keyfile  = _resolve(self._env_or(tls, 'keyfile', env_var='MQTT_CLIENT_KEY'))
+
+        if tls.get('generate'):
+            gen = tls['generate']
+            store_dir    = _resolve(gen.get('store_dir'))
+            common_name  = gen.get('common_name', 'mqtt_bridge')
+            validity_days = int(gen.get('validity_days', 3650))
+            certfile, keyfile = ensure_self_signed_cert(store_dir, common_name, validity_days)
+            self.get_logger().info(f'TLS client cert ready: {certfile}')
+
+        self.mqtt_client.tls_set(
+            ca_certs=ca_certs,
+            certfile=certfile,
+            keyfile=keyfile,
+        )
+        self.get_logger().info(
+            f'TLS enabled -- CA: {ca_certs or "system"}'
+            + (f', cert: {certfile}' if certfile else '')
+        )
+        if tls.get('insecure', False):
+            self.mqtt_client.tls_insecure_set(True)
+            self.get_logger().warning('TLS certificate verification is disabled')
+
+    def _configure_reconnect(self, cfg: dict):
+        delay     = self._env_or(cfg, 'reconnect_delay')
+        max_delay = self._env_or(cfg, 'reconnect_max_delay')
+        if delay is not None or max_delay is not None:
+            self.mqtt_client.reconnect_delay_set(
+                min_delay=int(delay or 1),
+                max_delay=int(max_delay or 120),
+            )
 
     def _on_mqtt_connect(self, client, userdata, flags, reason_code, properties):
         if reason_code == 0:
-            self.get_logger().info('Connected to MQTT broker')
+            self._ever_connected = True
+            self.get_logger().info(f'Connected to MQTT broker {self.broker}')
             for mqtt_topic in self._mqtt_topic_map:
-                client.subscribe(mqtt_topic)
-                self.get_logger().info(f'Subscribed to MQTT topic: {mqtt_topic}')
+                self._subscribe(mqtt_topic)
         else:
-            self.get_logger().error(f'MQTT connection failed with code: {reason_code}')
+            self.get_logger().error(
+                f'Broker {self.broker} refused the connection: {reason_text(reason_code)}')
+            if is_auth_failure(reason_code):
+                self.get_logger().error(
+                    'Authentication rejected: check MQTT_USERNAME/MQTT_PASSWORD, the client '
+                    'certificate and the broker ACL for this identity')
+
+    def _on_mqtt_disconnect(self, client, userdata, flags, reason_code, properties):
+        if reason_code == 0:
+            self.get_logger().info(f'Disconnected from MQTT broker {self.broker}')
+            return
+        self.get_logger().warning(
+            f'Unexpected disconnect from {self.broker}: {reason_text(reason_code)}')
+        if not self._ever_connected:
+            for hint in failure_hints(self._host, self._port, self._tls_enabled):
+                self.get_logger().error(hint)
+
+    def _subscribe(self, mqtt_topic: str):
+        qos = self._mqtt_qos.get(mqtt_topic, self._default_qos)
+        result, mid = self.mqtt_client.subscribe(mqtt_topic, qos=qos)
+        self._pending_subs[mid] = mqtt_topic
+        self.get_logger().info(f'SUBSCRIBE sent for: {mqtt_topic} (qos {qos})')
+
+    def _on_mqtt_subscribe(self, client, userdata, mid, reason_codes, properties):
+        topic = self._pending_subs.pop(mid, f'<mid {mid}>')
+        for reason in reason_codes:
+            if reason.is_failure:
+                self.get_logger().error(f'SUBSCRIBE denied for {topic}: {reason_text(reason)}')
+            else:
+                self.get_logger().info(f'SUBSCRIBE granted for {topic} (QoS {reason.value})')
 
     def _on_mqtt_message(self, client, userdata, message):
         if self._shutdown_event.is_set():
             return
-        entry = self._mqtt_topic_map.get(message.topic)
+        entry = self._resolve_topic(message.topic)
         if entry is None:
             return
+        self.get_logger().debug(f'M2R: {message.topic} ({len(message.payload)} bytes)')
         pub, msg_type, ros_topic, deserialize = entry
         try:
             self._m2r_queue.put((pub, deserialize(message.payload)))
         except Exception as e:
             self.get_logger().error(f'Deser failed on {ros_topic}: {e}')
+
+    def _resolve_topic(self, topic: str):
+        entry = self._mqtt_topic_map.get(topic)
+        if entry is not None:
+            return entry
+        if topic in self._topic_cache:
+            return self._topic_cache[topic]
+        for topic_filter in self._mqtt_wildcards:
+            if mqtt.topic_matches_sub(topic_filter, topic):
+                entry = self._mqtt_topic_map[topic_filter]
+                break
+        if entry is None:
+            self.get_logger().warning(f'No mapping matched inbound MQTT topic: {topic}')
+        self._topic_cache[topic] = entry
+        return entry
 
     def _setup_ros2_to_mqtt(self):
         for mapping in self.config.get('ros2_to_mqtt', []):
@@ -119,9 +329,10 @@ class ROS2MQTTBridge(Node):
             msg_type   = load_msg_type(ros_type)
             fmt        = mapping.get('format', 'cdr')
             qos        = _qos_from_mapping(mapping)
+            mqtt_qos   = int(mapping.get('mqtt_qos', self._default_qos))
             serialize  = _serializer(ros_type, fmt)
-            cb = lambda msg, t=mqtt_topic, s=serialize: (
-                self.mqtt_client.publish(t, s(msg)),
+            cb = lambda msg, t=mqtt_topic, s=serialize, q=mqtt_qos: (
+                self.mqtt_client.publish(t, s(msg), qos=q),
                 self.get_logger().debug(f'R2M: {t}')
             )
             self.ros_subs.append(self.create_subscription(msg_type, ros_topic, cb, qos))
@@ -138,11 +349,14 @@ class ROS2MQTTBridge(Node):
             pub         = self.create_publisher(pub_type, ros_topic, qos)
             deserialize = _deserializer(m_type, fmt)
             self.ros_pubs[mqtt_topic] = pub
+            self._mqtt_qos[mqtt_topic] = int(mapping.get('mqtt_qos', self._default_qos))
             self._mqtt_topic_map[mqtt_topic] = (pub, m_type, ros_topic, deserialize)
+            if '+' in mqtt_topic or '#' in mqtt_topic:
+                self._mqtt_wildcards.append(mqtt_topic)
 
         if self.mqtt_client.is_connected():
             for mqtt_topic in self._mqtt_topic_map:
-                self.mqtt_client.subscribe(mqtt_topic)
+                self._subscribe(mqtt_topic)
 
     def _drain_m2r_queue(self):
         while not self._m2r_queue.empty():
@@ -151,13 +365,19 @@ class ROS2MQTTBridge(Node):
 
     def shutdown(self):
         self._shutdown_event.set()
-        self.mqtt_client.loop_stop()
-        self.mqtt_client.disconnect()
+        if self.mqtt_client is not None:
+            self.mqtt_client.loop_stop()
+            self.mqtt_client.disconnect()
 
 
 def main(args=None):
     rclpy.init(args=args)
-    node = ROS2MQTTBridge()
+    try:
+        node = ROS2MQTTBridge()
+    except BaseException as e:
+        rclpy.shutdown()
+        raise SystemExit(f'{type(e).__name__}: {e}' if not isinstance(e, SystemExit) else e)
+
     executor = MultiThreadedExecutor()
     executor.add_node(node)
     try:

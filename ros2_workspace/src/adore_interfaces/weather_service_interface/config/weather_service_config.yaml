@@ -1,0 +1,55 @@
+# ─── Fetch policy ────────────────────────────────────────────────────────────
+fetch:
+  # Minimum distance (metres) the vehicle must move before a new fetch is triggered.
+  displacement_threshold_m: 5000.0
+
+  # Maximum age (seconds) of a cached forecast before it is considered stale.
+  max_forecast_age_s: 3600.0
+
+  # How often the service node checks whether a fetch is needed (seconds).
+  # This does NOT control how often external APIs are called.
+  check_interval_s: 60.0
+
+  # How often the latest forecast is re-published regardless of updates (seconds).
+  # Keep this low-frequency; 0.1 Hz (every 10 s) is a reasonable default.
+  publish_interval_s: 10.0
+
+# ─── Data sources ────────────────────────────────────────────────────────────
+# Sources are tried in priority order (lowest number first).
+# Set enabled: false to skip a source entirely.
+sources:
+  noaa:
+    enabled: true
+    priority: 2
+    # Timeout for each HTTP request in seconds.
+    timeout_s: 10.0
+
+  dwd:
+    enabled: true
+    priority: 1
+    timeout_s: 10.0
+
+  # Open-Meteo is the fallback: no API key required, global coverage.
+  open_meteo:
+    enabled: true
+    priority: 3
+    timeout_s: 10.0
+
+# ─── Logging ─────────────────────────────────────────────────────────────────
+logging:
+  # Write each forecast JSON to $ROS_HOME/weather_forecasts/.
+  enabled: true
+  # Maximum number of forecast files to retain (oldest are pruned).
+  max_files: 100
+
+# ─── Visualizer ──────────────────────────────────────────────────────────────
+visualizer:
+  # Launch the visualizer in a dedicated xterm window.
+  # Falls back to the current terminal session if xterm is not installed.
+  use_xterm: true
+
+# ─── Topics ──────────────────────────────────────────────────────────────────
+topics:
+  nav_sat_fix: /ego_vehicle/vehicle_state_dynamic_nav_sat_fix
+  weather_forecast: /ego_vehicle/weather_forecast
+  queue_depth: 10

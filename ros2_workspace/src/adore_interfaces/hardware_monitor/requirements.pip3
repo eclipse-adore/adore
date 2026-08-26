@@ -1,1 +1,2 @@
 psutil>=5.9.0
+setuptools<80

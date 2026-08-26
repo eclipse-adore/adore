@@ -1,0 +1,14 @@
+services:
+  bridge:
+    build: .
+    image: grpc_message_bridge:latest
+    network_mode: host
+    env_file:
+      - .secrets.env
+    environment:
+      BRIDGE_CONFIG_PATH: /config/bridge_config.yaml
+      GRPC_HOST: "0.0.0.0"
+      GRPC_PORT: "50051"
+    volumes:
+      - ./config/bridge_config.yaml:/config/bridge_config.yaml:ro
+    restart: unless-stopped
