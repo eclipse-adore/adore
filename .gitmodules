@@ -128,3 +128,9 @@
 [submodule "ros2_workspace/src/adore_libraries/adore_tridap"]
 	path = ros2_workspace/src/adore_libraries/adore_tridap
 	url = git@github.com:s0nofab1t/adore_tridap.git
+[submodule "ros2_workspace/vendor/osqp_build/qdldl"]
+	path = ros2_workspace/src/vendor/osqp_build/qdldl
+	url = https://github.com/osqp/qdldl.git
+[submodule "ros2_workspace/vendor/osqp_build/Catch2"]
+	path = ros2_workspace/src/vendor/osqp_build/Catch2
+	url = https://github.com/catchorg/Catch2.git
