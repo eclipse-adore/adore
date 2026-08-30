@@ -3,6 +3,7 @@ import queue
 import struct
 import threading
 import time
+import traceback
 import uuid
 import yaml
 import zenoh
@@ -122,25 +123,47 @@ def _qos_from_mapping(mapping: dict, default_reliability: str = 'reliable') -> Q
         history=HistoryPolicy.KEEP_LAST,
     )
 
+_MAPPING_KEYS = ('ros2_to_zenoh', 'zenoh_to_ros2')
+
+def _merge_configs(configs: list) -> dict:
+    """Merge in file order: mappings are concatenated, other keys taken from the first file setting them."""
+    merged = {}
+    for config in configs:
+        for key, value in config.items():
+            if key in _MAPPING_KEYS:
+                merged.setdefault(key, []).extend(value or [])
+            elif key not in merged:
+                merged[key] = value
+    return merged
+
+def _duplicate_topics(config: dict) -> list:
+    """Topics mapped more than once in the same direction."""
+    duplicates = []
+    for key in _MAPPING_KEYS:
+        seen = set()
+        for mapping in config.get(key, []):
+            topic = mapping.get('ros_topic')
+            if topic in seen:
+                duplicates.append(topic)
+            seen.add(topic)
+    return duplicates
+
+# Bounded so a burst on the zenoh side cannot starve the ros2_to_zenoh subscriptions, which share
+# the node's default (mutually exclusive) callback group with the drain timer.
+_MAX_PUBLISHES_PER_TICK = 100
+
 
 class ROS2ZenohBridge(Node):
     def __init__(self):
         super().__init__('zenoh_bridge_node')
         self.declare_parameter('config_path', '')
+        self.declare_parameter('config_paths', [''])
         self.declare_parameter('zenoh_config_path', '')
         self.declare_parameter('zenoh_router', 'tcp/localhost:7447')
 
-        config_path = self.get_parameter('config_path').get_parameter_value().string_value
-        if not config_path or not os.path.exists(config_path):
-            self.get_logger().error(f"Config file not found: {config_path}")
-            return
-
-        try:
-            with open(config_path, 'r') as f:
-                self.config = yaml.safe_load(f)
-        except Exception as e:
-            self.get_logger().error(f"Failed to load config: {e}")
-            return
+        self.config = self._load_config()
+        if self.config is None:
+            raise RuntimeError('no usable bridge configuration')
 
         self._ros_domain_id   = int(self.config.get('ros_domain_id', os.environ.get('ROS_DOMAIN', '0')))
         self._zenoh_bridge_id = int(self.config.get('zenoh_bridge_id', 0))
@@ -159,6 +182,39 @@ class ROS2ZenohBridge(Node):
         self._setup_ros2_to_zenoh()
         self._setup_zenoh_to_ros2()
         self.create_timer(0.01, self._drain_z2r_queue)
+
+    def _config_paths(self) -> list:
+        """Paths from 'config_paths' when set, otherwise the single 'config_path'."""
+        paths = [p for p in self.get_parameter('config_paths').get_parameter_value().string_array_value if p]
+        if paths:
+            return paths
+        config_path = self.get_parameter('config_path').get_parameter_value().string_value
+        return [config_path] if config_path else []
+
+    def _load_config(self):
+        """Load every configured file and merge them. Returns None if any of them is unusable."""
+        paths = self._config_paths()
+        if not paths:
+            self.get_logger().error("No config file given, set config_path or config_paths")
+            return None
+
+        configs = []
+        for path in paths:
+            if not os.path.exists(path):
+                self.get_logger().error(f"Config file not found: {path}")
+                return None
+            try:
+                with open(path, 'r') as f:
+                    configs.append(yaml.safe_load(f) or {})
+            except Exception as e:
+                self.get_logger().error(f"Failed to load config {path}: {e}")
+                return None
+            self.get_logger().info(f'Config loaded: {path}')
+
+        config = _merge_configs(configs)
+        for topic in _duplicate_topics(config):
+            self.get_logger().warn(f'{topic} is mapped more than once and will be bridged repeatedly')
+        return config
 
     def _setup_zenoh(self):
         zenoh_config_path = self.get_parameter('zenoh_config_path').get_parameter_value().string_value
@@ -189,13 +245,16 @@ class ROS2ZenohBridge(Node):
             wtype     = _wire_type(ros_type, fmt)
             serialize = _serializer(ros_type, fmt)
 
-            zenoh_key = _topic_keyexpr(domain_id, ros_topic, wtype, self._rmw_target)
+            custom_key = mapping.get('zenoh_key')
+            zenoh_key = custom_key or _topic_keyexpr(domain_id, ros_topic, wtype, self._rmw_target)
             pub = self.zenoh_session.declare_publisher(zenoh_key)
             self.zenoh_pubs[ros_topic] = pub
 
-            lv_key = _liveliness_keyexpr(domain_id, self._session_id, pub_id, node_name, ros_topic, wtype, qos, self._rmw_target)
-            token = self.zenoh_session.liveliness().declare_token(lv_key)
-            self.zenoh_lv_tokens.append(token)
+            # A custom key is not an rmw_zenoh_cpp topic, so do not advertise one.
+            if not custom_key:
+                lv_key = _liveliness_keyexpr(domain_id, self._session_id, pub_id, node_name, ros_topic, wtype, qos, self._rmw_target)
+                token = self.zenoh_session.liveliness().declare_token(lv_key)
+                self.zenoh_lv_tokens.append(token)
 
             gid = _make_gid()
             seq = [0]
@@ -214,12 +273,11 @@ class ROS2ZenohBridge(Node):
             domain_id = int(mapping.get('domain_id', self._zenoh_bridge_id))
             fmt       = mapping.get('format', 'cdr')
             wtype     = _wire_type(ros_type, fmt)
-            pub_type  = load_msg_type(wtype)
             m_type    = load_msg_type(ros_type)
             qos       = _qos_from_mapping(mapping, default_reliability='best_effort')
-            z_key     = _topic_sub_keyexpr(domain_id, ros_topic, wtype)
+            z_key     = mapping.get('zenoh_key') or _topic_sub_keyexpr(domain_id, ros_topic, wtype)
             deserialize = _deserializer(m_type, fmt)
-            pub = self.create_publisher(pub_type, ros_topic, qos)
+            pub = self.create_publisher(m_type, ros_topic, qos)
             self.ros_pubs[ros_topic] = pub
             self.get_logger().info(f'Z2R: {z_key} -> {ros_topic} [{fmt}]')
             def z_cb(sample, p=pub, t=ros_topic, deser=deserialize):
@@ -232,9 +290,15 @@ class ROS2ZenohBridge(Node):
             self.zenoh_subs.append(self.zenoh_session.declare_subscriber(z_key, z_cb))
 
     def _drain_z2r_queue(self):
-        while not self._z2r_queue.empty():
-            pub, msg = self._z2r_queue.get_nowait()
-            pub.publish(msg)
+        for _ in range(_MAX_PUBLISHES_PER_TICK):
+            try:
+                pub, msg = self._z2r_queue.get_nowait()
+            except queue.Empty:
+                return
+            try:
+                pub.publish(msg)
+            except Exception as e:
+                self.get_logger().error(f'Publish failed on {pub.topic_name}: {e}')
 
     def shutdown(self):
         self._shutdown_event.set()
@@ -248,7 +312,14 @@ class ROS2ZenohBridge(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = ROS2ZenohBridge()
+
+    try:
+        node = ROS2ZenohBridge()
+    except Exception:
+        traceback.print_exc()
+        rclpy.shutdown()
+        return 1
+
     executor = MultiThreadedExecutor()
     executor.add_node(node)
     try:
@@ -260,3 +331,4 @@ def main(args=None):
         executor.shutdown()
         node.destroy_node()
         rclpy.shutdown()
+    return 0

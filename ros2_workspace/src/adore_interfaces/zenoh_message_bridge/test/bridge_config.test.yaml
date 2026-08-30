@@ -1,0 +1,33 @@
+# Ready-made configuration for exercising the bridge, see the Test section in README.md.
+# Covers both wire formats in both directions. Every mapping sets zenoh_key so the keys are
+# typeable by hand rather than derived from the ROS domain and DDS type name.
+
+ros_domain_id: 0
+zenoh_bridge_id: 0
+rmw_target: jazzy
+
+zenoh_to_ros2:
+  - ros_topic: "/test/json_in"
+    msg_type: "std_msgs/msg/String"
+    format: json
+    zenoh_key: "test/json_in"
+    qos_depth: 10
+
+  - ros_topic: "/test/cdr_in"
+    msg_type: "std_msgs/msg/String"
+    format: cdr
+    zenoh_key: "test/cdr_in"
+    qos_depth: 10
+
+ros2_to_zenoh:
+  - ros_topic: "/test/json_out"
+    msg_type: "std_msgs/msg/String"
+    format: json
+    zenoh_key: "test/json_out"
+    qos_depth: 10
+
+  - ros_topic: "/test/cdr_out"
+    msg_type: "std_msgs/msg/String"
+    format: cdr
+    zenoh_key: "test/cdr_out"
+    qos_depth: 10

@@ -13,6 +13,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/config', ['config/bridge_config.yaml']),
         ('share/' + package_name + '/launch', ['launch/bridge.launch.py']),
+        ('share/' + package_name + '/test', ['test/bridge_config.test.yaml']),
     ],
     install_requires=['setuptools', 'yq', 'eclipse-zenoh'],
     zip_safe=True,
