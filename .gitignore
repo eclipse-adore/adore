@@ -17,6 +17,7 @@ adore_embedded/build/
 **.rej
 **.orig
 ros2_workspace/src/vendor/adore_extended
+ros2_workspace/src/adore_extended
 Function
 tools/adore_api/scenario_manager_state.json
 
