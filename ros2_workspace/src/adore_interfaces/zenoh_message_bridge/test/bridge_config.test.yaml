@@ -1,0 +1,32 @@
+# Config for the test procedure in README.md, both wire formats in both directions.
+# zenoh_key is set everywhere so the keys can be typed by hand.
+
+ros_domain_id: 0
+zenoh_bridge_id: 0
+rmw_target: jazzy
+
+zenoh_to_ros2:
+  - ros_topic: "/test/json_in"
+    msg_type: "std_msgs/msg/String"
+    format: json
+    zenoh_key: "test/json_in"
+    qos_depth: 10
+
+  - ros_topic: "/test/cdr_in"
+    msg_type: "std_msgs/msg/String"
+    format: cdr
+    zenoh_key: "test/cdr_in"
+    qos_depth: 10
+
+ros2_to_zenoh:
+  - ros_topic: "/test/json_out"
+    msg_type: "std_msgs/msg/String"
+    format: json
+    zenoh_key: "test/json_out"
+    qos_depth: 10
+
+  - ros_topic: "/test/cdr_out"
+    msg_type: "std_msgs/msg/String"
+    format: cdr
+    zenoh_key: "test/cdr_out"
+    qos_depth: 10
