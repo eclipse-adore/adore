@@ -9,6 +9,6 @@ To execute the test:
 - Then, in the same directory, type `make cli`, and press return to start the ADORe CLI.
 - Type `cd ros2_workspace/install/adore_map_downloader_test/bin`, and press return.
 - Type `./basic_map_loading_from_wfs_test` (without any parameters), and press return.
-- You should see the line "adore_nowcast_test: Nowcast query test completed successfully, good!" along the last few lines.
+- You should see the line "basic_map_loading_from_wfs_test: All tests passed successfully, good!" along the last few lines.
 
 ---

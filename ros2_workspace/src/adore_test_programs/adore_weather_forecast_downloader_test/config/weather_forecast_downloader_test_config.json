@@ -1,0 +1,8 @@
+{
+  "sources": {
+    "noaa":       { "enabled": true,  "priority": 2,  "timeout_s": 10 },
+    "dwd":        { "enabled": true,  "priority": 1,  "timeout_s": 10 },
+    "open_meteo": { "enabled": true,  "priority": 3,  "timeout_s": 10 }
+  },
+  "logging": { "enabled": true, "max_files": 100 }
+}
