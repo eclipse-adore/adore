@@ -1,6 +1,7 @@
 import importlib
 import json
 import os
+import re
 import datetime
 from rclpy.serialization import serialize_message, deserialize_message
 from rosidl_runtime_py import message_to_ordereddict, set_message_fields
@@ -130,3 +131,70 @@ def raw_to_str_msg(data: bytes):
 
 def str_msg_to_raw(msg) -> bytes:
     return msg.data.encode('utf-8')
+
+
+_TOPIC_PLACEHOLDER = re.compile(r'\{(\w+)\}')
+
+
+def mqtt_topic_resolver(mqtt_topic: str):
+    """None without placeholders, otherwise a function filling each {field}
+    from the top-level field of the same name in a JSON object."""
+    if not _TOPIC_PLACEHOLDER.search(mqtt_topic):
+        return None
+
+    def resolve(payload: bytes) -> str:
+        obj = json.loads(payload)
+        if not isinstance(obj, dict):
+            raise ValueError('payload is not a JSON object')
+
+        def level(match):
+            field = match.group(1)
+            value = obj.get(field)
+            if isinstance(value, bool) or not isinstance(value, (str, int)):
+                raise ValueError(f"field '{field}' is missing or not a string")
+            value = str(value)
+            if not value or any(c in value for c in '/+#\0'):
+                raise ValueError(f"field '{field}' is not a valid topic level: '{value}'")
+            return value
+
+        return _TOPIC_PLACEHOLDER.sub(level, mqtt_topic)
+
+    return resolve
+
+
+def mqtt_topic_filter(mqtt_topic: str) -> str:
+    """Subscription filter for a topic with placeholders: each {field} becomes '+'."""
+    return _TOPIC_PLACEHOLDER.sub('+', mqtt_topic)
+
+
+def mqtt_topic_fields(mqtt_topic: str):
+    """None without placeholders, otherwise a function returning {field: level}
+    for a topic matched by mqtt_topic_filter(mqtt_topic)."""
+    fields = {}
+    for index, level in enumerate(mqtt_topic.split('/')):
+        match = _TOPIC_PLACEHOLDER.fullmatch(level)
+        if match:
+            fields[index] = match.group(1)
+        elif _TOPIC_PLACEHOLDER.search(level):
+            raise ValueError(f"placeholder in '{level}' of {mqtt_topic} must fill the whole topic level")
+    if not fields:
+        return None
+
+    def extract(topic: str) -> dict:
+        levels = topic.split('/')
+        return {field: levels[index] for index, field in fields.items()}
+
+    return extract
+
+
+def add_topic_fields(payload: bytes, fields: dict) -> tuple[bytes, list]:
+    """Add the fields a JSON object lacks. Differing values are returned."""
+    obj = json.loads(payload)
+    if not isinstance(obj, dict):
+        raise ValueError('payload is not a JSON object')
+    conflicts = [field for field, value in fields.items() if field in obj and obj[field] != value]
+    missing = {field: value for field, value in fields.items() if field not in obj}
+    if not missing:
+        return payload, conflicts
+    obj.update(missing)
+    return json.dumps(obj, ensure_ascii=False).encode('utf-8'), conflicts

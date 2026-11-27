@@ -4,9 +4,8 @@ SOURCE_DIRECTORY="$(realpath "${SCRIPT_DIRECTORY}/..")"
 
 source "${SOURCE_DIRECTORY}/adore.env" 2>/dev/null || true
 
-# MQTT_BROKER_HOST/PORT are the pre-rename names, still honoured.
-BROKER_HOST="${MQTT_HOST:-${MQTT_BROKER_HOST:-127.0.0.1}}"
-BROKER_PORT="${MQTT_PORT:-${MQTT_BROKER_PORT:-1883}}"
+BROKER_HOST="${MQTT_HOST:-127.0.0.1}"
+BROKER_PORT="${MQTT_PORT:-1883}"
 LOG_DIR="${SOURCE_DIRECTORY}/.log/mqtt"
 PIDFILE="${LOG_DIR}/mqtt_broker.pid"
 LOGFILE="${LOG_DIR}/mqtt_broker.log"

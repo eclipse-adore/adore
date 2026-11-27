@@ -105,16 +105,21 @@ def load_settings(config_path: str | None = None) -> BrokerSettings:
             cfg = yaml.safe_load(f) or {}
     mqtt_cfg = cfg.get('mqtt') or {}
 
+    base = package_root(config_path) or os.path.dirname(os.path.abspath(config_path))
     env_file = mqtt_cfg.get('env_file')
     if env_file and not os.path.isabs(env_file):
-        base = package_root(config_path) or os.path.dirname(os.path.abspath(config_path))
         env_file = os.path.normpath(os.path.join(base, env_file))
     load_env_file(env_file)
 
-    cert_dir = os.environ.get('MQTT_BRIDGE_CERT_DIR') or os.path.join(PKG_ROOT, 'certs')
-
     auth = mqtt_cfg.get('auth') or {}
     tls_cfg = mqtt_cfg.get('tls') or {}
+
+    # A cert_dir in the config wins over MQTT_BRIDGE_CERT_DIR, which is only the default.
+    cert_dir = tls_cfg.get('cert_dir')
+    if cert_dir:
+        cert_dir = os.path.normpath(os.path.join(base, cert_dir))
+    else:
+        cert_dir = os.environ.get('MQTT_BRIDGE_CERT_DIR') or os.path.join(PKG_ROOT, 'certs')
 
     settings = BrokerSettings(
         host=str(env_or(mqtt_cfg, 'host', 'localhost', 'MQTT_HOST')),

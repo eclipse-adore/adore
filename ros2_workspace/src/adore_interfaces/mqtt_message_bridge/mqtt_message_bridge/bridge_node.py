@@ -9,7 +9,7 @@ from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy, HistoryPolicy
 from .diagnostics import failure_hints, is_auth_failure, reason_text
-from .utils import load_msg_type, msg_to_bytes, bytes_to_msg, msg_to_json, json_to_msg, msg_to_cdr_json, cdr_json_to_msg, raw_to_str_msg, str_msg_to_raw, ensure_self_signed_cert
+from .utils import load_msg_type, msg_to_bytes, bytes_to_msg, msg_to_json, json_to_msg, msg_to_cdr_json, cdr_json_to_msg, raw_to_str_msg, str_msg_to_raw, ensure_self_signed_cert, mqtt_topic_resolver, mqtt_topic_filter, mqtt_topic_fields, add_topic_fields
 
 _STR_TYPE = 'std_msgs/msg/String'
 
@@ -111,10 +111,14 @@ class ROS2MQTTBridge(Node):
         self._tls_enabled = False
         self._ever_connected = False
 
-        env_file = self.config.get('mqtt', {}).get('env_file')
+        mqtt_cfg = self.config.get('mqtt', {})
+        base = _package_root(config_path) or os.path.dirname(os.path.abspath(config_path))
+        env_file = mqtt_cfg.get('env_file')
         if env_file and not os.path.isabs(env_file):
-            base = _package_root(config_path) or os.path.dirname(os.path.abspath(config_path))
             env_file = os.path.normpath(os.path.join(base, env_file))
+        # A cert_dir in the config wins over MQTT_BRIDGE_CERT_DIR, which is only the default.
+        cert_dir = (mqtt_cfg.get('tls') or {}).get('cert_dir')
+        self._cert_dir = os.path.normpath(os.path.join(base, cert_dir)) if cert_dir else _CERT_DIR
         self._load_env_file(env_file)
         self._setup_mqtt()
         self._setup_ros2_to_mqtt()
@@ -221,13 +225,13 @@ class ROS2MQTTBridge(Node):
         if not enabled:
             return
 
-        ca_certs = _resolve(self._env_or(tls, 'ca_certs', env_var='MQTT_CA_CERT'))
-        certfile = _resolve(self._env_or(tls, 'certfile', env_var='MQTT_CLIENT_CERT'))
-        keyfile  = _resolve(self._env_or(tls, 'keyfile', env_var='MQTT_CLIENT_KEY'))
+        ca_certs = _resolve(self._env_or(tls, 'ca_certs', env_var='MQTT_CA_CERT'), self._cert_dir)
+        certfile = _resolve(self._env_or(tls, 'certfile', env_var='MQTT_CLIENT_CERT'), self._cert_dir)
+        keyfile  = _resolve(self._env_or(tls, 'keyfile', env_var='MQTT_CLIENT_KEY'), self._cert_dir)
 
         if tls.get('generate'):
             gen = tls['generate']
-            store_dir    = _resolve(gen.get('store_dir'))
+            store_dir    = _resolve(gen.get('store_dir'), self._cert_dir)
             common_name  = gen.get('common_name', 'mqtt_bridge')
             validity_days = int(gen.get('validity_days', 3650))
             certfile, keyfile = ensure_self_signed_cert(store_dir, common_name, validity_days)
@@ -300,11 +304,24 @@ class ROS2MQTTBridge(Node):
         if entry is None:
             return
         self.get_logger().debug(f'M2R: {message.topic} ({len(message.payload)} bytes)')
-        pub, msg_type, ros_topic, deserialize = entry
+        pub, msg_type, ros_topic, deserialize, topic_fields = entry
+        payload = message.payload
+        if topic_fields is not None:
+            payload = self._add_topic_fields(payload, topic_fields(message.topic), ros_topic)
         try:
-            self._m2r_queue.put((pub, deserialize(message.payload)))
+            self._m2r_queue.put((pub, deserialize(payload)))
         except Exception as e:
             self.get_logger().error(f'Deser failed on {ros_topic}: {e}')
+
+    def _add_topic_fields(self, payload, fields, ros_topic):
+        try:
+            payload, conflicts = add_topic_fields(payload, fields)
+        except ValueError as e:
+            self.get_logger().warning(f'{ros_topic}: passed on without {", ".join(fields)}, {e}')
+            return payload
+        for field in conflicts:
+            self.get_logger().warning(f"{ros_topic}: kept the payload's {field}, the topic says {fields[field]}")
+        return payload
 
     def _resolve_topic(self, topic: str):
         entry = self._mqtt_topic_map.get(topic)
@@ -331,18 +348,38 @@ class ROS2MQTTBridge(Node):
             qos        = _qos_from_mapping(mapping)
             mqtt_qos   = int(mapping.get('mqtt_qos', self._default_qos))
             serialize  = _serializer(ros_type, fmt)
-            cb = lambda msg, t=mqtt_topic, s=serialize, q=mqtt_qos: (
-                self.mqtt_client.publish(t, s(msg), qos=q),
-                self.get_logger().debug(f'R2M: {t}')
-            )
+            resolve    = mqtt_topic_resolver(mqtt_topic)
+            # Placeholders are filled from the json
+            if resolve is not None and fmt != 'raw':
+                raise SystemExit(f'{ros_topic}: placeholders in mqtt_topic {mqtt_topic} require format raw')
+            cb = lambda msg, t=mqtt_topic, s=serialize, q=mqtt_qos, r=resolve: self._publish_to_mqtt(msg, t, s, q, r)
             self.ros_subs.append(self.create_subscription(msg_type, ros_topic, cb, qos))
+
+    def _publish_to_mqtt(self, msg, mqtt_topic, serialize, mqtt_qos, resolve):
+        payload = serialize(msg)
+        if resolve is not None:
+            try:
+                mqtt_topic = resolve(payload)
+            except ValueError as e:
+                self.get_logger().error(f'R2M dropped, cannot fill {mqtt_topic}: {e}')
+                return
+        self.mqtt_client.publish(mqtt_topic, payload, qos=mqtt_qos)
+        self.get_logger().debug(f'R2M: {mqtt_topic}')
 
     def _setup_mqtt_to_ros2(self):
         for mapping in self.config.get('mqtt_to_ros2', []):
-            mqtt_topic  = mapping['mqtt_topic']
+            template    = mapping['mqtt_topic']
             ros_topic   = mapping['ros_topic']
             ros_type    = mapping.get('msg_type', _STR_TYPE)
             fmt         = mapping.get('format', 'cdr')
+            try:
+                topic_fields = mqtt_topic_fields(template)
+            except ValueError as e:
+                raise SystemExit(f'{ros_topic}: {e}')
+            # Placeholder values are added to the JSON
+            if topic_fields is not None and fmt != 'raw':
+                raise SystemExit(f'{ros_topic}: placeholders in mqtt_topic {template} require format raw')
+            mqtt_topic  = mqtt_topic_filter(template)
             pub_type    = load_msg_type(_wire_type(ros_type, fmt))
             m_type      = load_msg_type(ros_type)
             qos         = _qos_from_mapping(mapping)
@@ -350,7 +387,7 @@ class ROS2MQTTBridge(Node):
             deserialize = _deserializer(m_type, fmt)
             self.ros_pubs[mqtt_topic] = pub
             self._mqtt_qos[mqtt_topic] = int(mapping.get('mqtt_qos', self._default_qos))
-            self._mqtt_topic_map[mqtt_topic] = (pub, m_type, ros_topic, deserialize)
+            self._mqtt_topic_map[mqtt_topic] = (pub, m_type, ros_topic, deserialize, topic_fields)
             if '+' in mqtt_topic or '#' in mqtt_topic:
                 self._mqtt_wildcards.append(mqtt_topic)
 

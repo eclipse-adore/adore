@@ -94,6 +94,19 @@ class SettingsTestCase(unittest.TestCase):
         self.assertEqual(settings.ca_certs, os.path.join(cert_dir, 'broker.crt'))
         self.assertEqual(settings.missing, [])
 
+    def test_cert_dir_in_config_wins_over_environment(self):
+        cert_dir = os.path.join(self.tmp.name, 'partner_certs')
+        os.makedirs(cert_dir)
+        for name in ('broker.crt', 'client.crt', 'client.key'):
+            open(os.path.join(cert_dir, name), 'w').close()
+        os.environ['MQTT_BRIDGE_CERT_DIR'] = os.path.join(self.tmp.name, 'nope')
+        env_file = self.write('empty3.env', '')
+        os.makedirs(os.path.join(self.tmp.name, 'configs'))
+        config = TLS_CONFIG.format(env_file=env_file) + '    cert_dir: ../partner_certs\n'
+        settings = load_settings(self.write(os.path.join('configs', 'g.yaml'), config))
+        self.assertEqual(settings.ca_certs, os.path.join(cert_dir, 'broker.crt'))
+        self.assertEqual(settings.missing, [])
+
     def test_missing_tls_material_is_reported(self):
         os.environ['MQTT_BRIDGE_CERT_DIR'] = os.path.join(self.tmp.name, 'nope')
         env_file = self.write('empty2.env', '')
