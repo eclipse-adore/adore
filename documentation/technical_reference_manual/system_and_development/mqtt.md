@@ -20,7 +20,7 @@ The bridge node and optional MQTT broker do not start automatically by default. 
 | File | Purpose |
 |---|---|
 | `mqtt_bridge_config.yaml` | Define which ROS topics to bridge and their MQTT mappings |
-| `adore.env` | Enable the bridge and broker services at startup; configure remote broker connection parameters (host, port, credentials) |
+| `adore.env` | Enable the bridge and broker services at startup; set the bridge config and the certificate directory. |
 
 ## Further Reading
 

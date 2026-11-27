@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # End-to-end test run against a throwaway local broker.
 #
-# Runs the local suite against a throwaway broker, then the remote suite against
-# the broker in config/bridge_config.yaml.
+# Runs the local suite against a throwaway broker. With --remote, the remote
+# suite follows against the broker in config.
 #
-# Usage: ./scripts/run_tests.sh [--no-broker] [--config PATH] [--no-remote]
+# Usage: ./scripts/run_tests.sh [--no-broker] [--config PATH] [--remote PATH]
 #
 # --no-broker  skip starting mosquitto and use the broker the config names
 # --config     test against a different bridge config (implies a real broker)
-# --no-remote  skip the remote broker suite
+# --remote     also run the remote broker suite
 
 set -uo pipefail
 
@@ -18,16 +18,14 @@ PKG_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 source "$SCRIPT_DIR/test_common.sh"
 
 START_BROKER=1
-RUN_REMOTE=1
 CONFIG="$PKG_ROOT/test/bridge_config.test.yaml"
-REMOTE_CONFIG="${REMOTE_CONFIG:-$PKG_ROOT/config/bridge_config.yaml}"
+REMOTE_CONFIG="${REMOTE_CONFIG:-}"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --no-broker) START_BROKER=0; shift ;;
         --config)    CONFIG="$2"; START_BROKER=0; shift 2 ;;
-        --remote)    RUN_REMOTE=1; shift ;;
-        --no-remote) RUN_REMOTE=0; shift ;;
+        --remote)    REMOTE_CONFIG="$2"; shift 2 ;;
         *) echo "unknown argument: $1" >&2; exit 2 ;;
     esac
 done
@@ -185,13 +183,13 @@ banner "Configured topic loopback"
     > "$WORK_DIR/topics.log" 2>&1
 record "mqtt_test_bridge.sh" $? "$WORK_DIR/topics.log"
 
-if [[ "$RUN_REMOTE" -eq 1 ]]; then
+if [[ -n "$REMOTE_CONFIG" ]]; then
     printf '\n########## Remote broker suite ##########\n'
     RESULTS_FILE="$WORK_DIR/remote.results" "$SCRIPT_DIR/mqtt_test_remote.sh" "$REMOTE_CONFIG"
     absorb_results "$WORK_DIR/remote.results"
     printf '########## End remote broker suite ##########\n'
 else
-    skip "remote broker suite" "--no-remote"
+    skip "remote broker suite" "no --remote config"
 fi
 
 summary

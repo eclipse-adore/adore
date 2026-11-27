@@ -6,8 +6,8 @@
 #
 # Examples:
 #   ./mqtt_log.sh                                   # all topics -> mqtt_log_<ts>.jsonl
-#   ./mqtt_log.sh -o solbox.jsonl 'od_imoger/solbox/+/notifications'
-#   ./mqtt_log.sh bridge_config.yaml -o run.jsonl 'od_imoger/#'
+#   ./mqtt_log.sh -o status.jsonl 'devices/+/status'
+#   ./mqtt_log.sh bridge_config.yaml -o run.jsonl 'devices/#'
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

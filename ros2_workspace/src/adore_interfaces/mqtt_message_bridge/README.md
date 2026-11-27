@@ -26,48 +26,61 @@ mqtt_to_ros2:
 
 Each mapping supports optional QoS overrides: `qos_depth`, `qos_durability` (`volatile`|`transient_local`), `qos_reliability` (`best_effort`|`reliable`).
 
-## DiMOS 5.2 interface
+A `ros2_to_mqtt` topic may contain `{field}` placeholders, filled per message from
+the top-level field of the same name in the JSON payload. This requires
+`format: raw`. Messages without a usable field are dropped.
 
-`config/bridge_config.yaml` targets the UseCase 5.2 broker
-(`mqtts://broker:8887`, MQTT v3.1.1, QoS 1) using the
-certificate file names the specification hands out: `ca.crt`,
-`client.crt`, `client.key`. Credentials come from `.mqtt_secrets.env`.
+```yaml
+ros2_to_mqtt:
+  - ros_topic: "/device/request"
+    mqtt_topic: "{region}/{device_id}/request"
+    msg_type: "std_msgs/msg/String"
+    format: raw
+```
 
-Payloads are UTF-8 JSON and are bridged verbatim (`format: raw`) into
-`std_msgs/msg/String`. `scripts/dimos_message.py` builds a notification message
-and checks a received one for the fields the bridge relies on. It validates
-structure and types only; field values are left to the publisher, since the live
-traffic uses cause codes, station types and intervals outside any fixed list.
+`mqtt_to_ros2` topics take the usual MQTT wildcards `+` and `#`. They may also
+contain placeholders. The bridge subscribes with `+` in their place and adds the
+matched levels to the JSON payload. This also requires `format: raw`.
+Fields the payload already holds are kept, a differing value is logged.
+
+```yaml
+mqtt_to_ros2:
+  - mqtt_topic: "{region}/{device_id}/response/request_status"
+    ros_topic: "/response/request_status"
+    msg_type: "std_msgs/msg/String"
+    format: raw
+```
+
+On `region-A/id-12345/response/request_status`, `{"vehicle_id": "0"}` arrives in ROS as
+`{"vehicle_id": "0", "region": "region-A", "device_id": "id-12345"}`.
+
 
 ## Launch
 
 ```bash
-ros2 launch mqtt_message_bridge bridge.launch.py mqtt_broker:=localhost mqtt_port:=1883
+ros2 launch mqtt_message_bridge bridge.launch.py config_path:=/path/to/bridge_config.yaml
 ```
+
+Without `config_path` the bridge takes `config/bridge_config.yaml`, a local broker
+without TLS or credentials.
 
 ## Test
 
 ```bash
 make build         # docker image
-make test          # local suite, then the remote broker suite
-make test-offline  # local suite only
+make test          # local suite broker
 make clean
 ```
 
-The remote suite works down the stack against the broker in
-`config/bridge_config.yaml`, so a failure names the layer that broke:
+`./scripts/run_tests.sh --remote PATH` adds the remote suite for the broker in
+the config at PATH. A failure names the layer that broke:
 
 1. host reachable (TCP)
 2. TLS handshake, reporting the negotiated version and the server certificate
 3. authentication, reporting the CONNACK reason code
-4. live data on `od_imoger/vehicles/dlr1/nmea`, plus a synthetic notification
-   published to `od_imoger/solbox/solbox_test/notifications`
-5. the same data arriving on `/imoger/vehicles/dlr1/nmea` and
-   `/imoger/solbox/notifications` through the bridge
 
-One received payload is printed at each stage. Stages below a failure are not
-attempted. Missing credentials or certificates skip rather than fail. `NMEA_WAIT`
-allows longer for live data; `NMEA_REQUIRE=0` treats a silent vehicle as a skip.
+Stages below a failure are not attempted. Missing credentials or certificates
+skip rather than fail.
 
 Individually, against whatever broker `config/bridge_config.yaml` names:
 
